@@ -16,6 +16,9 @@ class AppUserProfile {
     required this.phone,
     required this.department,
     required this.joinedDate,
+    this.username,
+    this.status,
+    this.roles = const [],
     this.profileImageUrl,
   });
 
@@ -26,7 +29,27 @@ class AppUserProfile {
   final String phone;
   final String department;
   final String joinedDate;
+  final String? username;
+  final String? status;
+  final List<String> roles;
   final String? profileImageUrl;
+
+  /// A copy with a different avatar, so a fresh upload shows without a reload.
+  AppUserProfile copyWithProfileImageUrl(String? url) {
+    return AppUserProfile(
+      id: id,
+      fullName: fullName,
+      subtitle: subtitle,
+      email: email,
+      phone: phone,
+      department: department,
+      joinedDate: joinedDate,
+      username: username,
+      status: status,
+      roles: roles,
+      profileImageUrl: url,
+    );
+  }
 
   factory AppUserProfile.fromJson(Map<String, dynamic> json) {
     final id = _asInt(json['id'] ?? json['userId'] ?? json['user_id'] ?? json['teacher_id'] ?? json['teacherId']) ?? 0;
@@ -59,9 +82,27 @@ class AppUserProfile {
         .where((part) => part.trim().isNotEmpty && part != 'Not specified')
         .toList();
 
+    final roles = <String>[];
+    final rawRoles = json['roles'];
+    if (rawRoles is List) {
+      for (final role in rawRoles) {
+        if (role is String && role.trim().isNotEmpty) {
+          roles.add(role.trim());
+        } else if (role is Map<String, dynamic>) {
+          final nested = _nestedString(role);
+          if (nested != null) {
+            roles.add(nested);
+          }
+        }
+      }
+    }
+
     return AppUserProfile(
       id: id,
       fullName: fullName,
+      username: _firstString(json, const ['username', 'user_name', 'userName']),
+      status: _firstString(json, const ['status']),
+      roles: roles,
       subtitle:
           subtitleParts.isEmpty ? 'Staff member' : subtitleParts.join(' • '),
       email: _firstString(json, const ['email']) ?? 'Not specified',
@@ -181,4 +222,15 @@ abstract class AuthRepository {
   Future<void> revoke(String token);
 
   Future<AppUserProfile> getCurrentUser(String token);
+
+  /// Uploads [bytes] as the user's avatar and returns the new picture URL.
+  Future<String?> uploadProfilePicture(
+    String token, {
+    required int userId,
+    required List<int> bytes,
+    required String filename,
+  });
+
+  /// Clears the stored avatar. Returns the (now null) picture URL.
+  Future<String?> removeProfilePicture(String token, {required int userId});
 }

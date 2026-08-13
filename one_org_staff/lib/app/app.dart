@@ -44,7 +44,6 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
         pointsRepository: HttpLessonPointsRepository(
           client: _client!,
           baseUrl: ApiConfig.baseUrl,
-          academicYearId: ApiConfig.academicYearId,
         ),
       );
     } else {

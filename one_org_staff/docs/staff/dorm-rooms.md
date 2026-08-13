@@ -3,11 +3,13 @@
 **Base path:** `/dorm-rooms`
 
 ## Overview
-Dorm rooms define the room inventory used by the dorm assignment flow. Each room is linked to a single `billing_id`, which is used when a student is assigned to that room.
+Dorm rooms define the room inventory used by the dorm assignment flow. Each
+room is linked to a single `invoice_template_id`, which is billed when a
+student is assigned to that room.
 
-All routes are under `RolesGuard`.
-- `GET` routes: guarded, no explicit role restriction in controller.
-- `POST`, `PATCH`, `DELETE`: allowed for `OWNER`, `ADMIN`, `MODERATOR`.
+All routes are under `RolesGuard` + permission checks via `@RequirePermissions`.
+- `GET` routes: authenticated, no explicit permission.
+- `POST`: `dorm_rooms.create`; `PATCH`: `dorm_rooms.update`; `DELETE`: `dorm_rooms.delete`.
 
 ## Data Shape
 
@@ -17,7 +19,7 @@ Dorm room object:
 	"id": 1,
 	"name": "Room A-101",
 	"description": "First floor, 4 beds",
-	"billing_id": 12,
+	"invoice_template_id": 12,
 	"capacity": 4,
 	"occupied_beds": 1,
 	"free_beds": 3,
@@ -31,7 +33,7 @@ Dorm room object:
 Validation and business rules:
 - `name`: string, length `1..255`
 - `description`: optional string, length `1..255`
-- `billing_id`: integer, `>= 1`, must reference an existing billing
+- `invoice_template_id`: integer, `>= 1`, must reference an existing invoice template
 - `capacity`: integer, `>= 1`
 - `free_beds`: computed as `capacity - active dorm students`
 - A dorm room cannot be deleted while it has dorm student assignments
@@ -39,12 +41,17 @@ Validation and business rules:
 ## Endpoints
 
 ### 1) Get Dorm Rooms
-`GET /dorm-rooms`
+`GET /dorm-rooms` (alias: `GET /dorm-rooms/all`)
 
 Query params (all optional):
 - `id`: integer, `>= 1`
 - `name`: string, exact match
-- `billing_id`: integer, `>= 1`
+- `invoice_template_id`: integer, `>= 1`
+
+Example:
+```http
+GET /dorm-rooms?invoice_template_id=12
+```
 
 Response `200`:
 ```json
@@ -59,7 +66,7 @@ Response `200`:
 			"id": 1,
 			"name": "Room A-101",
 			"description": "First floor, 4 beds",
-			"billing_id": 12,
+			"invoice_template_id": 12,
 			"capacity": 4,
 			"occupied_beds": 1,
 			"free_beds": 3,
@@ -75,6 +82,11 @@ Response `200`:
 ### 2) Get One Dorm Room
 `GET /dorm-rooms/:id`
 
+Example:
+```http
+GET /dorm-rooms/1
+```
+
 Response `200`:
 ```json
 {
@@ -84,7 +96,7 @@ Response `200`:
 		"id": 1,
 		"name": "Room A-101",
 		"description": "First floor, 4 beds",
-		"billing_id": 12,
+		"invoice_template_id": 12,
 		"capacity": 4,
 		"occupied_beds": 1,
 		"free_beds": 3
@@ -98,54 +110,94 @@ Possible errors:
 ### 3) Create Dorm Room
 `POST /dorm-rooms`
 
-Roles:
-- `OWNER`, `ADMIN`, `MODERATOR`
+Permission: `dorm_rooms.create`
 
 Request body:
 ```json
 {
 	"name": "Room A-101",
 	"description": "First floor, 4 beds",
-	"billing_id": 12,
+	"invoice_template_id": 12,
 	"capacity": 4
 }
 ```
 
-Possible errors:
-- `400 Bad Request`: `Billing code not found`
-- `400 Bad Request`: DTO validation errors
+Response `201` returns the room with computed `occupied_beds` and `free_beds`:
+```json
+{
+	"ok": true,
+	"message": "Dorm room created successfully",
+	"result": {
+		"id": 1,
+		"name": "Room A-101",
+		"description": "First floor, 4 beds",
+		"invoice_template_id": 12,
+		"capacity": 4,
+		"occupied_beds": 0,
+		"free_beds": 4
+	}
+}
+```
 
-Response `201` returns the room with computed `occupied_beds` and `free_beds`.
+Possible errors:
+- `400 Bad Request`: `Invoice template not found`
+- `400 Bad Request`: DTO validation errors
 
 ### 4) Update Dorm Room
 `PATCH /dorm-rooms/:id`
 
-Roles:
-- `OWNER`, `ADMIN`, `MODERATOR`
+Permission: `dorm_rooms.update`
 
-Request body:
-- Partial of the create body
+Request body: partial of the create body.
+
+Example:
+```http
+PATCH /dorm-rooms/1
+```
+```json
+{
+	"capacity": 5
+}
+```
+
+Response `200`:
+```json
+{
+	"ok": true,
+	"message": "Dorm room updated successfully",
+	"result": {
+		"id": 1,
+		"name": "Room A-101",
+		"description": "First floor, 4 beds",
+		"invoice_template_id": 12,
+		"capacity": 5,
+		"occupied_beds": 1,
+		"free_beds": 4
+	}
+}
+```
 
 Possible errors:
 - `400 Bad Request`: `No data provided for update`
-- `400 Bad Request`: `Billing code not found`
+- `400 Bad Request`: `Invoice template not found`
 - `404 Not Found`: `Dorm room not found`
-
-Response `200` returns the room with computed `occupied_beds` and `free_beds`.
 
 ### 5) Delete Dorm Room
 `DELETE /dorm-rooms/:id`
 
-Roles:
-- `OWNER`, `ADMIN`, `MODERATOR`
+Permission: `dorm_rooms.delete`
 
-Response `204`:
-- Empty body
+Example:
+```http
+DELETE /dorm-rooms/1
+```
+
+Response `204`: empty body.
 
 Possible errors:
 - `400 Bad Request`: `Cannot delete dorm room with existing student assignments`
 - `404 Not Found`: `Dorm room not found`
 
 ## Frontend Notes
-- Use the room's `billing_id` as informative metadata when choosing a room for assignment.
+- Use the room's `invoice_template_id` as informative metadata when choosing a room for assignment.
 - Do not offer delete actions for rooms that still have student assignments.

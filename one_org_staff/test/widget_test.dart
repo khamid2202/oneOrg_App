@@ -63,6 +63,9 @@ void main() {
           phone: '+998 90 123 45 67',
           department: 'Mathematics',
           joinedDate: '12 Sep 2024',
+          username: 'ahror',
+          status: 'active',
+          roles: ['teacher'],
         ),
       ),
       tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
@@ -74,18 +77,33 @@ void main() {
     await tester.tap(find.descendant(of: find.byType(BottomMenu), matching: find.text('Profile')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Ahror Teacher'), findsOneWidget);
-    expect(find.text('User data'), findsOneWidget);
-    expect(find.text('teacher@oneorg.uz'), findsOneWidget);
+    // The name and email show in the header card and again in the
+    // Personal Information rows, matching the web layout.
+    expect(find.text('Ahror Teacher'), findsNWidgets(2));
+    expect(find.text('teacher@oneorg.uz'), findsNWidgets(2));
+    expect(find.text('@ahror'), findsOneWidget);
+    expect(find.text('Personal Information'), findsOneWidget);
+    expect(find.text('Account Details'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+    expect(find.text('teacher'), findsOneWidget);
+
+    // Password moved behind its own tab.
+    await tester.tap(find.text('Password'));
+    await tester.pumpAndSettle();
     expect(find.text('Update password'), findsWidgets);
-    expect(find.text('Light theme is active.'), findsOneWidget);
+
+    // Theme lives under System.
+    await tester.tap(find.text('System'));
+    await tester.pumpAndSettle();
 
     final switchFinder = find.byType(Switch);
     await tester.ensureVisible(switchFinder);
+    expect(tester.widget<Switch>(switchFinder).value, isFalse);
+
     await tester.tap(switchFinder);
     await tester.pumpAndSettle();
 
-    expect(find.text('Dark theme is active.'), findsOneWidget);
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
   });
 
   testWidgets('lessons tab shows scheduled lessons for the selected day', (
@@ -172,6 +190,40 @@ class FakeAuthRepository implements AuthRepository {
   final String signInToken;
   final Set<String> validTokens;
   final AppUserProfile currentUser;
+
+  /// Avatar uploads recorded by [uploadProfilePicture], newest last.
+  final List<({int userId, int byteCount, String filename})> pictureUploads = [];
+  final List<int> pictureRemovals = [];
+
+  @override
+  Future<String?> uploadProfilePicture(
+    String token, {
+    required int userId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    if (!validTokens.contains(token)) {
+      throw const AuthFailure('Invalid or expired token');
+    }
+    pictureUploads.add((
+      userId: userId,
+      byteCount: bytes.length,
+      filename: filename,
+    ));
+    return 'https://cdn.example.com/users/$userId/avatar.jpg';
+  }
+
+  @override
+  Future<String?> removeProfilePicture(
+    String token, {
+    required int userId,
+  }) async {
+    if (!validTokens.contains(token)) {
+      throw const AuthFailure('Invalid or expired token');
+    }
+    pictureRemovals.add(userId);
+    return null;
+  }
 
   @override
   Future<String> signIn({

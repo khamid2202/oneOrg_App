@@ -71,8 +71,15 @@ Manage student scores per `student_id + exam_id`.
 - Authorization: only creator or `owner/admin/moderator` can delete.
 - Returns **204 No Content** on success.
 
-## Response shape
-- **List:**
+## Examples
+
+### List exam results
+**Example request**
+```http
+GET /exam-results?exam_id=12
+```
+
+**Example response**
 ```json
 {
 	"ok": true,
@@ -92,7 +99,92 @@ Manage student scores per `student_id + exam_id`.
 	]
 }
 ```
-- **Single / create / update:**
+
+### Get one
+**Example request**
+```http
+GET /exam-results/55
+```
+
+**Example response**
+```json
+{
+	"ok": true,
+	"message": "Exam result retrieved successfully",
+	"result": {
+		"id": 55,
+		"student_id": 101,
+		"exam_id": 12,
+		"score": 86.5,
+		"created_at": "2026-03-19T10:11:12.000Z",
+		"created_by": 1,
+		"updated_at": null,
+		"updated_by": null
+	}
+}
+```
+
+### Create
+**Example request**
+```json
+{
+	"student_id": 101,
+	"exam_id": 12,
+	"score": 86.5
+}
+```
+
+**Example response**
+```json
+{
+	"ok": true,
+	"message": "Exam result created successfully",
+	"result": {
+		"id": 55,
+		"student_id": 101,
+		"exam_id": 12,
+		"score": 86.5,
+		"created_at": "2026-03-19T10:11:12.000Z",
+		"created_by": 1,
+		"updated_at": null,
+		"updated_by": null
+	}
+}
+```
+
+### Bulk create
+**Example request** (`POST /exam-results/bulk`)
+```json
+[
+	{ "student_id": 101, "exam_id": 12, "score": 86.5 },
+	{ "student_id": 102, "exam_id": 12, "score": 74 }
+]
+```
+
+**Example response**
+```json
+{
+	"ok": true,
+	"message": "Exam results created successfully",
+	"result": [
+		{ "id": 55, "student_id": 101, "exam_id": 12, "score": 86.5, "created_by": 1, "created_at": "2026-03-19T10:11:12.000Z" },
+		{ "id": 56, "student_id": 102, "exam_id": 12, "score": 74, "created_by": 1, "created_at": "2026-03-19T10:11:12.000Z" }
+	]
+}
+```
+
+### Update
+**Example request**
+```http
+PATCH /exam-results/55
+```
+```json
+{
+	"score": 88
+}
+```
+
+**Example response**
 ```json
 {
 	"ok": true,
@@ -110,17 +202,33 @@ Manage student scores per `student_id + exam_id`.
 }
 ```
 
-## Example request
-- **Method:** POST
-- **Path:** `/exam-results`
-- **Request body:**
+### Bulk update
+**Example request** (`PATCH /exam-results/bulk`)
+```json
+[
+	{ "id": 55, "score": 90 },
+	{ "id": 56, "score": 75 }
+]
+```
+
+**Example response**
 ```json
 {
-	"student_id": 101,
-	"exam_id": 12,
-	"score": 86.5
+	"ok": true,
+	"message": "Exam results updated successfully",
+	"result": [
+		{ "id": 55, "student_id": 101, "exam_id": 12, "score": 90, "updated_by": 1, "updated_at": "2026-03-19T11:01:00.000Z" },
+		{ "id": 56, "student_id": 102, "exam_id": 12, "score": 75, "updated_by": 1, "updated_at": "2026-03-19T11:01:00.000Z" }
+	]
 }
 ```
+
+### Delete
+**Example request**
+```http
+DELETE /exam-results/55
+```
+Returns **204 No Content** (empty body).
 
 ## Frontend integration notes
 - Always fetch related exam (`GET /exams/:id`) to get `max_score` and validate `score` client-side.

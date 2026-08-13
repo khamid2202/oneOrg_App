@@ -140,6 +140,76 @@ class HttpAuthRepository implements AuthRepository {
     return AppUserProfile.fromJson(userMap);
   }
 
+  @override
+  Future<String?> uploadProfilePicture(
+    String token, {
+    required int userId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    // docs/staff/users.md: POST /users/:id/picture, multipart field `file`,
+    // responds with { ok, picture_url }.
+    final request = http.MultipartRequest(
+      'POST',
+      _buildUri('/users/$userId/picture'),
+    )
+      ..headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      })
+      ..files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: filename),
+      );
+
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to upload the picture.'),
+      );
+    }
+
+    return _extractPictureUrl(responseBody);
+  }
+
+  @override
+  Future<String?> removeProfilePicture(
+    String token, {
+    required int userId,
+  }) async {
+    final response = await _client.delete(
+      _buildUri('/users/$userId/picture'),
+      headers: {
+        ..._jsonHeaders,
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to remove the picture.'),
+      );
+    }
+
+    return _extractPictureUrl(responseBody);
+  }
+
+  String? _extractPictureUrl(dynamic responseBody) {
+    if (responseBody is! Map<String, dynamic>) {
+      return null;
+    }
+
+    final url = responseBody['picture_url'] ?? responseBody['pictureUrl'];
+    if (url is String && url.trim().isNotEmpty) {
+      return url.trim();
+    }
+
+    return null;
+  }
+
   static const _jsonHeaders = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',

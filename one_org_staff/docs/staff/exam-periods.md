@@ -5,22 +5,14 @@
 Manage exam windows (period metadata) per academic year.
 
 ## Auth
-- Guard: `RolesGuard`
-- Roles:
-  - Create/Update/Delete: `owner`, `admin`, `moderator`
-  - Read: authenticated (guarded)
+- Guard: `RolesGuard` + permission checks via `@RequirePermissions`.
+- Permissions:
+  - Create: `exam_periods.create`
+  - Update: `exam_periods.update`
+  - Delete: `exam_periods.delete`
+  - Read (list, get one): authenticated
 
 ## Endpoints
-
-### Create exam period
-- **POST** `/exam-periods`
-- **Body (CreateExamPeriodDto):**
-  - `academic_year_id` (int, required, min 1)
-  - `name` (string, required, length 1-255)
-  - `description` (string, optional, max 255)
-  - `is_active` (boolean, optional, default `true`)
-  - `accept_scores` (boolean, optional, default `true`)
-  - `date` (ISO date string, required)
 
 ### List exam periods
 - **GET** `/exam-periods`
@@ -36,20 +28,12 @@ Manage exam windows (period metadata) per academic year.
   - Supports one-sided ranges (`start_date` only or `end_date` only).
   - Rejects request if `start_date > end_date`.
 
-### Get one
-- **GET** `/exam-periods/:id`
+**Example request**
+```http
+GET /exam-periods?academic_year_id=1&is_active=true
+```
 
-### Update exam period
-- **PATCH** `/exam-periods/:id`
-- **Body (UpdateExamPeriodDto):** partial of create fields.
-- **Validation/behavior:** empty body is rejected.
-
-### Delete exam period
-- **DELETE** `/exam-periods/:id`
-- Returns **204 No Content** on success.
-
-## Response shape
-- **List:**
+**Example response**
 ```json
 {
   "ok": true,
@@ -72,7 +56,59 @@ Manage exam windows (period metadata) per academic year.
   ]
 }
 ```
-- **Single / create / update:**
+
+### Get one
+- **GET** `/exam-periods/:id`
+
+**Example request**
+```http
+GET /exam-periods/3
+```
+
+**Example response**
+```json
+{
+  "ok": true,
+  "message": "Exam period retrieved successfully",
+  "result": {
+    "id": 3,
+    "academic_year_id": 1,
+    "name": "Midterm 2026",
+    "description": "First semester midterm",
+    "is_active": true,
+    "accept_scores": true,
+    "date": "2026-03-25",
+    "created_at": "2026-03-19T10:11:12.000Z",
+    "created_by": 1,
+    "updated_at": null,
+    "updated_by": null
+  }
+}
+```
+
+### Create exam period
+- **POST** `/exam-periods`
+- **Body (CreateExamPeriodDto):**
+  - `academic_year_id` (int, required, min 1)
+  - `name` (string, required, length 1-255)
+  - `description` (string, optional, max 255)
+  - `is_active` (boolean, optional, default `true`)
+  - `accept_scores` (boolean, optional, default `true`)
+  - `date` (ISO date string, required)
+
+**Example request**
+```json
+{
+  "academic_year_id": 1,
+  "name": "Midterm 2026",
+  "description": "First semester midterm",
+  "is_active": true,
+  "accept_scores": true,
+  "date": "2026-03-25"
+}
+```
+
+**Example response**
 ```json
 {
   "ok": true,
@@ -93,19 +129,49 @@ Manage exam windows (period metadata) per academic year.
 }
 ```
 
-## Example request
-- **Method:** POST
-- **Path:** `/exam-periods`
-- **Request body:**
+### Update exam period
+- **PATCH** `/exam-periods/:id`
+- **Body (UpdateExamPeriodDto):** partial of create fields.
+- **Validation/behavior:** empty body is rejected.
+
+**Example request**
+```http
+PATCH /exam-periods/3
+```
 ```json
 {
-  "academic_year_id": 1,
-  "name": "Midterm 2026",
-  "description": "First semester midterm",
-  "is_active": true,
-  "accept_scores": true,
-  "date": "2026-03-25"
+  "accept_scores": false
 }
+```
+
+**Example response**
+```json
+{
+  "ok": true,
+  "message": "Exam period updated successfully",
+  "result": {
+    "id": 3,
+    "academic_year_id": 1,
+    "name": "Midterm 2026",
+    "description": "First semester midterm",
+    "is_active": true,
+    "accept_scores": false,
+    "date": "2026-03-25",
+    "created_at": "2026-03-19T10:11:12.000Z",
+    "created_by": 1,
+    "updated_at": "2026-03-26T08:00:00.000Z",
+    "updated_by": 1
+  }
+}
+```
+
+### Delete exam period
+- **DELETE** `/exam-periods/:id`
+- Returns **204 No Content** (empty body) on success.
+
+**Example request**
+```http
+DELETE /exam-periods/3
 ```
 
 ## Frontend integration notes

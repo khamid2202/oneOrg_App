@@ -1,4 +1,3 @@
-````markdown
 # Settings API
 
 **Base path:** `/settings`
@@ -60,5 +59,3 @@ Settings endpoints for authenticated users.
 ## Frontend suggestions
 - Use a dedicated form with three fields: current password, new password, confirm new password (client-side confirmation).
 - Show success toast and force re-login only if your product policy requires token/session rotation.
-
-````

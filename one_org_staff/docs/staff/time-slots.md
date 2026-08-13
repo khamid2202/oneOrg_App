@@ -5,9 +5,9 @@
 ## Overview
 Time slots are used to define named daily intervals (for example, `Morning`, `Evening`) with `start_time` and `end_time`.
 
-All routes are under `RolesGuard`.
-- `GET` routes: guarded, no explicit role restriction in controller.
-- `POST`, `PATCH`, `DELETE`: allowed for `OWNER`, `ADMIN`, `MODERATOR`.
+All routes are under `RolesGuard` + permission checks via `@RequirePermissions`.
+- `GET` routes: authenticated, no explicit permission.
+- `POST`: `time_slots.create`; `PATCH`: `time_slots.update`; `DELETE`: `time_slots.delete`.
 
 ## Data Shape
 
@@ -104,8 +104,7 @@ Not found `404`:
 ### 3) Create Time Slot
 `POST /time-slots`
 
-Roles:
-- `OWNER`, `ADMIN`, `MODERATOR`
+Permission: `time_slots.create`
 
 Request body:
 ```json
@@ -140,8 +139,7 @@ Possible errors:
 ### 4) Update Time Slot
 `PATCH /time-slots/:id`
 
-Roles:
-- `OWNER`, `ADMIN`, `MODERATOR`
+Permission: `time_slots.update`
 
 Path params:
 - `id`: integer
@@ -182,11 +180,15 @@ Possible errors:
 ### 5) Delete Time Slot
 `DELETE /time-slots/:id`
 
-Roles:
-- `OWNER`, `ADMIN`, `MODERATOR`
+Permission: `time_slots.delete`
 
 Path params:
 - `id`: integer
+
+Example:
+```http
+DELETE /time-slots/1
+```
 
 Response `204`:
 - Empty body

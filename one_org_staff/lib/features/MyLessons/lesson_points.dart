@@ -68,9 +68,10 @@ class _LessonPointsPageState extends State<LessonPointsPage> {
 
       // Initialize/update controllers with existing points
       for (final student in students) {
-        final existingPoint = points[student.id];
+        // `/student-points` keys by person id, not the enrollment id.
+        final existingPoint = points[student.personId];
         final controller = _controllers.putIfAbsent(
-          student.id,
+          student.personId,
           () => TextEditingController(),
         );
         if (existingPoint != null) {
@@ -152,7 +153,7 @@ class _LessonPointsPageState extends State<LessonPointsPage> {
                     itemBuilder: (context, index) {
                       final student = students[index];
                       final controller = _controllers.putIfAbsent(
-                        student.id,
+                        student.personId,
                         () => TextEditingController(),
                       );
 
@@ -266,7 +267,7 @@ class _LessonPointsPageState extends State<LessonPointsPage> {
       }
       drafts.add(
         StudentPointDraft(
-          studentId: entry.key,
+          personId: entry.key,
           groupId: widget.groupId,
           points: points,
           date: widget.date,

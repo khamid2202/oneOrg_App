@@ -9,14 +9,11 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
   HttpLessonPointsRepository({
     required http.Client client,
     required String baseUrl,
-    required int academicYearId,
   }) : _client = client,
-       _baseUrl = _normalizeBaseUrl(baseUrl),
-       _academicYearId = academicYearId;
+       _baseUrl = _normalizeBaseUrl(baseUrl);
 
   final http.Client _client;
   final String _baseUrl;
-  final int _academicYearId;
 
   static const _jsonHeaders = {
     'Accept': 'application/json',
@@ -27,18 +24,19 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
   Future<List<StudentEntry>> getStudentsForGroup(
     String token, {
     required int groupId,
+    bool includeContacts = false,
   }) async {
+    // `group_id` alone identifies the roster — a group belongs to exactly one
+    // academic year. Sending `academic_year_id` as well would silently return
+    // nothing whenever the configured year disagrees with the group's own.
     final response = await _client.get(
       _buildUri(
-        '/students/all',
+        '/students',
         queryParameters: {
-          'academic_year_id': _academicYearId.toString(),
-          'include_group': 'true',
-          'limit': '100',
+          'group_id': groupId.toString(),
           'page': '1',
-          'filter': jsonEncode({
-            'group_ids': [groupId.toString()],
-          }),
+          'limit': '100',
+          if (includeContacts) 'include': jsonEncode(['contacts']),
         },
       ),
       headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
@@ -52,7 +50,12 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
     }
 
     final students =
-        _extractStudents(responseBody).map(StudentEntry.fromJson).toList()
+        _extractStudents(responseBody)
+            // An enrollment with a leave date is no longer in the class, so
+            // it should not appear on the roster.
+            .where((json) => json['leave_date'] == null)
+            .map(StudentEntry.fromJson)
+            .toList()
           ..sort((a, b) => a.fullName.compareTo(b.fullName));
 
     return students;
@@ -66,7 +69,7 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
     final payload = points
         .map(
           (point) => {
-            'student_id': point.studentId,
+            'person_id': point.personId,
             'group_id': point.groupId,
             if (point.subjectId != null) 'subject_id': point.subjectId,
             'points': point.points,
@@ -121,31 +124,11 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
     }
 
     final pointsMap = <int, double>{};
-    if (responseBody is Map<String, dynamic>) {
-      final results = responseBody['points'] ??
-          responseBody['results'] ??
-          responseBody['data'] ??
-          responseBody['result'];
-      if (results is List) {
-        for (final item in results) {
-          if (item is Map<String, dynamic>) {
-            final studentId = _asInt(item['student_id']);
-            final pointsValue = _asDouble(item['points']);
-            if (studentId != null && pointsValue != null) {
-              pointsMap[studentId] = pointsValue;
-            }
-          }
-        }
-      }
-    } else if (responseBody is List) {
-      for (final item in responseBody) {
-        if (item is Map<String, dynamic>) {
-          final studentId = _asInt(item['student_id']);
-          final pointsValue = _asDouble(item['points']);
-          if (studentId != null && pointsValue != null) {
-            pointsMap[studentId] = pointsValue;
-          }
-        }
+    for (final item in _extractPoints(responseBody)) {
+      final personId = _asInt(item['person_id']);
+      final pointsValue = _asDouble(item['points']);
+      if (personId != null && pointsValue != null) {
+        pointsMap[personId] = pointsValue;
       }
     }
     return pointsMap;
@@ -201,15 +184,366 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
   }
 
   @override
+  Future<List<AcademicYearEntry>> getAcademicYears(String token) async {
+    final response = await _client.get(
+      _buildUri('/academic-years'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+    );
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to load academic years.'),
+      );
+    }
+
+    final years = <AcademicYearEntry>[];
+    for (final item in _extractRows(responseBody, const [
+      'result',
+      'data',
+      'academic_years',
+    ])) {
+      try {
+        years.add(AcademicYearEntry.fromJson(item));
+      } on FormatException {
+        continue;
+      }
+    }
+
+    return years;
+  }
+
+  @override
+  Future<List<GuardianEntry>> getGuardians(
+    String token, {
+    required int personId,
+  }) async {
+    final response = await _client.get(
+      _buildUri(
+        '/guardians',
+        queryParameters: {'person_id': personId.toString()},
+      ),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+    );
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to load guardians.'),
+      );
+    }
+
+    final guardians = <GuardianEntry>[];
+    for (final item in _extractRows(responseBody, const [
+      'result',
+      'data',
+      'guardians',
+    ])) {
+      try {
+        guardians.add(GuardianEntry.fromJson(item, fallbackPersonId: personId));
+      } on FormatException {
+        continue;
+      }
+    }
+    return guardians;
+  }
+
+  @override
+  Future<GuardianEntry> createGuardian(
+    String token, {
+    required int personId,
+    required String fullName,
+    required String relation,
+    required String phone,
+    String? workAddress,
+    String? position,
+  }) async {
+    final response = await _client.post(
+      _buildUri('/guardians'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+      body: jsonEncode({
+        'person_id': personId,
+        'full_name': fullName.trim(),
+        'relation': relation.trim(),
+        'phone': phone.trim(),
+        if (workAddress != null && workAddress.trim().isNotEmpty)
+          'work_address': workAddress.trim(),
+        if (position != null && position.trim().isNotEmpty)
+          'position': position.trim(),
+      }),
+    );
+
+    return _singleGuardian(
+      response,
+      personId: personId,
+      fallbackMessage: 'Unable to add the guardian.',
+    );
+  }
+
+  @override
+  Future<GuardianEntry> updateGuardian(
+    String token, {
+    required int guardianId,
+    String? fullName,
+    String? relation,
+    String? phone,
+    String? workAddress,
+    String? position,
+  }) async {
+    final response = await _client.patch(
+      _buildUri('/guardians/$guardianId'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+      body: jsonEncode({
+        if (fullName != null) 'full_name': fullName.trim(),
+        if (relation != null) 'relation': relation.trim(),
+        if (phone != null) 'phone': phone.trim(),
+        if (workAddress != null) 'work_address': workAddress.trim(),
+        if (position != null) 'position': position.trim(),
+      }),
+    );
+
+    return _singleGuardian(
+      response,
+      fallbackMessage: 'Unable to update the guardian.',
+    );
+  }
+
+  @override
+  Future<void> deleteGuardian(String token, {required int guardianId}) async {
+    final response = await _client.delete(
+      _buildUri('/guardians/$guardianId'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+    );
+
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(
+          _decodeBody(response.body),
+          'Unable to delete the guardian.',
+        ),
+      );
+    }
+  }
+
+  GuardianEntry _singleGuardian(
+    http.Response response, {
+    int? personId,
+    required String fallbackMessage,
+  }) {
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(_extractMessage(responseBody, fallbackMessage));
+    }
+
+    if (responseBody is Map<String, dynamic>) {
+      final result = responseBody['result'] ?? responseBody;
+      if (result is Map<String, dynamic>) {
+        return GuardianEntry.fromJson(result, fallbackPersonId: personId);
+      }
+    }
+
+    throw const AuthFailure('Unexpected response from server.');
+  }
+
+  @override
+  Future<List<DocumentEntry>> getDocuments(
+    String token, {
+    required int personId,
+  }) async {
+    final response = await _client.get(
+      _buildUri(
+        '/documents',
+        queryParameters: {'person_id': personId.toString()},
+      ),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+    );
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to load documents.'),
+      );
+    }
+
+    final documents = <DocumentEntry>[];
+    for (final item in _extractRows(responseBody, const [
+      'result',
+      'data',
+      'documents',
+    ])) {
+      try {
+        documents.add(DocumentEntry.fromJson(item, fallbackPersonId: personId));
+      } on FormatException {
+        continue;
+      }
+    }
+    return documents;
+  }
+
+  @override
+  Future<DocumentEntry> createDocument(
+    String token, {
+    required int personId,
+    required String documentName,
+    required String documentType,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    // docs/staff/documents.md: multipart with person_id, document_name,
+    // document_type and the binary `file`.
+    final request = http.MultipartRequest('POST', _buildUri('/documents'))
+      ..headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      })
+      ..fields['person_id'] = personId.toString()
+      ..fields['document_name'] = documentName.trim()
+      ..fields['document_type'] = documentType.trim()
+      ..files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: filename),
+      );
+
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to upload the document.'),
+      );
+    }
+
+    if (responseBody is Map<String, dynamic>) {
+      final result = responseBody['result'] ?? responseBody;
+      if (result is Map<String, dynamic>) {
+        return DocumentEntry.fromJson(result, fallbackPersonId: personId);
+      }
+    }
+
+    throw const AuthFailure('Unexpected response from server.');
+  }
+
+  @override
+  Future<void> deleteDocument(String token, {required int documentId}) async {
+    final response = await _client.delete(
+      _buildUri('/documents/$documentId'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+    );
+
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(
+          _decodeBody(response.body),
+          'Unable to delete the document.',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<String?> uploadPersonPicture(
+    String token, {
+    required int personId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    // docs/staff/persons.md: multipart field `file`, responds with
+    // { ok, picture_url }.
+    final request = http.MultipartRequest(
+      'POST',
+      _buildUri('/persons/$personId/picture'),
+    )
+      ..headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      })
+      ..files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: filename),
+      );
+
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to upload the picture.'),
+      );
+    }
+
+    return _extractPictureUrl(responseBody);
+  }
+
+  @override
+  Future<String?> removePersonPicture(
+    String token, {
+    required int personId,
+  }) async {
+    final response = await _client.delete(
+      _buildUri('/persons/$personId/picture'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+    );
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to remove the picture.'),
+      );
+    }
+
+    return _extractPictureUrl(responseBody);
+  }
+
+  String? _extractPictureUrl(dynamic responseBody) {
+    if (responseBody is! Map<String, dynamic>) {
+      return null;
+    }
+    final url = responseBody['picture_url'] ?? responseBody['pictureUrl'];
+    if (url is String && url.trim().isNotEmpty) {
+      return url.trim();
+    }
+    return null;
+  }
+
+  @override
+  Future<PersonDetails> updatePersonDetails(
+    String token, {
+    required int personId,
+    required Map<String, String> changes,
+  }) async {
+    final response = await _client.patch(
+      _buildUri('/persons/$personId'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+      body: jsonEncode(changes),
+    );
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to save the student details.'),
+      );
+    }
+
+    if (responseBody is Map<String, dynamic>) {
+      final result = responseBody['result'];
+      if (result is Map<String, dynamic>) {
+        return PersonDetails.fromJson(result);
+      }
+    }
+
+    throw const AuthFailure('Unexpected response from server.');
+  }
+
+  @override
   Future<List<ContactEntry>> getContactsForStudent(
     String token, {
-    required int studentId,
+    required int personId,
   }) async {
     final response = await _client.get(
       _buildUri(
         '/contacts',
         queryParameters: {
-          'student_id': studentId.toString(),
+          'person_id': personId.toString(),
         },
       ),
       headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
@@ -223,20 +557,16 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
     }
 
     final contacts = <ContactEntry>[];
-    if (responseBody is Map<String, dynamic>) {
-      final results = responseBody['result'] ?? responseBody['data'] ?? responseBody['contacts'];
-      if (results is List) {
-        for (final item in results) {
-          if (item is Map<String, dynamic>) {
-            contacts.add(ContactEntry.fromJson(item));
-          }
-        }
-      }
-    } else if (responseBody is List) {
-      for (final item in responseBody) {
-        if (item is Map<String, dynamic>) {
-          contacts.add(ContactEntry.fromJson(item));
-        }
+    for (final item in _extractRows(responseBody, const [
+      'result',
+      'data',
+      'contacts',
+    ])) {
+      try {
+        contacts.add(ContactEntry.fromJson(item, fallbackPersonId: personId));
+      } on FormatException {
+        // One unusable row must not blank out the whole contact list.
+        continue;
       }
     }
 
@@ -246,7 +576,7 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
   @override
   Future<ContactEntry> createContact(
     String token, {
-    required int studentId,
+    required int personId,
     required String fullName,
     required String relationship,
     required String phoneNumber,
@@ -255,7 +585,7 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
       _buildUri('/contacts'),
       headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
       body: jsonEncode({
-        'student_id': studentId,
+        'person_id': personId,
         'full_name': fullName.trim(),
         'relationship': relationship,
         'phone_number': phoneNumber.trim(),
@@ -272,7 +602,7 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
     if (responseBody is Map<String, dynamic>) {
       final result = responseBody['result'] ?? responseBody;
       if (result is Map<String, dynamic>) {
-        return ContactEntry.fromJson(result);
+        return ContactEntry.fromJson(result, fallbackPersonId: personId);
       }
     }
 
@@ -382,6 +712,61 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
     } catch (_) {
       return trimmed;
     }
+  }
+
+  /// Pulls the row list out of a response, tolerating the API's varying
+  /// envelope keys.
+  List<Map<String, dynamic>> _extractRows(
+    dynamic responseBody,
+    List<String> keys,
+  ) {
+    if (responseBody is List) {
+      return responseBody
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+
+    if (responseBody is! Map<String, dynamic>) {
+      return const [];
+    }
+
+    for (final key in keys) {
+      final value = responseBody[key];
+      if (value is List) {
+        return value
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+      }
+    }
+
+    return const [];
+  }
+
+  List<Map<String, dynamic>> _extractPoints(dynamic responseBody) {
+    if (responseBody is List) {
+      return responseBody
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+
+    if (responseBody is! Map<String, dynamic>) {
+      return const [];
+    }
+
+    for (final key in const ['points', 'results', 'data', 'result']) {
+      final value = responseBody[key];
+      if (value is List) {
+        return value
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+      }
+    }
+
+    return const [];
   }
 
   List<Map<String, dynamic>> _extractStudents(dynamic responseBody) {

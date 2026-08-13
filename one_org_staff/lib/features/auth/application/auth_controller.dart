@@ -47,6 +47,33 @@ class AuthController extends ChangeNotifier {
     return _authRepository.getCurrentUser(token);
   }
 
+  Future<String?> uploadProfilePicture({
+    required int userId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return _authRepository.uploadProfilePicture(
+      token,
+      userId: userId,
+      bytes: bytes,
+      filename: filename,
+    );
+  }
+
+  Future<String?> removeProfilePicture({required int userId}) async {
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return _authRepository.removeProfilePicture(token, userId: userId);
+  }
+
   Future<void> restoreSession() async {
     _status = AuthStatus.checking;
     _errorMessage = null;
@@ -151,7 +178,173 @@ class AuthController extends ChangeNotifier {
     return timetableRepository.getTimetable(token);
   }
 
-  Future<List<StudentEntry>> loadStudentsForGroup(int groupId) async {
+  Future<List<AcademicYearEntry>> loadAcademicYears() async {
+    final pointsRepository = _pointsRepository;
+    if (pointsRepository == null) {
+      throw const AuthFailure('Academic years are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return pointsRepository.getAcademicYears(token);
+  }
+
+  Future<List<GuardianEntry>> loadGuardians(int personId) =>
+      _withPoints((repo, token) => repo.getGuardians(token, personId: personId));
+
+  Future<GuardianEntry> createGuardian({
+    required int personId,
+    required String fullName,
+    required String relation,
+    required String phone,
+    String? workAddress,
+    String? position,
+  }) {
+    return _withPoints(
+      (repo, token) => repo.createGuardian(
+        token,
+        personId: personId,
+        fullName: fullName,
+        relation: relation,
+        phone: phone,
+        workAddress: workAddress,
+        position: position,
+      ),
+    );
+  }
+
+  Future<GuardianEntry> updateGuardian({
+    required int guardianId,
+    String? fullName,
+    String? relation,
+    String? phone,
+    String? workAddress,
+    String? position,
+  }) {
+    return _withPoints(
+      (repo, token) => repo.updateGuardian(
+        token,
+        guardianId: guardianId,
+        fullName: fullName,
+        relation: relation,
+        phone: phone,
+        workAddress: workAddress,
+        position: position,
+      ),
+    );
+  }
+
+  Future<void> deleteGuardian(int guardianId) =>
+      _withPoints((repo, token) => repo.deleteGuardian(token, guardianId: guardianId));
+
+  Future<List<DocumentEntry>> loadDocuments(int personId) =>
+      _withPoints((repo, token) => repo.getDocuments(token, personId: personId));
+
+  Future<DocumentEntry> createDocument({
+    required int personId,
+    required String documentName,
+    required String documentType,
+    required List<int> bytes,
+    required String filename,
+  }) {
+    return _withPoints(
+      (repo, token) => repo.createDocument(
+        token,
+        personId: personId,
+        documentName: documentName,
+        documentType: documentType,
+        bytes: bytes,
+        filename: filename,
+      ),
+    );
+  }
+
+  Future<void> deleteDocument(int documentId) =>
+      _withPoints((repo, token) => repo.deleteDocument(token, documentId: documentId));
+
+  /// Shared guard for the person-scoped calls: both a configured repository and
+  /// a live session are required before any of them can run.
+  Future<T> _withPoints<T>(
+    Future<T> Function(LessonPointsRepository repo, String token) action,
+  ) async {
+    final pointsRepository = _pointsRepository;
+    if (pointsRepository == null) {
+      throw const AuthFailure('Student details are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return action(pointsRepository, token);
+  }
+
+  Future<String?> uploadPersonPicture({
+    required int personId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final pointsRepository = _pointsRepository;
+    if (pointsRepository == null) {
+      throw const AuthFailure('Student details are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return pointsRepository.uploadPersonPicture(
+      token,
+      personId: personId,
+      bytes: bytes,
+      filename: filename,
+    );
+  }
+
+  Future<String?> removePersonPicture({required int personId}) async {
+    final pointsRepository = _pointsRepository;
+    if (pointsRepository == null) {
+      throw const AuthFailure('Student details are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return pointsRepository.removePersonPicture(token, personId: personId);
+  }
+
+  Future<PersonDetails> updatePersonDetails({
+    required int personId,
+    required Map<String, String> changes,
+  }) async {
+    final pointsRepository = _pointsRepository;
+    if (pointsRepository == null) {
+      throw const AuthFailure('Student details are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return pointsRepository.updatePersonDetails(
+      token,
+      personId: personId,
+      changes: changes,
+    );
+  }
+
+  Future<List<StudentEntry>> loadStudentsForGroup(
+    int groupId, {
+    bool includeContacts = false,
+  }) async {
     final pointsRepository = _pointsRepository;
     if (pointsRepository == null) {
       throw const AuthFailure('Points are not configured.');
@@ -162,7 +355,11 @@ class AuthController extends ChangeNotifier {
       throw const AuthFailure('No active session found.');
     }
 
-    return pointsRepository.getStudentsForGroup(token, groupId: groupId);
+    return pointsRepository.getStudentsForGroup(
+      token,
+      groupId: groupId,
+      includeContacts: includeContacts,
+    );
   }
 
   Future<void> savePointsBulk(List<StudentPointDraft> points) async {
@@ -206,7 +403,9 @@ class AuthController extends ChangeNotifier {
     );
   }
 
-  Future<List<GroupEntry>> loadGroups() async {
+  /// Defaults to the configured year; My Class passes the year the teacher
+  /// picked so the roster follows the dropdown.
+  Future<List<GroupEntry>> loadGroups({int? academicYearId}) async {
     final pointsRepository = _pointsRepository;
     if (pointsRepository == null) {
       throw const AuthFailure('Points are not configured.');
@@ -219,11 +418,11 @@ class AuthController extends ChangeNotifier {
 
     return pointsRepository.getGroups(
       token,
-      academicYearId: ApiConfig.academicYearId,
+      academicYearId: academicYearId ?? ApiConfig.academicYearId,
     );
   }
 
-  Future<List<ContactEntry>> loadContactsForStudent(int studentId) async {
+  Future<List<ContactEntry>> loadContactsForStudent(int personId) async {
     final pointsRepository = _pointsRepository;
     if (pointsRepository == null) {
       throw const AuthFailure('Contacts are not configured.');
@@ -234,11 +433,11 @@ class AuthController extends ChangeNotifier {
       throw const AuthFailure('No active session found.');
     }
 
-    return pointsRepository.getContactsForStudent(token, studentId: studentId);
+    return pointsRepository.getContactsForStudent(token, personId: personId);
   }
 
   Future<ContactEntry> createContact({
-    required int studentId,
+    required int personId,
     required String fullName,
     required String relationship,
     required String phoneNumber,
@@ -255,7 +454,7 @@ class AuthController extends ChangeNotifier {
 
     return pointsRepository.createContact(
       token,
-      studentId: studentId,
+      personId: personId,
       fullName: fullName,
       relationship: relationship,
       phoneNumber: phoneNumber,

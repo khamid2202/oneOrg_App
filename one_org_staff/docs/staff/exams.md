@@ -13,17 +13,6 @@ Manage exam definitions per `exam_period_id + subject_id`.
 
 ## Endpoints
 
-### Create exam
-- **POST** `/exams`
-- **Body (CreateExamDto):**
-  - `exam_period_id` (int, required, min 1)
-  - `subject_id` (int, required, min 1)
-  - `group_ids` (int[], optional, each min 1)
-  - `max_score` (int, required, min 1)
-- **Validation/behavior:**
-  - Duplicate combination `exam_period_id + subject_id` is rejected.
-  - If `group_ids` is provided, duplicate IDs are normalized.
-
 ### List exams
 - **GET** `/exams`
 - **Query (GetExamDto):** optional:
@@ -40,25 +29,12 @@ Manage exam definitions per `exam_period_id + subject_id`.
 - **Group filter behavior:**
   - `group_ids` returns exams where `exam.group_ids` has at least one overlapping group id.
 
-### Get one
-- **GET** `/exams/:id`
+**Example request**
+```http
+GET /exams?exam_period_id=3&group_ids=[5,6]
+```
 
-### Update exam
-- **PATCH** `/exams/:id`
-- **Body (UpdateExamDto):** partial of create fields.
-- **Validation/behavior:**
-  - Authorization: only creator or `owner/admin/moderator` can update.
-  - Empty body is rejected.
-  - Changing `exam_period_id` or `subject_id` checks duplicate pair again.
-  - If `group_ids` is provided, duplicate IDs are normalized.
-
-### Delete exam
-- **DELETE** `/exams/:id`
-- Authorization: only creator or `owner/admin/moderator` can delete.
-- Returns **204 No Content** on success.
-
-## Response shape
-- **List:**
+**Example response**
 ```json
 {
   "ok": true,
@@ -79,7 +55,56 @@ Manage exam definitions per `exam_period_id + subject_id`.
   ]
 }
 ```
-- **Single / create / update:**
+
+### Get one
+- **GET** `/exams/:id`
+
+**Example request**
+```http
+GET /exams/12
+```
+
+**Example response**
+```json
+{
+  "ok": true,
+  "message": "Exam retrieved successfully",
+  "result": {
+    "id": 12,
+    "exam_period_id": 3,
+    "subject_id": 7,
+    "group_ids": [5, 6],
+    "max_score": 100,
+    "created_at": "2026-03-19T10:11:12.000Z",
+    "created_by": 1,
+    "updated_at": null,
+    "updated_by": null
+  }
+}
+```
+
+### Create exam
+- **POST** `/exams`
+- **Body (CreateExamDto):**
+  - `exam_period_id` (int, required, min 1)
+  - `subject_id` (int, required, min 1)
+  - `group_ids` (int[], optional, each min 1)
+  - `max_score` (int, required, min 1)
+- **Validation/behavior:**
+  - Duplicate combination `exam_period_id + subject_id` is rejected.
+  - If `group_ids` is provided, duplicate IDs are normalized.
+
+**Example request**
+```json
+{
+  "exam_period_id": 3,
+  "subject_id": 7,
+  "group_ids": [5, 6],
+  "max_score": 100
+}
+```
+
+**Example response**
 ```json
 {
   "ok": true,
@@ -98,17 +123,52 @@ Manage exam definitions per `exam_period_id + subject_id`.
 }
 ```
 
-## Example request
-- **Method:** POST
-- **Path:** `/exams`
-- **Request body:**
+### Update exam
+- **PATCH** `/exams/:id`
+- **Body (UpdateExamDto):** partial of create fields.
+- **Validation/behavior:**
+  - Authorization: only creator or `owner/admin/moderator` can update.
+  - Empty body is rejected.
+  - Changing `exam_period_id` or `subject_id` checks duplicate pair again.
+  - If `group_ids` is provided, duplicate IDs are normalized.
+
+**Example request**
+```http
+PATCH /exams/12
+```
 ```json
 {
-  "exam_period_id": 3,
-  "subject_id": 7,
-  "group_ids": [5, 6],
-  "max_score": 100
+  "max_score": 80
 }
+```
+
+**Example response**
+```json
+{
+  "ok": true,
+  "message": "Exam updated successfully",
+  "result": {
+    "id": 12,
+    "exam_period_id": 3,
+    "subject_id": 7,
+    "group_ids": [5, 6],
+    "max_score": 80,
+    "created_at": "2026-03-19T10:11:12.000Z",
+    "created_by": 1,
+    "updated_at": "2026-03-20T09:00:00.000Z",
+    "updated_by": 1
+  }
+}
+```
+
+### Delete exam
+- **DELETE** `/exams/:id`
+- Authorization: only creator or `owner/admin/moderator` can delete.
+- Returns **204 No Content** (empty body) on success.
+
+**Example request**
+```http
+DELETE /exams/12
 ```
 
 ## Frontend integration notes

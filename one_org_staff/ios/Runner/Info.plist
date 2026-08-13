@@ -70,5 +70,9 @@
 	<array>
 		<string>tel</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a photo to use as your profile picture.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo to use as your profile picture.</string>
 </dict>
 </plist>

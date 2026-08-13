@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:one_org_staff/features/BottomBar/bottom_menu.dart';
 import 'package:one_org_staff/app/swipe_back_detector.dart';
 import 'package:one_org_staff/features/MyClass/my_class.dart';
+import 'package:one_org_staff/features/MyClass/student_info_view.dart';
+import 'package:one_org_staff/features/MyClass/student_people_sync.dart';
 import 'package:one_org_staff/features/MyLessons/my_lessons.dart';
 import 'package:one_org_staff/features/Profile/profilepage.dart';
 import 'package:one_org_staff/features/TimeTable/TimeTable.dart';
@@ -209,7 +211,7 @@ class _LandingPageState extends State<LandingPage> {
           const SizedBox(height: 16),
           _DashboardCard(
             title: 'My Class',
-            subtitle: 'View homeroom roster & students',
+            subtitle: 'Homeroom roster, info & contacts',
             icon: Icons.school_rounded,
             iconColor: const Color(0xFF4ADE80),
             iconBgColor: isDarkMode
@@ -432,17 +434,42 @@ class _LandingPageState extends State<LandingPage> {
                                                       updatePassword: widget
                                                           .controller
                                                           .updatePassword,
+                                                      uploadProfilePicture: widget
+                                                          .controller
+                                                          .uploadProfilePicture,
+                                                      removeProfilePicture: widget
+                                                          .controller
+                                                          .removeProfilePicture,
                                                       onLogout:
                                                           widget.controller.signOut,
                                                     )
                                                   : MyClassPage(
                                                       loadProfile: widget.controller.loadCurrentUserProfile,
                                                       loadGroups: widget.controller.loadGroups,
+                                                      loadAcademicYears: widget.controller.loadAcademicYears,
                                                       loadStudentsForGroup: widget.controller.loadStudentsForGroup,
-                                                      loadContactsForStudent: widget.controller.loadContactsForStudent,
-                                                      createContact: widget.controller.createContact,
-                                                      updateContact: widget.controller.updateContact,
-                                                      deleteContact: widget.controller.deleteContact,
+                                                      updatePersonDetails: widget.controller.updatePersonDetails,
+                                                      uploadPersonPicture: widget.controller.uploadPersonPicture,
+                                                      removePersonPicture: widget.controller.removePersonPicture,
+                                                      guardians: StudentGuardiansApi(
+                                                        load: widget.controller.loadGuardians,
+                                                        create: widget.controller.createGuardian,
+                                                        update: widget.controller.updateGuardian,
+                                                        delete: widget.controller.deleteGuardian,
+                                                      ),
+                                                      peopleSync: StudentPeopleSync(
+                                                        loadContacts: widget.controller.loadContactsForStudent,
+                                                        createContact: widget.controller.createContact,
+                                                        updateContact: widget.controller.updateContact,
+                                                        loadGuardians: widget.controller.loadGuardians,
+                                                        createGuardian: widget.controller.createGuardian,
+                                                        updateGuardian: widget.controller.updateGuardian,
+                                                      ),
+                                                      documents: StudentDocumentsApi(
+                                                        load: widget.controller.loadDocuments,
+                                                        create: widget.controller.createDocument,
+                                                        delete: widget.controller.deleteDocument,
+                                                      ),
                                                     ),
                                 ),
                               ),
