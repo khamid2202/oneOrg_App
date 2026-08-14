@@ -14,6 +14,13 @@ import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 import 'package:one_org_staff/features/auth/data/token_storage.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/BottomBar/bottom_menu.dart';
+import 'package:one_org_staff/features/MyClass/my_class.dart';
+import 'package:one_org_staff/features/colleagues/domain/colleagues_repository.dart';
+import 'package:one_org_staff/features/point_report/domain/point_report_repository.dart';
+import 'package:one_org_staff/features/point_report/presentation/point_report_page.dart';
+import 'package:one_org_staff/app/theme.dart';
+import 'package:one_org_staff/app/theme_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('shows the login screen when no saved token exists', (
@@ -44,9 +51,17 @@ void main() {
 
     expect(find.text('Quick Access'), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
+    // Twice: once in the bottom navbar, once as a dashboard row.
     expect(find.text('Lessons'), findsNWidgets(2));
-    expect(find.text('Timetable'), findsNWidgets(2));
-    expect(find.text('Profile'), findsNWidgets(2));
+    expect(find.text('Colleagues'), findsNWidgets(2));
+    // Dashboard row only — Timetable was taken off the navbar.
+    expect(find.text('Timetable'), findsOneWidget);
+    expect(find.text('My Class'), findsOneWidget);
+    expect(find.text('Point report'), findsOneWidget);
+    // Only in the navbar — the dashboard's Profile and Sign Out cards were
+    // removed; the header avatar is the way into the profile now.
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.text('Sign Out'), findsNothing);
   });
 
   testWidgets('profile tab shows user data, theme switch, and password form', (
@@ -74,7 +89,12 @@ void main() {
     await tester.pumpWidget(OneOrgStaffApp(controller: controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.descendant(of: find.byType(BottomMenu), matching: find.text('Profile')));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(BottomMenu),
+        matching: find.text('Profile'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     // The name and email show in the header card and again in the
@@ -106,13 +126,146 @@ void main() {
     expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
   });
 
+  testWidgets('picking an accent in System recolours the whole app', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final themeController = ThemeController();
+    await themeController.load();
+
+    final controller = AuthController(
+      authRepository: FakeAuthRepository(validTokens: const {'saved-token'}),
+      tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
+    );
+
+    await tester.pumpWidget(
+      OneOrgStaffApp(controller: controller, themeController: themeController),
+    );
+    await tester.pumpAndSettle();
+
+    ThemeData currentTheme() =>
+        Theme.of(tester.element(find.byType(BottomMenu)));
+
+    expect(currentTheme().colorScheme.primary, accentForKey('purple').solid);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(BottomMenu),
+        matching: find.text('Profile'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('System'));
+    await tester.pumpAndSettle();
+
+    // The swatches are in palette order, so Cyan is the sixth.
+    final cyanSwatch = find.byWidgetPredicate(
+      (widget) => widget is Semantics && widget.properties.label == 'Cyan',
+    );
+    await tester.ensureVisible(cyanSwatch);
+    await tester.tap(cyanSwatch);
+    await tester.pumpAndSettle();
+
+    expect(themeController.accent.key, 'cyan');
+    // The change reaches the app-wide theme, not just the settings page.
+    expect(currentTheme().colorScheme.primary, accentForKey('cyan').solid);
+  });
+
+  testWidgets('the Colleagues navbar button opens the directory', (
+    WidgetTester tester,
+  ) async {
+    final controller = AuthController(
+      authRepository: FakeAuthRepository(validTokens: const {'saved-token'}),
+      tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
+      colleaguesRepository: _FakeColleaguesRepository(),
+    );
+
+    await tester.pumpWidget(OneOrgStaffApp(controller: controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(BottomMenu),
+        matching: find.text('Colleagues'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ali Vali'), findsOneWidget);
+    expect(find.text('1 active colleague'), findsOneWidget);
+  });
+
+  testWidgets('Profile and My Class still open after the tab renumbering', (
+    WidgetTester tester,
+  ) async {
+    // Inserting Colleagues shifted Profile to 4 and My Class to 5; this pins
+    // both so a future insert can't silently point a button at the wrong page.
+    final controller = AuthController(
+      authRepository: FakeAuthRepository(validTokens: const {'saved-token'}),
+      tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
+    );
+
+    await tester.pumpWidget(OneOrgStaffApp(controller: controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(BottomMenu),
+        matching: find.text('Profile'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Personal Information'), findsOneWidget);
+
+    // Back to the dashboard, then into My Class from its row.
+    await tester.tap(
+      find.descendant(of: find.byType(BottomMenu), matching: find.text('Home')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('My Class'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MyClassPage), findsOneWidget);
+  });
+
+  testWidgets('the dashboard Point report row opens the report', (
+    WidgetTester tester,
+  ) async {
+    final controller = AuthController(
+      authRepository: FakeAuthRepository(validTokens: const {'saved-token'}),
+      tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
+      pointReportRepository: _FakePointReportRepository(),
+    );
+
+    await tester.pumpWidget(OneOrgStaffApp(controller: controller));
+    await tester.pumpAndSettle();
+
+    // No navbar button by design — the report opens from the dashboard.
+    expect(
+      find.descendant(
+        of: find.byType(BottomMenu),
+        matching: find.text('Point report'),
+      ),
+      findsNothing,
+    );
+
+    await tester.ensureVisible(find.text('Point report'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Point report'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PointReportPage), findsOneWidget);
+    expect(
+      find.text('Choose a class to view the point report.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('lessons tab shows scheduled lessons for the selected day', (
     WidgetTester tester,
   ) async {
     final controller = AuthController(
-      authRepository: FakeAuthRepository(
-        validTokens: const {'saved-token'},
-      ),
+      authRepository: FakeAuthRepository(validTokens: const {'saved-token'}),
       tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
       timetableRepository: FakeTimetableRepository(),
     );
@@ -120,7 +273,12 @@ void main() {
     await tester.pumpWidget(OneOrgStaffApp(controller: controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.descendant(of: find.byType(BottomMenu), matching: find.text('Lessons')));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(BottomMenu),
+        matching: find.text('Lessons'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Mathematics'), findsOneWidget);
@@ -133,9 +291,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final controller = AuthController(
-      authRepository: FakeAuthRepository(
-        validTokens: const {'saved-token'},
-      ),
+      authRepository: FakeAuthRepository(validTokens: const {'saved-token'}),
       tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
       timetableRepository: FakeTimetableRepository(),
     );
@@ -143,7 +299,11 @@ void main() {
     await tester.pumpWidget(OneOrgStaffApp(controller: controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.descendant(of: find.byType(BottomMenu), matching: find.text('Timetable')));
+    // Timetable has no navbar button — it opens from its dashboard row, which
+    // sits below the fold at this window size.
+    await tester.ensureVisible(find.text('Timetable'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Timetable'));
     await tester.pumpAndSettle();
 
     expect(find.text('Full timetable'), findsOneWidget);
@@ -192,7 +352,8 @@ class FakeAuthRepository implements AuthRepository {
   final AppUserProfile currentUser;
 
   /// Avatar uploads recorded by [uploadProfilePicture], newest last.
-  final List<({int userId, int byteCount, String filename})> pictureUploads = [];
+  final List<({int userId, int byteCount, String filename})> pictureUploads =
+      [];
   final List<int> pictureRemovals = [];
 
   @override
@@ -347,4 +508,27 @@ class FakeTimetableRepository implements TimetableRepository {
       ),
     ];
   }
+}
+
+class _FakeColleaguesRepository implements ColleaguesRepository {
+  @override
+  Future<List<Colleague>> getColleagues(String token) async => const [
+    Colleague(
+      id: 1,
+      fullName: 'Ali Vali',
+      username: 'ali',
+      phoneNumber: '+998901112233',
+      status: 'active',
+    ),
+  ];
+}
+
+class _FakePointReportRepository implements PointReportRepository {
+  @override
+  Future<List<StudentPoint>> getPoints(
+    String token, {
+    required int groupId,
+    required DateTime start,
+    required DateTime end,
+  }) async => const [];
 }

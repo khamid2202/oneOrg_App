@@ -1,6 +1,8 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import 'package:one_org_staff/app/theme.dart';
+
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 
 import 'document_viewer.dart';
@@ -63,9 +65,9 @@ class _DocumentsTabState extends State<DocumentsTab> {
   }
 
   void _report(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<PickedDocument?> _pick() async {
@@ -195,9 +197,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = widget.isDarkMode;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,9 +299,7 @@ class _DocumentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
     final primary = theme.colorScheme.primary;
 
     return InkWell(
@@ -310,13 +308,9 @@ class _DocumentCard extends StatelessWidget {
       child: Ink(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF1A2430) : Colors.white,
+          color: appColorsOf(context).card,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isDarkMode
-                ? const Color(0xFF273445)
-                : const Color(0xFFD7E1EE),
-          ),
+          border: Border.all(color: appColorsOf(context).line),
         ),
         child: Row(
           children: [
@@ -327,11 +321,7 @@ class _DocumentCard extends StatelessWidget {
                 color: primary.withValues(alpha: isDarkMode ? 0.2 : 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                Icons.description_outlined,
-                size: 19,
-                color: primary,
-              ),
+              child: Icon(Icons.description_outlined, size: 19, color: primary),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -447,9 +437,7 @@ class _DocumentFormState extends State<_DocumentForm> {
             Text(
               widget.filename,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF9DB0C1)
-                    : const Color(0xFF5C738B),
+                color: appColorsOf(context).mutedText,
               ),
             ),
             const SizedBox(height: 16),

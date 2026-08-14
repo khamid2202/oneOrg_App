@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'package:one_org_staff/app/theme.dart';
+
 import 'lesson_points_repository.dart';
 
 class _StudentListData {
   final List<StudentEntry> students;
   final Map<int, double> points;
 
-  const _StudentListData({
-    required this.students,
-    required this.points,
-  });
+  const _StudentListData({required this.students, required this.points});
 }
 
 class LessonPointsPage extends StatefulWidget {
@@ -36,7 +35,8 @@ class LessonPointsPage extends StatefulWidget {
     required int groupId,
     required DateTime date,
     int? subjectId,
-  }) loadPoints;
+  })
+  loadPoints;
 
   @override
   State<LessonPointsPage> createState() => _LessonPointsPageState();
@@ -55,38 +55,39 @@ class _LessonPointsPageState extends State<LessonPointsPage> {
   }
 
   void _loadData() {
-    _dataFuture = Future.wait([
-      widget.loadStudents(widget.groupId),
-      widget.loadPoints(
-        groupId: widget.groupId,
-        date: widget.date,
-        subjectId: widget.subjectId,
-      ),
-    ]).then((results) {
-      final students = results[0] as List<StudentEntry>;
-      final points = results[1] as Map<int, double>;
+    _dataFuture =
+        Future.wait([
+          widget.loadStudents(widget.groupId),
+          widget.loadPoints(
+            groupId: widget.groupId,
+            date: widget.date,
+            subjectId: widget.subjectId,
+          ),
+        ]).then((results) {
+          final students = results[0] as List<StudentEntry>;
+          final points = results[1] as Map<int, double>;
 
-      // Initialize/update controllers with existing points
-      for (final student in students) {
-        // `/student-points` keys by person id, not the enrollment id.
-        final existingPoint = points[student.personId];
-        final controller = _controllers.putIfAbsent(
-          student.personId,
-          () => TextEditingController(),
-        );
-        if (existingPoint != null) {
-          if (existingPoint == existingPoint.toInt()) {
-            controller.text = existingPoint.toInt().toString();
-          } else {
-            controller.text = existingPoint.toString();
+          // Initialize/update controllers with existing points
+          for (final student in students) {
+            // `/student-points` keys by person id, not the enrollment id.
+            final existingPoint = points[student.personId];
+            final controller = _controllers.putIfAbsent(
+              student.personId,
+              () => TextEditingController(),
+            );
+            if (existingPoint != null) {
+              if (existingPoint == existingPoint.toInt()) {
+                controller.text = existingPoint.toInt().toString();
+              } else {
+                controller.text = existingPoint.toString();
+              }
+            } else {
+              controller.clear();
+            }
           }
-        } else {
-          controller.clear();
-        }
-      }
 
-      return _StudentListData(students: students, points: points);
-    });
+          return _StudentListData(students: students, points: points);
+        });
   }
 
   @override
@@ -99,8 +100,6 @@ class _LessonPointsPageState extends State<LessonPointsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       appBar: AppBar(title: Text(widget.groupLabel)),
       body: Container(
@@ -119,9 +118,7 @@ class _LessonPointsPageState extends State<LessonPointsPage> {
             Text(
               _formatDate(widget.date),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isDarkMode
-                    ? const Color(0xFF9DB0C1)
-                    : const Color(0xFF5C738B),
+                color: appColorsOf(context).mutedText,
               ),
             ),
             const SizedBox(height: 16),
@@ -199,9 +196,7 @@ class _LessonPointsPageState extends State<LessonPointsPage> {
               'Only filled points will be saved.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: isDarkMode
-                    ? const Color(0xFF9DB0C1)
-                    : const Color(0xFF5C738B),
+                color: appColorsOf(context).mutedText,
               ),
             ),
           ],
@@ -307,23 +302,16 @@ class _StudentPointCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
-    final inputBorderColor = isDarkMode
-        ? const Color(0xFF3A4B5F)
-        : const Color(0xFFB8C7D8);
+    final mutedColor = appColorsOf(context).mutedText;
+    final inputBorderColor = appColorsOf(context).line;
     final focusedInputBorderColor = Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1A2430) : Colors.white,
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDarkMode ? const Color(0xFF273445) : const Color(0xFFD7E1EE),
-        ),
+        border: Border.all(color: appColorsOf(context).line),
       ),
       child: Row(
         children: [

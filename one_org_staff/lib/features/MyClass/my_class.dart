@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:one_org_staff/app/theme.dart';
+
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 
@@ -13,6 +15,10 @@ import 'student_row_card.dart';
 /// The field shown alongside each student. The teacher switches between them
 /// from the row of chips under the class header.
 enum ClassField { info, status, contacts }
+
+/// Applied to each page *inside* the swipe-back detector so the detector itself
+/// stays full-bleed and can catch a drag from the screen edge.
+const EdgeInsets _pagePadding = EdgeInsets.fromLTRB(20, 16, 20, 24);
 
 class MyClassPage extends StatefulWidget {
   const MyClassPage({
@@ -32,10 +38,7 @@ class MyClassPage extends StatefulWidget {
   final Future<AppUserProfile> Function() loadProfile;
   final Future<List<GroupEntry>> Function({int? academicYearId}) loadGroups;
   final Future<List<AcademicYearEntry>> Function() loadAcademicYears;
-  final Future<List<StudentEntry>> Function(
-    int groupId, {
-    bool includeContacts,
-  })
+  final Future<List<StudentEntry>> Function(int groupId, {bool includeContacts})
   loadStudentsForGroup;
   final Future<PersonDetails> Function({
     required int personId,
@@ -110,7 +113,8 @@ class _MyClassPageState extends State<MyClassPage> {
     final profile = _profile;
 
     final mine = groups.where((group) {
-      final matchesId = profile != null && group.teacherIds.contains(profile.id);
+      final matchesId =
+          profile != null && group.teacherIds.contains(profile.id);
       final matchesName =
           group.teacherName != null &&
           profile != null &&
@@ -153,37 +157,51 @@ class _MyClassPageState extends State<MyClassPage> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      child: FutureBuilder<void>(
-        future: _loadFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const SizedBox(
+    return FutureBuilder<void>(
+      future: _loadFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Padding(
+            padding: _pagePadding,
+            child: SizedBox(
               height: 300,
               child: Center(child: CircularProgressIndicator()),
-            );
-          }
+            ),
+          );
+        }
 
-          if (snapshot.hasError) {
-            return ErrorLayout(
+        if (snapshot.hasError) {
+          return Padding(
+            padding: _pagePadding,
+            child: ErrorLayout(
               message: snapshot.error is AuthFailure
                   ? (snapshot.error as AuthFailure).message
                   : 'Soon the content will appear',
               onRetry: _reload,
-            );
-          }
-
-          return SwipeBackDetector(
-            enabled: _selectedStudent != null,
-            onSwipeBack: () => setState(() => _selectedStudent = null),
-            underneathChild: _buildRoster(isDarkMode),
-            child: _selectedStudent == null
-                ? const SizedBox.shrink()
-                : _buildStudentDetail(_selectedStudent!, isDarkMode),
+            ),
           );
-        },
-      ),
+        }
+
+        // The page padding goes *inside* the detector, not around it. Wrapping
+        // the detector in it inset the swipe area by 20px, so a drag from the
+        // real screen edge missed this detector entirely and was claimed by the
+        // landing shell's — which is why going back from a student jumped all
+        // the way to the dashboard instead of to the roster.
+        return SwipeBackDetector(
+          enabled: _selectedStudent != null,
+          onSwipeBack: () => setState(() => _selectedStudent = null),
+          underneathChild: Padding(
+            padding: _pagePadding,
+            child: _buildRoster(isDarkMode),
+          ),
+          child: _selectedStudent == null
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: _pagePadding,
+                  child: _buildStudentDetail(_selectedStudent!, isDarkMode),
+                ),
+        );
+      },
     );
   }
 
@@ -265,9 +283,7 @@ class _MyClassPageState extends State<MyClassPage> {
 
   Widget _buildRoster(bool isDarkMode) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,13 +336,9 @@ class _MyClassPageState extends State<MyClassPage> {
           const SizedBox(height: 16),
           Container(
             decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF19202A) : Colors.white,
+              color: appColorsOf(context).card,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDarkMode
-                    ? const Color(0xFF273445)
-                    : const Color(0xFFD7E1EE),
-              ),
+              border: Border.all(color: appColorsOf(context).line),
             ),
             child: TextField(
               controller: _searchController,
@@ -418,7 +430,8 @@ class _MyClassPageState extends State<MyClassPage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: filtered.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 10),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final student = filtered[index];
                   return StudentRowCard(
@@ -460,9 +473,7 @@ class _ClassHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -507,13 +518,9 @@ class _ClassHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF19202A) : Colors.white,
+              color: appColorsOf(context).card,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isDarkMode
-                    ? const Color(0xFF273445)
-                    : const Color(0xFFD7E1EE),
-              ),
+              border: Border.all(color: appColorsOf(context).line),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<AcademicYearEntry>(
@@ -545,9 +552,7 @@ class _ColumnHeadings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
       color: mutedColor,
       fontWeight: FontWeight.w700,
@@ -559,14 +564,11 @@ class _ColumnHeadings extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text('STUDENT', style: style)),
-          Text(
-            switch (field) {
-              ClassField.info => 'CODE',
-              ClassField.status => 'STATUS',
-              ClassField.contacts => 'CONTACT',
-            },
-            style: style,
-          ),
+          Text(switch (field) {
+            ClassField.info => 'CODE',
+            ClassField.status => 'STATUS',
+            ClassField.contacts => 'CONTACT',
+          }, style: style),
         ],
       ),
     );

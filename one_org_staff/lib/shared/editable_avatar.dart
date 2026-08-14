@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:one_org_staff/app/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -28,6 +30,7 @@ class EditableAvatar extends StatefulWidget {
 
   final String fullName;
   final String? imageUrl;
+
   /// Whose picture this is — a user id or a person id, per the callbacks.
   final int ownerId;
   final bool isDarkMode;
@@ -264,9 +267,7 @@ class _EditableAvatarState extends State<EditableAvatar> {
     final initial = widget.fullName.isNotEmpty
         ? widget.fullName[0].toUpperCase()
         : 'U';
-    final badgeBorderColor = widget.isDarkMode
-        ? const Color(0xFF121A24)
-        : Colors.white;
+    final badgeBorderColor = appColorsOf(context).card;
 
     return Semantics(
       button: true,
@@ -281,12 +282,8 @@ class _EditableAvatarState extends State<EditableAvatar> {
           children: [
             CircleAvatar(
               radius: widget.radius,
-              backgroundColor: widget.isDarkMode
-                  ? const Color(0xFF1F2E40)
-                  : const Color(0xFFE1EDFA),
-              backgroundImage: imageUrl == null
-                  ? null
-                  : NetworkImage(imageUrl),
+              backgroundColor: appColorsOf(context).softBg,
+              backgroundImage: imageUrl == null ? null : NetworkImage(imageUrl),
               onBackgroundImageError: imageUrl == null
                   ? null
                   : (_, _) {
@@ -304,9 +301,7 @@ class _EditableAvatarState extends State<EditableAvatar> {
                       style: TextStyle(
                         fontSize: widget.radius * 0.8,
                         fontWeight: FontWeight.bold,
-                        color: widget.isDarkMode
-                            ? const Color(0xFF64AFFF)
-                            : const Color(0xFF1E5C99),
+                        color: appColorsOf(context).softText,
                       ),
                     ),
             ),

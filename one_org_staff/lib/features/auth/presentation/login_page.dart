@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme.dart';
+
 import '../application/auth_controller.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({
-    super.key,
-    required this.controller,
-  });
+  const LoginPage({super.key, required this.controller});
 
   final AuthController controller;
 
@@ -50,11 +49,20 @@ class _LoginPageState extends State<LoginPage> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        // Washed with the accent so the user's chosen colour is already in
+        // place at the login screen — the preference is a device setting and
+        // survives sign-out.
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFE8F0FB), Color(0xFFF7FAFD)],
+            colors: [
+              Color.alphaBlend(
+                appColorsOf(context).accent.solid.withValues(alpha: 0.10),
+                Theme.of(context).scaffoldBackgroundColor,
+              ),
+              Theme.of(context).scaffoldBackgroundColor,
+            ],
           ),
         ),
         child: SafeArea(
@@ -65,10 +73,10 @@ class _LoginPageState extends State<LoginPage> {
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: Card(
                   elevation: 0,
-                  color: Colors.white,
+                  color: appColorsOf(context).card,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
-                    side: const BorderSide(color: Color(0xFFDCE5F1)),
+                    side: BorderSide(color: appColorsOf(context).line),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(28),
@@ -82,14 +90,14 @@ class _LoginPageState extends State<LoginPage> {
                             'Welcome back',
                             style: theme.textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF16324A),
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Sign in to continue to Dombit School.',
                             style: theme.textTheme.bodyLarge?.copyWith(
-                              color: const Color(0xFF59718A),
+                              color: appColorsOf(context).mutedText,
                             ),
                           ),
                           if (errorMessage != null) ...[
@@ -98,16 +106,18 @@ class _LoginPageState extends State<LoginPage> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFF2F2),
+                                color: theme.colorScheme.errorContainer,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: const Color(0xFFF4B8B8),
+                                  color: theme.colorScheme.error.withValues(
+                                    alpha: 0.4,
+                                  ),
                                 ),
                               ),
                               child: Text(
                                 errorMessage,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: const Color(0xFF8D2B2B),
+                                  color: theme.colorScheme.onErrorContainer,
                                 ),
                               ),
                             ),
@@ -121,23 +131,36 @@ class _LoginPageState extends State<LoginPage> {
                               labelText: 'Username',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: Color(0xFFDCE5F1)),
+                                borderSide: BorderSide(
+                                  color: appColorsOf(context).line,
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: Color(0xFFDCE5F1)),
+                                borderSide: BorderSide(
+                                  color: appColorsOf(context).line,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.2),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                  width: 1.2,
+                                ),
                               ),
                               errorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide(color: theme.colorScheme.error, width: 1.0),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.error,
+                                  width: 1.0,
+                                ),
                               ),
                               focusedErrorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide(color: theme.colorScheme.error, width: 1.5),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.error,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                             validator: (value) {
@@ -157,23 +180,36 @@ class _LoginPageState extends State<LoginPage> {
                               labelText: 'Password',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: Color(0xFFDCE5F1)),
+                                borderSide: BorderSide(
+                                  color: appColorsOf(context).line,
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: Color(0xFFDCE5F1)),
+                                borderSide: BorderSide(
+                                  color: appColorsOf(context).line,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.2),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                  width: 1.2,
+                                ),
                               ),
                               errorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide(color: theme.colorScheme.error, width: 1.0),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.error,
+                                  width: 1.0,
+                                ),
                               ),
                               focusedErrorBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide(color: theme.colorScheme.error, width: 1.5),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.error,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                             validator: (value) {

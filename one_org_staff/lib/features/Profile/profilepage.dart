@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+
+import 'package:one_org_staff/app/theme.dart';
+import 'package:one_org_staff/app/theme_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 
 import 'package:one_org_staff/shared/editable_avatar.dart';
+import 'package:one_org_staff/shared/underline_tabs.dart';
 
 enum ProfileTab { profile, password, help, system }
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({
     super.key,
-    required this.themeMode,
-    required this.onThemeModeChanged,
+    required this.themeController,
     required this.loadProfile,
     required this.updatePassword,
     required this.uploadProfilePicture,
@@ -19,8 +22,7 @@ class ProfilePage extends StatefulWidget {
     this.onLogout,
   });
 
-  final ThemeMode themeMode;
-  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ThemeController themeController;
   final Future<AppUserProfile> Function() loadProfile;
   final Future<String> Function({
     required String currentPassword,
@@ -73,7 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-  bool get _isDarkMode => widget.themeMode == ThemeMode.dark;
+  bool get _isDarkMode => widget.themeController.isDark;
 
   void _reloadProfile() {
     setState(() {
@@ -166,10 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _openTelegram() async {
     final uri = Uri.parse(_telegramLink);
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
       _showSnackBar('Unable to open Telegram.');
     }
@@ -212,7 +211,31 @@ class _ProfilePageState extends State<ProfilePage> {
                 onError: _showSnackBar,
               ),
               const SizedBox(height: 16),
-              _TabSelector(
+              // The same underlined bar the My Class student modal uses, so the
+              // two tabbed sections read as one component.
+              UnderlineTabs<ProfileTab>(
+                items: const [
+                  UnderlineTabItem(
+                    value: ProfileTab.profile,
+                    label: 'Profile',
+                    icon: Icons.person_rounded,
+                  ),
+                  UnderlineTabItem(
+                    value: ProfileTab.password,
+                    label: 'Password',
+                    icon: Icons.vpn_key_rounded,
+                  ),
+                  UnderlineTabItem(
+                    value: ProfileTab.help,
+                    label: 'Help',
+                    icon: Icons.help_outline_rounded,
+                  ),
+                  UnderlineTabItem(
+                    value: ProfileTab.system,
+                    label: 'System',
+                    icon: Icons.settings_rounded,
+                  ),
+                ],
                 selected: _tab,
                 isDarkMode: _isDarkMode,
                 onSelected: (tab) => setState(() => _tab = tab),
@@ -238,10 +261,10 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
+        _SectionHeader(
           icon: Icons.vpn_key_rounded,
           title: 'Reset Password',
-          color: Color(0xFF1F5E89),
+          color: Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(height: 16),
         TextField(
@@ -286,9 +309,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   )
                 : const Icon(Icons.password_rounded),
             label: Text(
-              _isUpdatingPassword
-                  ? 'Updating password...'
-                  : 'Update password',
+              _isUpdatingPassword ? 'Updating password...' : 'Update password',
             ),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -300,38 +321,65 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildSystemSection() {
-    final borderColor = _isDarkMode
-        ? const Color(0xFF273445)
-        : const Color(0xFFD7E1EE);
+    final colors = appColorsOf(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
+        _SectionHeader(
           icon: Icons.settings_rounded,
           title: 'System',
-          color: Color(0xFF7C6BC4),
+          color: colors.accent.solid,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 6),
+        Text(
+          'Manage how the app looks. Changes apply across the whole app and '
+          'are saved for next time.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colors.mutedText),
+        ),
+        const SizedBox(height: 22),
+
+        _SettingsSection(
+          title: 'APPEARANCE',
+          description: 'Choose the system color used across the whole app.',
+          mutedColor: colors.mutedText,
+          child: _AccentPicker(
+            selected: widget.themeController.accent,
+            onSelected: widget.themeController.setAccent,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        _SettingsSection(
+          title: 'DARK MODE',
+          description:
+              'Pick the dark flavor. The toggle below turns dark on and off; '
+              'this sets which shade it uses.',
+          mutedColor: colors.mutedText,
+          child: _DarkVariantPicker(
+            selected: widget.themeController.darkVariant,
+            onSelected: widget.themeController.setDarkVariant,
+          ),
+        ),
+        const SizedBox(height: 24),
+
         Container(
           decoration: BoxDecoration(
-            color: _isDarkMode
-                ? const Color(0xFF1A2430)
-                : const Color(0xFFF4F7FB),
+            color: colors.card,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: borderColor),
+            border: Border.all(color: colors.line),
           ),
           child: SwitchListTile(
             value: _isDarkMode,
             title: const Text('Dark mode'),
             subtitle: const Text('Switch between light and dark themes.'),
             secondary: Icon(
-              _isDarkMode
-                  ? Icons.dark_mode_rounded
-                  : Icons.light_mode_rounded,
+              _isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
             ),
             onChanged: (value) {
-              widget.onThemeModeChanged(
+              widget.themeController.setThemeMode(
                 value ? ThemeMode.dark : ThemeMode.light,
               );
             },
@@ -353,6 +401,291 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// A titled block within the System settings, matching the web's `Section`.
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.title,
+    required this.description,
+    required this.mutedColor,
+    required this.child,
+  });
+
+  final String title;
+  final String description;
+  final Color mutedColor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: mutedColor,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          description,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: mutedColor),
+        ),
+        const SizedBox(height: 14),
+        child,
+      ],
+    );
+  }
+}
+
+/// The row of accent swatches. The selected one is ringed and ticked, and its
+/// label is spelled out beside the row so the choice is readable, not just
+/// colour-coded.
+class _AccentPicker extends StatelessWidget {
+  const _AccentPicker({required this.selected, required this.onSelected});
+
+  final AppAccent selected;
+  final ValueChanged<AppAccent> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = appColorsOf(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final accent in kAccents)
+              Semantics(
+                label: accent.label,
+                selected: accent.key == selected.key,
+                button: true,
+                child: GestureDetector(
+                  onTap: () => onSelected(accent),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: accent.gradient,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: accent.key == selected.key
+                            ? (Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black87)
+                            : Colors.transparent,
+                        width: 2.5,
+                      ),
+                    ),
+                    child: accent.key == selected.key
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 20,
+                            color: Colors.white,
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Text(
+          selected.label,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 12),
+
+        // Live preview, so the effect of a pick is visible without leaving the
+        // page — same idea as the web's swatch preview strip.
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.line),
+          ),
+          child: Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  gradient: selected.gradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Primary button',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.softBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Highlight',
+                  style: TextStyle(
+                    color: colors.softText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                'Accent text',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: selected.solid,
+                child: const Text(
+                  'A',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Dark-flavor picker. Each option is a miniature of the app in that shade —
+/// three identical dark squares would tell the user nothing.
+class _DarkVariantPicker extends StatelessWidget {
+  const _DarkVariantPicker({required this.selected, required this.onSelected});
+
+  final AppDarkVariant selected;
+  final ValueChanged<AppDarkVariant> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = appColorsOf(context);
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        for (final variant in kDarkVariants)
+          Semantics(
+            label: variant.label,
+            selected: variant.key == selected.key,
+            button: true,
+            child: GestureDetector(
+              onTap: () => onSelected(variant),
+              child: Container(
+                width: 118,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: variant.key == selected.key
+                        ? Theme.of(context).colorScheme.primary
+                        : colors.line,
+                    width: variant.key == selected.key ? 2.5 : 1,
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 62,
+                      width: double.infinity,
+                      color: variant.background,
+                      padding: const EdgeInsets.all(8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            width: 14,
+                            decoration: BoxDecoration(
+                              color: variant.card,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  height: 6,
+                                  width: 46,
+                                  decoration: BoxDecoration(
+                                    color: variant.line,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Expanded(
+                                  child: Container(
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: variant.card,
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: double.infinity,
+                      color: colors.card,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      child: Text(
+                        variant.label,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -383,21 +716,15 @@ class _ProfileHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF121A24) : Colors.white,
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDarkMode
-              ? const Color(0xFF273445)
-              : const Color(0xFFD7E1EE),
-        ),
+        border: Border.all(color: appColorsOf(context).line),
       ),
       child: Row(
         children: [
@@ -406,12 +733,13 @@ class _ProfileHeaderCard extends StatelessWidget {
             imageUrl: profile.profileImageUrl,
             ownerId: profile.id,
             isDarkMode: isDarkMode,
-            uploadPicture: ({required ownerId, required bytes, required filename}) =>
-                uploadProfilePicture(
-                  userId: ownerId,
-                  bytes: bytes,
-                  filename: filename,
-                ),
+            uploadPicture:
+                ({required ownerId, required bytes, required filename}) =>
+                    uploadProfilePicture(
+                      userId: ownerId,
+                      bytes: bytes,
+                      filename: filename,
+                    ),
             removePicture: ({required ownerId}) =>
                 removeProfilePicture(userId: ownerId),
             onChanged: onAvatarChanged,
@@ -443,9 +771,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   profile.email,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: mutedColor,
-                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(color: mutedColor),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -453,112 +779,6 @@ class _ProfileHeaderCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TabSelector extends StatelessWidget {
-  const _TabSelector({
-    required this.selected,
-    required this.isDarkMode,
-    required this.onSelected,
-  });
-
-  final ProfileTab selected;
-  final bool isDarkMode;
-  final ValueChanged<ProfileTab> onSelected;
-
-  static const _labels = {
-    ProfileTab.profile: ('Profile', Icons.person_rounded),
-    ProfileTab.password: ('Password', Icons.vpn_key_rounded),
-    ProfileTab.help: ('Help', Icons.help_outline_rounded),
-    ProfileTab.system: ('System', Icons.settings_rounded),
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final tab in ProfileTab.values) ...[
-            _TabChip(
-              label: _labels[tab]!.$1,
-              icon: _labels[tab]!.$2,
-              isSelected: selected == tab,
-              isDarkMode: isDarkMode,
-              onTap: () => onSelected(tab),
-            ),
-            if (tab != ProfileTab.values.last) const SizedBox(width: 10),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _TabChip extends StatelessWidget {
-  const _TabChip({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.isDarkMode,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final bool isDarkMode;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final unselectedForeground = isDarkMode
-        ? const Color(0xFFC6D3E1)
-        : const Color(0xFF44566B);
-
-    return Material(
-      color: isSelected
-          ? primary
-          : (isDarkMode ? const Color(0xFF1A2430) : Colors.white),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected
-                  ? primary
-                  : (isDarkMode
-                        ? const Color(0xFF273445)
-                        : const Color(0xFFD7E1EE)),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? Colors.white : unselectedForeground,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white : unselectedForeground,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -575,23 +795,23 @@ class _ProfileDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
+        _SectionHeader(
           icon: Icons.person_rounded,
           title: 'My Profile',
-          color: Color(0xFF1F5E89),
+          color: Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(height: 16),
         _InfoCard(
           title: 'Personal Information',
           icon: Icons.info_outline_rounded,
-          headerColor: const Color(0xFF3E88C0),
+          headerColor: appColorsOf(context).ring,
           isDarkMode: isDarkMode,
           children: [
             _InfoRow(
               label: 'FULL NAME',
               value: profile.fullName,
               icon: Icons.person_outline_rounded,
-              iconColor: const Color(0xFF1F5E89),
+              iconColor: Theme.of(context).colorScheme.primary,
               isDarkMode: isDarkMode,
             ),
             _InfoRow(
@@ -669,13 +889,9 @@ class _InfoCard extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF121A24) : Colors.white,
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDarkMode
-              ? const Color(0xFF273445)
-              : const Color(0xFFD7E1EE),
-        ),
+        border: Border.all(color: appColorsOf(context).line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -728,9 +944,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
@@ -786,9 +1000,7 @@ class _RolesRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
@@ -859,18 +1071,15 @@ class _HelpSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
+        _SectionHeader(
           icon: Icons.help_outline_rounded,
           title: 'Help & Support',
-          color: Color(0xFF1F5E89),
+          color: Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(height: 6),
         Text(
@@ -882,24 +1091,18 @@ class _HelpSection extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF121A24) : Colors.white,
+            color: appColorsOf(context).card,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDarkMode
-                  ? const Color(0xFF273445)
-                  : const Color(0xFFD7E1EE),
-            ),
+            border: Border.all(color: appColorsOf(context).line),
           ),
           child: Column(
             children: [
               Container(
                 width: 56,
                 height: 56,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF3B82F6), Color(0xFF06B6D4)],
-                  ),
+                  gradient: appColorsOf(context).gradient,
                 ),
                 child: const Icon(
                   Icons.send_rounded,
@@ -979,9 +1182,9 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
       ],
     );

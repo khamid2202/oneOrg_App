@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:one_org_staff/app/theme.dart';
+
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 
 import 'student_people_sync.dart';
@@ -41,9 +43,9 @@ class _GuardiansTabState extends State<GuardiansTab> {
   }
 
   void _report(Object error) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error.toString())),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(error.toString())));
   }
 
   Future<void> _openForm({GuardianEntry? existing}) async {
@@ -122,9 +124,7 @@ class _GuardiansTabState extends State<GuardiansTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = widget.isDarkMode;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,21 +215,15 @@ class _GuardianCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1A2430) : Colors.white,
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDarkMode
-              ? const Color(0xFF273445)
-              : const Color(0xFFD7E1EE),
-        ),
+        border: Border.all(color: appColorsOf(context).line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,10 +289,7 @@ class _DetailLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Padding(
       padding: const EdgeInsets.only(top: 4),
@@ -307,10 +298,7 @@ class _DetailLine extends StatelessWidget {
           Icon(icon, size: 15, color: mutedColor),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            child: Text(value, style: Theme.of(context).textTheme.bodySmall),
           ),
         ],
       ),
@@ -432,15 +420,9 @@ class _GuardianFormState extends State<_GuardianForm> {
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 12),
-            _Field(
-              controller: _position,
-              label: 'Position (optional)',
-            ),
+            _Field(controller: _position, label: 'Position (optional)'),
             const SizedBox(height: 12),
-            _Field(
-              controller: _workAddress,
-              label: 'Work address (optional)',
-            ),
+            _Field(controller: _workAddress, label: 'Work address (optional)'),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Text(

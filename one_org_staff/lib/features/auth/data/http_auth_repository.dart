@@ -5,11 +5,9 @@ import 'package:http/http.dart' as http;
 import '../domain/auth_repository.dart';
 
 class HttpAuthRepository implements AuthRepository {
-  HttpAuthRepository({
-    required http.Client client,
-    required String baseUrl,
-  })  : _client = client,
-        _baseUrl = _normalizeBaseUrl(baseUrl);
+  HttpAuthRepository({required http.Client client, required String baseUrl})
+    : _client = client,
+      _baseUrl = _normalizeBaseUrl(baseUrl);
 
   final http.Client _client;
   final String _baseUrl;
@@ -59,10 +57,7 @@ class HttpAuthRepository implements AuthRepository {
   }) async {
     final response = await _client.patch(
       _buildUri('/settings/password'),
-      headers: {
-        ..._jsonHeaders,
-        'Authorization': 'Bearer $token',
-      },
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
       body: jsonEncode({
         'current_password': currentPassword,
         'new_password': newPassword,
@@ -90,10 +85,7 @@ class HttpAuthRepository implements AuthRepository {
   Future<void> validate(String token) async {
     final response = await _client.get(
       _buildUri('/auth/validate'),
-      headers: {
-        ..._jsonHeaders,
-        'Authorization': 'Bearer $token',
-      },
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
 
     final responseBody = _decodeBody(response.body);
@@ -112,10 +104,7 @@ class HttpAuthRepository implements AuthRepository {
   Future<void> revoke(String token) async {
     await _client.post(
       _buildUri('/auth/revoke'),
-      headers: {
-        ..._jsonHeaders,
-        'Authorization': 'Bearer $token',
-      },
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
   }
 
@@ -123,10 +112,7 @@ class HttpAuthRepository implements AuthRepository {
   Future<AppUserProfile> getCurrentUser(String token) async {
     final response = await _client.get(
       _buildUri('/users/me'),
-      headers: {
-        ..._jsonHeaders,
-        'Authorization': 'Bearer $token',
-      },
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
 
     final responseBody = _decodeBody(response.body);
@@ -149,17 +135,15 @@ class HttpAuthRepository implements AuthRepository {
   }) async {
     // docs/staff/users.md: POST /users/:id/picture, multipart field `file`,
     // responds with { ok, picture_url }.
-    final request = http.MultipartRequest(
-      'POST',
-      _buildUri('/users/$userId/picture'),
-    )
-      ..headers.addAll({
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      })
-      ..files.add(
-        http.MultipartFile.fromBytes('file', bytes, filename: filename),
-      );
+    final request =
+        http.MultipartRequest('POST', _buildUri('/users/$userId/picture'))
+          ..headers.addAll({
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          })
+          ..files.add(
+            http.MultipartFile.fromBytes('file', bytes, filename: filename),
+          );
 
     final streamed = await _client.send(request);
     final response = await http.Response.fromStream(streamed);
@@ -181,10 +165,7 @@ class HttpAuthRepository implements AuthRepository {
   }) async {
     final response = await _client.delete(
       _buildUri('/users/$userId/picture'),
-      headers: {
-        ..._jsonHeaders,
-        'Authorization': 'Bearer $token',
-      },
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
 
     final responseBody = _decodeBody(response.body);

@@ -107,10 +107,11 @@ Widget _wrapPage({
             onLoadGroups?.call(academicYearId);
             return [_group];
           },
-          loadStudentsForGroup: (groupId, {bool includeContacts = false}) async {
-            onLoadStudents?.call(includeContacts);
-            return students ?? _students;
-          },
+          loadStudentsForGroup:
+              (groupId, {bool includeContacts = false}) async {
+                onLoadStudents?.call(includeContacts);
+                return students ?? _students;
+              },
           updatePersonDetails: ({required personId, required changes}) async {
             onUpdatePerson?.call(personId, changes);
             return updateResult ?? const PersonDetails();
@@ -380,10 +381,9 @@ void main() {
 
     test('uses the API field names', () {
       const edited = PersonDetails(birthCertificateNumber: 'BC-1');
-      expect(
-        edited.diffFrom(const PersonDetails()),
-        {'birth_certificate_number': 'BC-1'},
-      );
+      expect(edited.diffFrom(const PersonDetails()), {
+        'birth_certificate_number': 'BC-1',
+      });
     });
   });
 
@@ -576,9 +576,7 @@ void main() {
 
     testWidgets('fetches the roster with contacts included', (tester) async {
       final includeFlags = <bool>[];
-      await tester.pumpWidget(
-        _wrapPage(onLoadStudents: includeFlags.add),
-      );
+      await tester.pumpWidget(_wrapPage(onLoadStudents: includeFlags.add));
       await tester.pumpAndSettle();
 
       expect(includeFlags, isNotEmpty);
@@ -647,6 +645,31 @@ void main() {
         findsOneWidget,
       );
       expect(find.widgetWithText(TextField, 'AA1234567'), findsOneWidget);
+    });
+
+    testWidgets('a swipe from the very screen edge returns to the roster', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrapPage(students: [_studentWithDetails]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Yusupova Samira'));
+      await tester.pumpAndSettle();
+      expect(find.text('Student info'), findsOneWidget);
+
+      // Start at x=5 — inside the real screen edge, but inside the page's 20px
+      // padding too. The detector used to sit *under* that padding, so this
+      // drag never reached it and the landing shell's detector took it instead,
+      // dropping the user on the dashboard rather than the roster.
+      await tester.timedDragFrom(
+        const Offset(5, 400),
+        const Offset(300, 0),
+        const Duration(milliseconds: 300),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Student info'), findsNothing);
+      expect(find.text('Yusupova Samira'), findsOneWidget);
     });
 
     testWidgets('Status: tapping a student does nothing', (tester) async {
@@ -876,9 +899,11 @@ void main() {
       await tester.ensureVisible(find.text('Save changes'));
       await tester.pumpAndSettle();
       expect(
-        tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, 'Save changes'),
-        ).onPressed,
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Save changes'),
+            )
+            .onPressed,
         isNull,
       );
 
@@ -953,7 +978,9 @@ void main() {
       expect(tester.widget<EditableAvatar>(avatar).ownerId, 100);
 
       // Removal reaches the API with that same person id.
-      await tester.tap(find.descendant(of: avatar, matching: find.byType(InkWell)).first);
+      await tester.tap(
+        find.descendant(of: avatar, matching: find.byType(InkWell)).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Remove photo'));
       await tester.pumpAndSettle();

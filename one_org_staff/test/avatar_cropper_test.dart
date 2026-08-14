@@ -203,35 +203,37 @@ void main() {
       expect(centre.b, lessThan(60));
     });
 
-    test('dragging fully left frames the blue edge, not the red centre',
-        () async {
-      final scale = coverScale(imageWidth: 800, imageHeight: 400);
-      final max = maxCropOffset(
-        imageWidth: 800,
-        imageHeight: 400,
-        scale: scale,
-      );
-      final bytes = await cropToSquareJpeg(
-        CropRequest(
-          bytes: _sampleJpeg(),
-          rect: computeCropRect(
-            imageWidth: 800,
-            imageHeight: 400,
-            scale: scale,
-            offset: Offset(max.dx, 0),
+    test(
+      'dragging fully left frames the blue edge, not the red centre',
+      () async {
+        final scale = coverScale(imageWidth: 800, imageHeight: 400);
+        final max = maxCropOffset(
+          imageWidth: 800,
+          imageHeight: 400,
+          scale: scale,
+        );
+        final bytes = await cropToSquareJpeg(
+          CropRequest(
+            bytes: _sampleJpeg(),
+            rect: computeCropRect(
+              imageWidth: 800,
+              imageHeight: 400,
+              scale: scale,
+              offset: Offset(max.dx, 0),
+            ),
+            outputSize: kCropOutputSize,
           ),
-          outputSize: kCropOutputSize,
-        ),
-      );
+        );
 
-      final decoded = img.decodeImage(bytes)!;
-      final centre = decoded.getPixel(
-        kCropOutputSize ~/ 2,
-        kCropOutputSize ~/ 2,
-      );
-      expect(centre.b, greaterThan(200));
-      expect(centre.r, lessThan(60));
-    });
+        final decoded = img.decodeImage(bytes)!;
+        final centre = decoded.getPixel(
+          kCropOutputSize ~/ 2,
+          kCropOutputSize ~/ 2,
+        );
+        expect(centre.b, greaterThan(200));
+        expect(centre.r, lessThan(60));
+      },
+    );
 
     test('stays inside the source when the rect rounds past an edge', () async {
       // A rect deliberately overhanging both edges must not throw.

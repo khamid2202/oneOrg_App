@@ -21,8 +21,10 @@ void main() {
         expect(request.url.queryParameters['limit'], '100');
         // The group already pins the academic year; sending it too would
         // return nothing whenever the configured year disagrees.
-        expect(request.url.queryParameters.containsKey('academic_year_id'),
-            isFalse);
+        expect(
+          request.url.queryParameters.containsKey('academic_year_id'),
+          isFalse,
+        );
         expect(request.headers['Authorization'], 'Bearer test-token');
 
         return http.Response(
@@ -472,10 +474,7 @@ void main() {
   test('surfaces the API message when a document upload is rejected', () async {
     final repository = HttpLessonPointsRepository(
       client: MockClient((request) async {
-        return http.Response(
-          jsonEncode({'message': 'File too large'}),
-          400,
-        );
+        return http.Response(jsonEncode({'message': 'File too large'}), 400);
       }),
       baseUrl: 'https://dev-api.oneorg.uz',
     );

@@ -3,14 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:one_org_staff/config/api_config.dart';
 import '../../TimeTable/time_table_repository.dart';
 import '../../MyLessons/lesson_points_repository.dart';
+import '../../colleagues/domain/colleagues_repository.dart';
+import '../../point_report/domain/point_report_repository.dart';
 import '../data/token_storage.dart';
 import '../domain/auth_repository.dart';
 
-enum AuthStatus {
-  checking,
-  unauthenticated,
-  authenticated,
-}
+enum AuthStatus { checking, unauthenticated, authenticated }
 
 class AuthController extends ChangeNotifier {
   AuthController({
@@ -18,15 +16,21 @@ class AuthController extends ChangeNotifier {
     required TokenStorage tokenStorage,
     TimetableRepository? timetableRepository,
     LessonPointsRepository? pointsRepository,
-  })  : _authRepository = authRepository,
-        _tokenStorage = tokenStorage,
-        _timetableRepository = timetableRepository,
-        _pointsRepository = pointsRepository;
+    ColleaguesRepository? colleaguesRepository,
+    PointReportRepository? pointReportRepository,
+  }) : _authRepository = authRepository,
+       _tokenStorage = tokenStorage,
+       _timetableRepository = timetableRepository,
+       _pointsRepository = pointsRepository,
+       _colleaguesRepository = colleaguesRepository,
+       _pointReportRepository = pointReportRepository;
 
   final AuthRepository _authRepository;
   final TokenStorage _tokenStorage;
   final TimetableRepository? _timetableRepository;
   final LessonPointsRepository? _pointsRepository;
+  final ColleaguesRepository? _colleaguesRepository;
+  final PointReportRepository? _pointReportRepository;
 
   AuthStatus _status = AuthStatus.checking;
   bool _isSubmitting = false;
@@ -178,6 +182,43 @@ class AuthController extends ChangeNotifier {
     return timetableRepository.getTimetable(token);
   }
 
+  Future<List<Colleague>> loadColleagues() async {
+    final colleaguesRepository = _colleaguesRepository;
+    if (colleaguesRepository == null) {
+      throw const AuthFailure('Colleagues are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return colleaguesRepository.getColleagues(token);
+  }
+
+  Future<List<StudentPoint>> loadPointsForReport({
+    required int groupId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final pointReportRepository = _pointReportRepository;
+    if (pointReportRepository == null) {
+      throw const AuthFailure('The point report is not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return pointReportRepository.getPoints(
+      token,
+      groupId: groupId,
+      start: start,
+      end: end,
+    );
+  }
+
   Future<List<AcademicYearEntry>> loadAcademicYears() async {
     final pointsRepository = _pointsRepository;
     if (pointsRepository == null) {
@@ -192,8 +233,9 @@ class AuthController extends ChangeNotifier {
     return pointsRepository.getAcademicYears(token);
   }
 
-  Future<List<GuardianEntry>> loadGuardians(int personId) =>
-      _withPoints((repo, token) => repo.getGuardians(token, personId: personId));
+  Future<List<GuardianEntry>> loadGuardians(int personId) => _withPoints(
+    (repo, token) => repo.getGuardians(token, personId: personId),
+  );
 
   Future<GuardianEntry> createGuardian({
     required int personId,
@@ -237,11 +279,13 @@ class AuthController extends ChangeNotifier {
     );
   }
 
-  Future<void> deleteGuardian(int guardianId) =>
-      _withPoints((repo, token) => repo.deleteGuardian(token, guardianId: guardianId));
+  Future<void> deleteGuardian(int guardianId) => _withPoints(
+    (repo, token) => repo.deleteGuardian(token, guardianId: guardianId),
+  );
 
-  Future<List<DocumentEntry>> loadDocuments(int personId) =>
-      _withPoints((repo, token) => repo.getDocuments(token, personId: personId));
+  Future<List<DocumentEntry>> loadDocuments(int personId) => _withPoints(
+    (repo, token) => repo.getDocuments(token, personId: personId),
+  );
 
   Future<DocumentEntry> createDocument({
     required int personId,
@@ -262,8 +306,9 @@ class AuthController extends ChangeNotifier {
     );
   }
 
-  Future<void> deleteDocument(int documentId) =>
-      _withPoints((repo, token) => repo.deleteDocument(token, documentId: documentId));
+  Future<void> deleteDocument(int documentId) => _withPoints(
+    (repo, token) => repo.deleteDocument(token, documentId: documentId),
+  );
 
   /// Shared guard for the person-scoped calls: both a configured repository and
   /// a live session are required before any of them can run.

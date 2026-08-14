@@ -8,11 +8,19 @@ import '../features/auth/application/auth_controller.dart';
 import '../features/auth/data/http_auth_repository.dart';
 import '../features/auth/data/token_storage.dart';
 import '../features/auth/presentation/auth_gate.dart';
+import '../features/colleagues/data/http_colleagues_repository.dart';
+import '../features/point_report/data/http_point_report_repository.dart';
+import 'theme.dart';
+import 'theme_controller.dart';
 
 class OneOrgStaffApp extends StatefulWidget {
-  const OneOrgStaffApp({super.key, this.controller});
+  const OneOrgStaffApp({super.key, this.controller, this.themeController});
 
   final AuthController? controller;
+
+  /// Injected by tests so they can start from a known appearance without
+  /// touching the platform's preference store.
+  final ThemeController? themeController;
 
   @override
   State<OneOrgStaffApp> createState() => _OneOrgStaffAppState();
@@ -21,7 +29,8 @@ class OneOrgStaffApp extends StatefulWidget {
 class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
   late final bool _ownsController;
   late final AuthController _controller;
-  ThemeMode _themeMode = ThemeMode.light;
+  late final bool _ownsThemeController;
+  late final ThemeController _themeController;
   http.Client? _client;
 
   @override
@@ -45,12 +54,28 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
           client: _client!,
           baseUrl: ApiConfig.baseUrl,
         ),
+        colleaguesRepository: HttpColleaguesRepository(
+          client: _client!,
+          baseUrl: ApiConfig.baseUrl,
+        ),
+        pointReportRepository: HttpPointReportRepository(
+          client: _client!,
+          baseUrl: ApiConfig.baseUrl,
+        ),
       );
     } else {
       _controller = widget.controller!;
     }
 
     _controller.restoreSession();
+
+    _ownsThemeController = widget.themeController == null;
+    _themeController = widget.themeController ?? ThemeController();
+    if (_ownsThemeController) {
+      // Fire-and-forget: the defaults render immediately and the stored
+      // preferences swap in a frame later, which beats holding a blank screen.
+      _themeController.load();
+    }
   }
 
   @override
@@ -59,75 +84,39 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
       _controller.dispose();
       _client?.close();
     }
-    super.dispose();
-  }
-
-  void _handleThemeModeChanged(ThemeMode themeMode) {
-    if (_themeMode == themeMode) {
-      return;
+    if (_ownsThemeController) {
+      _themeController.dispose();
     }
-
-    setState(() {
-      _themeMode = themeMode;
-    });
-  }
-
-  ThemeData _buildTheme(Brightness brightness) {
-    const seedColor = Color(0xFF1F5E89);
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: seedColor,
-      brightness: brightness,
-    );
-    final isDarkMode = brightness == Brightness.dark;
-
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: isDarkMode
-          ? const Color(0xFF0E131A)
-          : const Color(0xFFF3F6FB),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        },
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: isDarkMode ? const Color(0xFF19202A) : Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.2),
-        ),
-      ),
-    );
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Dombit School',
-      debugShowCheckedModeBanner: false,
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
-      themeMode: _themeMode,
-      home: AuthGate(
-        controller: _controller,
-        themeMode: _themeMode,
-        onThemeModeChanged: _handleThemeModeChanged,
-      ),
+    // Rebuilds on every appearance change, so picking an accent or a dark
+    // flavor recolours the running app immediately.
+    return AnimatedBuilder(
+      animation: _themeController,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Dombit School',
+          debugShowCheckedModeBanner: false,
+          theme: buildAppTheme(
+            accent: _themeController.accent,
+            brightness: Brightness.light,
+            darkVariant: _themeController.darkVariant,
+          ),
+          darkTheme: buildAppTheme(
+            accent: _themeController.accent,
+            brightness: Brightness.dark,
+            darkVariant: _themeController.darkVariant,
+          ),
+          themeMode: _themeController.themeMode,
+          home: AuthGate(
+            controller: _controller,
+            themeController: _themeController,
+          ),
+        );
+      },
     );
   }
 }

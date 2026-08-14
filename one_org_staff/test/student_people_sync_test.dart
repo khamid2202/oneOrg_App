@@ -173,59 +173,65 @@ void main() {
       });
     });
 
-    test('an existing contact on the same phone is updated, not duplicated', () async {
-      final log = _Recorder();
-      await _sync(
-        log,
-        contacts: const [
-          ContactEntry(
-            id: 7,
-            personId: 100,
-            fullName: 'Old Name',
-            relationship: 'other',
-            phoneNumber: '+998901112233',
-          ),
-        ],
-      ).saveGuardian(
-        personId: 100,
-        guardianId: 3,
-        fullName: 'Valijon Valiyev',
-        relation: 'father',
-        phone: '+998901112233',
-      );
+    test(
+      'an existing contact on the same phone is updated, not duplicated',
+      () async {
+        final log = _Recorder();
+        await _sync(
+          log,
+          contacts: const [
+            ContactEntry(
+              id: 7,
+              personId: 100,
+              fullName: 'Old Name',
+              relationship: 'other',
+              phoneNumber: '+998901112233',
+            ),
+          ],
+        ).saveGuardian(
+          personId: 100,
+          guardianId: 3,
+          fullName: 'Valijon Valiyev',
+          relation: 'father',
+          phone: '+998901112233',
+        );
 
-      expect(log.contactCreates, isEmpty);
-      expect(log.contactUpdates.single['contactId'], 7);
-      expect(log.contactUpdates.single['fullName'], 'Valijon Valiyev');
-    });
+        expect(log.contactCreates, isEmpty);
+        expect(log.contactUpdates.single['contactId'], 7);
+        expect(log.contactUpdates.single['fullName'], 'Valijon Valiyev');
+      },
+    );
 
-    test('changing the number moves the mirror instead of orphaning it', () async {
-      final log = _Recorder();
-      await _sync(
-        log,
-        contacts: const [
-          ContactEntry(
-            id: 7,
-            personId: 100,
-            fullName: 'Valijon',
-            relationship: 'father',
-            phoneNumber: '+998901112233',
-          ),
-        ],
-      ).saveGuardian(
-        personId: 100,
-        guardianId: 3,
-        fullName: 'Valijon',
-        relation: 'father',
-        phone: '+998900000000',
-        previousPhone: '+998901112233',
-      );
+    test(
+      'changing the number moves the mirror instead of orphaning it',
+      () async {
+        final log = _Recorder();
+        await _sync(
+          log,
+          contacts: const [
+            ContactEntry(
+              id: 7,
+              personId: 100,
+              fullName: 'Valijon',
+              relationship: 'father',
+              phoneNumber: '+998901112233',
+            ),
+          ],
+        ).saveGuardian(
+          personId: 100,
+          guardianId: 3,
+          fullName: 'Valijon',
+          relation: 'father',
+          phone: '+998900000000',
+          previousPhone: '+998901112233',
+        );
 
-      // Matched on the old number, so the same contact row is repointed.
-      expect(log.contactCreates, isEmpty);
-      expect(log.contactUpdates.single['contactId'], 7);
-      expect(log.contactUpdates.single['phoneNumber'], '+998900000000');
-    });
+        // Matched on the old number, so the same contact row is repointed.
+        expect(log.contactCreates, isEmpty);
+        expect(log.contactUpdates.single['contactId'], 7);
+        expect(log.contactUpdates.single['phoneNumber'], '+998900000000');
+      },
+    );
 
     test('an identical mirror is left alone', () async {
       final log = _Recorder();

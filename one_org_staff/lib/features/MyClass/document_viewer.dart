@@ -2,6 +2,8 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+
+import 'package:one_org_staff/app/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -217,10 +219,7 @@ class _ViewerHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
@@ -273,10 +272,7 @@ class _ViewerMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Center(
       child: Padding(

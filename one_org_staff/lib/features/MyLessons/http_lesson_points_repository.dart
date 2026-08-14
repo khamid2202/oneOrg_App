@@ -142,9 +142,7 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
     final response = await _client.get(
       _buildUri(
         '/groups',
-        queryParameters: {
-          'academic_year_id': academicYearId.toString(),
-        },
+        queryParameters: {'academic_year_id': academicYearId.toString()},
       ),
       headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
@@ -158,7 +156,10 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
 
     final groups = <GroupEntry>[];
     if (responseBody is Map<String, dynamic>) {
-      final results = responseBody['groups'] ?? responseBody['data'] ?? responseBody['result'];
+      final results =
+          responseBody['groups'] ??
+          responseBody['data'] ??
+          responseBody['result'];
       if (results is List) {
         for (final item in results) {
           if (item is Map<String, dynamic>) {
@@ -449,17 +450,15 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
   }) async {
     // docs/staff/persons.md: multipart field `file`, responds with
     // { ok, picture_url }.
-    final request = http.MultipartRequest(
-      'POST',
-      _buildUri('/persons/$personId/picture'),
-    )
-      ..headers.addAll({
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      })
-      ..files.add(
-        http.MultipartFile.fromBytes('file', bytes, filename: filename),
-      );
+    final request =
+        http.MultipartRequest('POST', _buildUri('/persons/$personId/picture'))
+          ..headers.addAll({
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          })
+          ..files.add(
+            http.MultipartFile.fromBytes('file', bytes, filename: filename),
+          );
 
     final streamed = await _client.send(request);
     final response = await http.Response.fromStream(streamed);
@@ -542,9 +541,7 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
     final response = await _client.get(
       _buildUri(
         '/contacts',
-        queryParameters: {
-          'person_id': personId.toString(),
-        },
+        queryParameters: {'person_id': personId.toString()},
       ),
       headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
@@ -646,10 +643,7 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
   }
 
   @override
-  Future<void> deleteContact(
-    String token, {
-    required int contactId,
-  }) async {
+  Future<void> deleteContact(String token, {required int contactId}) async {
     final response = await _client.delete(
       _buildUri('/contacts/$contactId'),
       headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},

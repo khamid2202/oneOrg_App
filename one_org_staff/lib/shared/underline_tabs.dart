@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:one_org_staff/app/theme.dart';
+
 /// One tab in an [UnderlineTabs] bar.
 class UnderlineTabItem<T> {
   const UnderlineTabItem({
@@ -37,12 +39,8 @@ class UnderlineTabs<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
-    final inactive = isDarkMode
-        ? const Color(0xFF8FA3B8)
-        : const Color(0xFF64748B);
-    final ruleColor = isDarkMode
-        ? const Color(0xFF273445)
-        : const Color(0xFFE2E8F0);
+    final inactive = appColorsOf(context).mutedText;
+    final ruleColor = appColorsOf(context).line;
 
     return DecoratedBox(
       decoration: BoxDecoration(

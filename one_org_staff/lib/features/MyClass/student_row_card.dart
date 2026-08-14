@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 
 import 'my_class.dart';
@@ -15,15 +17,14 @@ class StudentRowCard extends StatelessWidget {
   final StudentEntry student;
   final ClassField field;
   final bool isDarkMode;
+
   /// Null makes the row inert — used by the read-only Status field.
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return InkWell(
       onTap: onTap,
@@ -33,13 +34,9 @@ class StudentRowCard extends StatelessWidget {
       child: Ink(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF1A2430) : Colors.white,
+          color: appColorsOf(context).card,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDarkMode
-                ? const Color(0xFF273445)
-                : const Color(0xFFD7E1EE),
-          ),
+          border: Border.all(color: appColorsOf(context).line),
         ),
         child: Row(
           children: [
@@ -90,9 +87,7 @@ class _StudentAvatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: 20,
-      backgroundColor: isDarkMode
-          ? const Color(0xFF223042)
-          : const Color(0xFFE8F0FA),
+      backgroundColor: appColorsOf(context).softBg,
       backgroundImage: hasPicture ? NetworkImage(pictureUrl) : null,
       // A broken or offline photo must not take the row down with it.
       onBackgroundImageError: hasPicture ? (_, _) {} : null,
@@ -101,9 +96,7 @@ class _StudentAvatar extends StatelessWidget {
           : Icon(
               Icons.person_rounded,
               size: 20,
-              color: isDarkMode
-                  ? const Color(0xFF64AFFF)
-                  : const Color(0xFF1F5E89),
+              color: appColorsOf(context).softText,
             ),
     );
   }
@@ -144,9 +137,7 @@ class _CodeText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Text(
       code ?? '—',
@@ -171,7 +162,7 @@ class _StatusChip extends StatelessWidget {
     final color = switch (normalized) {
       'present' || 'active' => const Color(0xFF16A34A),
       'left' || 'inactive' => const Color(0xFFFB7185),
-      null => isDarkMode ? const Color(0xFF9DB0C1) : const Color(0xFF5C738B),
+      null => appColorsOf(context).mutedText,
       _ => const Color(0xFFFBBF24),
     };
 
@@ -205,9 +196,7 @@ class _ContactsSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     if (contacts.isEmpty) {
       return Text(

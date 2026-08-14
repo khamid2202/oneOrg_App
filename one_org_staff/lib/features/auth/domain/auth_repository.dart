@@ -52,7 +52,15 @@ class AppUserProfile {
   }
 
   factory AppUserProfile.fromJson(Map<String, dynamic> json) {
-    final id = _asInt(json['id'] ?? json['userId'] ?? json['user_id'] ?? json['teacher_id'] ?? json['teacherId']) ?? 0;
+    final id =
+        _asInt(
+          json['id'] ??
+              json['userId'] ??
+              json['user_id'] ??
+              json['teacher_id'] ??
+              json['teacherId'],
+        ) ??
+        0;
     final role = _firstString(json, const [
       'role',
       'position',
@@ -61,19 +69,19 @@ class AppUserProfile {
       'jobTitle',
     ]);
     final department =
-            _firstString(json, const ['department', 'department_name']) ??
+        _firstString(json, const ['department', 'department_name']) ??
         _nestedString(json['department']) ??
         _nestedString(json['group']) ??
         'Not specified';
     final firstName =
         _firstString(json, const ['first_name', 'firstName']) ?? '';
     final lastName = _firstString(json, const ['last_name', 'lastName']) ?? '';
-    final combinedName = [firstName, lastName]
-        .where((part) => part.trim().isNotEmpty)
-        .join(' ')
-        .trim();
+    final combinedName = [
+      firstName,
+      lastName,
+    ].where((part) => part.trim().isNotEmpty).join(' ').trim();
     final fullName =
-            _firstString(json, const ['full_name', 'fullName', 'name']) ??
+        _firstString(json, const ['full_name', 'fullName', 'name']) ??
         (combinedName.isNotEmpty ? combinedName : null) ??
         _firstString(json, const ['username', 'email']) ??
         'OneOrg Staff User';
@@ -103,10 +111,12 @@ class AppUserProfile {
       username: _firstString(json, const ['username', 'user_name', 'userName']),
       status: _firstString(json, const ['status']),
       roles: roles,
-      subtitle:
-          subtitleParts.isEmpty ? 'Staff member' : subtitleParts.join(' • '),
+      subtitle: subtitleParts.isEmpty
+          ? 'Staff member'
+          : subtitleParts.join(' • '),
       email: _firstString(json, const ['email']) ?? 'Not specified',
-      phone: _firstString(json, const [
+      phone:
+          _firstString(json, const [
             'phone',
             'phone_number',
             'phoneNumber',
@@ -124,6 +134,15 @@ class AppUserProfile {
             'Not specified',
       ),
       profileImageUrl: _firstString(json, const [
+        // `picture_url` first — it is the field the API actually returns, on
+        // the user object and from the picture endpoints alike (see
+        // docs/staff/users.md). Leaving it out was why an uploaded photo
+        // showed once and then vanished: the upload response was read
+        // correctly, but the next `/users/me` load found none of these keys
+        // and reset the avatar to null.
+        'picture_url',
+        'pictureUrl',
+        'picture',
         'avatar',
         'avatar_url',
         'avatarUrl',
@@ -206,10 +225,7 @@ class AppUserProfile {
 }
 
 abstract class AuthRepository {
-  Future<String> signIn({
-    required String username,
-    required String password,
-  });
+  Future<String> signIn({required String username, required String password});
 
   Future<String> updatePassword(
     String token, {

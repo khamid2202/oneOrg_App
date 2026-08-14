@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:one_org_staff/app/theme.dart';
+
 import 'package:one_org_staff/features/MyLessons/lesson_points.dart';
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 import 'package:one_org_staff/features/TimeTable/time_table_repository.dart';
-import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 
 class MyLessonsPage extends StatefulWidget {
   const MyLessonsPage({
@@ -21,7 +22,8 @@ class MyLessonsPage extends StatefulWidget {
     required int groupId,
     required DateTime date,
     int? subjectId,
-  }) loadPointsForGroupAndDate;
+  })
+  loadPointsForGroupAndDate;
 
   @override
   State<MyLessonsPage> createState() => _MyLessonsPageState();
@@ -167,9 +169,7 @@ class _MyLessonsPageState extends State<MyLessonsPage> {
   }
 
   Color _mutedTextColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFFB7C3D1)
-        : const Color(0xFF5C738B);
+    return appColorsOf(context).mutedText;
   }
 }
 
@@ -192,11 +192,9 @@ class _DateToolbar extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1A2430) : const Color(0xFFF4F7FB),
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDarkMode ? const Color(0xFF273445) : const Color(0xFFD7E1EE),
-        ),
+        border: Border.all(color: appColorsOf(context).line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,9 +220,7 @@ class _DateToolbar extends StatelessWidget {
                     Text(
                       _relativeLabel(selectedDate),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isDarkMode
-                            ? const Color(0xFF9DB0C1)
-                            : const Color(0xFF5C738B),
+                        color: appColorsOf(context).mutedText,
                       ),
                     ),
                   ],
@@ -301,10 +297,9 @@ class _ToolbarIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Ink(
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF223042) : Colors.white,
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(16),
       ),
       child: IconButton(onPressed: onPressed, icon: Icon(icon)),
@@ -320,10 +315,7 @@ class _LessonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
     final classLabel = lesson.groupLabel ?? 'Class';
 
     return InkWell(
@@ -333,13 +325,9 @@ class _LessonCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF1A2430) : const Color(0xFFF4F7FB),
+          color: appColorsOf(context).card,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDarkMode
-                ? const Color(0xFF273445)
-                : const Color(0xFFD7E1EE),
-          ),
+          border: Border.all(color: appColorsOf(context).line),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,9 +336,7 @@ class _LessonCard extends StatelessWidget {
               width: 100,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
               decoration: BoxDecoration(
-                color: isDarkMode
-                    ? const Color(0xFF223042)
-                    : const Color(0xFFE8F0FA),
+                color: appColorsOf(context).softBg,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Column(
@@ -362,9 +348,7 @@ class _LessonCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
-                      color: isDarkMode
-                          ? const Color(0xFFE8F0FA)
-                          : const Color(0xFF16324A),
+                      color: appColorsOf(context).softText,
                     ),
                   ),
                 ],
@@ -447,15 +431,12 @@ class _MetaBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF223042) : Colors.white,
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: isDarkMode ? const Color(0xFF304154) : const Color(0xFFD7E1EE),
-        ),
+        border: Border.all(color: appColorsOf(context).line),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -485,9 +466,7 @@ class _EmptyLessonsState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF1A2430)
-            : const Color(0xFFF4F7FB),
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -525,9 +504,7 @@ class _MyLessonsErrorState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF1A2430)
-            : const Color(0xFFF4F7FB),
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(

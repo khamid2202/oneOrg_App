@@ -114,6 +114,21 @@ void main() {
       expect(profile.status, 'active');
       expect(profile.roles, ['admin', 'cashier', 'teacher']);
       expect(profile.phone, '+998906961898');
+      expect(profile.profileImageUrl, isNull);
+    });
+
+    test('reads the avatar from picture_url, the field the API sends', () {
+      // Regression: an uploaded photo appeared once and then vanished on the
+      // next profile load, because this parser looked for `avatar`/`photo`/
+      // `image` but never `picture_url` (docs/staff/users.md).
+      final profile = AppUserProfile.fromJson(const {
+        'id': 11,
+        'username': 'bobur',
+        'full_name': 'Bobur',
+        'picture_url': 'https://cdn.example.com/users/11/a.jpg',
+      });
+
+      expect(profile.profileImageUrl, 'https://cdn.example.com/users/11/a.jpg');
     });
 
     test('copyWithProfileImageUrl keeps every other field', () {
@@ -153,11 +168,8 @@ void main() {
             ownerId: 11,
             isDarkMode: false,
             uploadPicture:
-                ({
-                  required ownerId,
-                  required bytes,
-                  required filename,
-                }) async => null,
+                ({required ownerId, required bytes, required filename}) async =>
+                    null,
             removePicture: onRemove,
             onChanged: onChanged ?? (_) {},
             onError: (_) {},
@@ -178,7 +190,11 @@ void main() {
               ownerId: 11,
               isDarkMode: false,
               uploadPicture:
-                  ({required ownerId, required bytes, required filename}) async {
+                  ({
+                    required ownerId,
+                    required bytes,
+                    required filename,
+                  }) async {
                     throw const AuthFailure('Forbidden resource');
                   },
               removePicture: ({required ownerId}) async {

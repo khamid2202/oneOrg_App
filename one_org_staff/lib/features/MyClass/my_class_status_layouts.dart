@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'package:one_org_staff/app/theme.dart';
+
 class NoHomeroomLayout extends StatelessWidget {
   const NoHomeroomLayout({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final mutedColor = isDarkMode ? const Color(0xFF9DB0C1) : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Center(
       child: Column(
@@ -21,7 +22,9 @@ class NoHomeroomLayout extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             'No Assigned Class',
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -36,11 +39,7 @@ class NoHomeroomLayout extends StatelessWidget {
 }
 
 class ErrorLayout extends StatelessWidget {
-  const ErrorLayout({
-    super.key,
-    required this.message,
-    required this.onRetry,
-  });
+  const ErrorLayout({super.key, required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
@@ -52,7 +51,11 @@ class ErrorLayout extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline_rounded, size: 44, color: Colors.redAccent),
+          const Icon(
+            Icons.error_outline_rounded,
+            size: 44,
+            color: Colors.redAccent,
+          ),
           const SizedBox(height: 14),
           Text(
             message,

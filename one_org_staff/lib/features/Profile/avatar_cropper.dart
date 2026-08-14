@@ -2,6 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'package:one_org_staff/app/theme.dart';
 import 'package:image/image.dart' as img;
 
 /// Preview viewport, in logical pixels. Matches the web cropper.
@@ -276,10 +278,7 @@ class _AvatarCropperState extends State<AvatarCropper> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return AlertDialog(
       title: const Text('Adjust photo'),
@@ -292,9 +291,7 @@ class _AvatarCropperState extends State<AvatarCropper> {
             if (_decodeError != null)
               const SizedBox(
                 height: kCropViewSize,
-                child: Center(
-                  child: Text('That image could not be opened.'),
-                ),
+                child: Center(child: Text('That image could not be opened.')),
               )
             else if (_image == null)
               const SizedBox(

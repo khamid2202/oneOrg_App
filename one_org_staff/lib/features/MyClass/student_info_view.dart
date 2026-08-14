@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:one_org_staff/app/theme.dart';
+
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 import 'package:one_org_staff/shared/editable_avatar.dart';
 import 'package:one_org_staff/shared/underline_tabs.dart';
@@ -229,9 +231,9 @@ class _StudentInfoViewState extends State<StudentInfoView> {
   Future<void> _save() async {
     final changes = _edited.diffFrom(_saved);
     if (changes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No changes to save.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No changes to save.')));
       return;
     }
 
@@ -253,9 +255,9 @@ class _StudentInfoViewState extends State<StudentInfoView> {
         _resetFieldsFromSaved();
       });
       widget.onSaved(widget.student, result);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Student details saved.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Student details saved.')));
     } catch (error) {
       if (mounted) {
         setState(() => _errorMessage = error.toString());
@@ -313,10 +315,9 @@ class _StudentInfoViewState extends State<StudentInfoView> {
             setState(() => _pictureUrl = url);
             widget.onPictureChanged(widget.student, url);
           },
-          onError: (message) =>
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(message)),
-              ),
+          onError: (message) => ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message))),
         ),
         const SizedBox(height: 16),
         UnderlineTabs<StudentTab>(
@@ -367,136 +368,135 @@ class _StudentInfoViewState extends State<StudentInfoView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-      _FormCard(
-        title: 'Details',
-        icon: Icons.info_outline_rounded,
-        headerColor: const Color(0xFF3E88C0),
-        isDarkMode: isDarkMode,
-        children: [
-          _FieldLabel(label: 'Birth Date', isDarkMode: isDarkMode),
-          const SizedBox(height: 6),
-          _DateField(
-            value: _birthDate,
-            isDarkMode: isDarkMode,
-            onTap: _pickBirthDate,
-            onClear: _birthDate == null
-                ? null
-                : () => setState(() => _birthDate = null),
-          ),
-          const SizedBox(height: 16),
-          _FieldLabel(label: 'Gender', isDarkMode: isDarkMode),
-          const SizedBox(height: 6),
-          _SegmentedToggle(
-            options: const ['female', 'male'],
-            labels: const ['Female', 'Male'],
-            selected: _gender,
-            isDarkMode: isDarkMode,
-            onSelected: (value) => setState(
-              () => _gender = _gender == value ? null : value,
+        _FormCard(
+          title: 'Details',
+          icon: Icons.info_outline_rounded,
+          headerColor: appColorsOf(context).ring,
+          isDarkMode: isDarkMode,
+          children: [
+            _FieldLabel(label: 'Birth Date', isDarkMode: isDarkMode),
+            const SizedBox(height: 6),
+            _DateField(
+              value: _birthDate,
+              isDarkMode: isDarkMode,
+              onTap: _pickBirthDate,
+              onClear: _birthDate == null
+                  ? null
+                  : () => setState(() => _birthDate = null),
             ),
-          ),
-          const SizedBox(height: 16),
-          _FieldLabel(label: 'Phone', isDarkMode: isDarkMode),
-          const SizedBox(height: 6),
-          _TextField(
-            controller: _phoneController,
-            hintText: '+998',
-            keyboardType: TextInputType.phone,
-            isDarkMode: isDarkMode,
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 16),
-          _FieldLabel(label: 'Address', isDarkMode: isDarkMode),
-          const SizedBox(height: 6),
-          _TextField(
-            controller: _addressController,
-            hintText: 'e.g., Street, City, Country',
-            isDarkMode: isDarkMode,
-            onChanged: (_) => setState(() {}),
-          ),
-        ],
-      ),
-      const SizedBox(height: 16),
-      _FormCard(
-        title: 'Identification Type',
-        icon: Icons.badge_outlined,
-        headerColor: const Color(0xFF2F9E77),
-        isDarkMode: isDarkMode,
-        children: [
-          _SegmentedToggle(
-            options: const ['passport', 'birth_certificate'],
-            labels: const ['Passport', 'Birth Certificate'],
-            selected: _identificationType == IdentificationType.passport
-                ? 'passport'
-                : 'birth_certificate',
-            isDarkMode: isDarkMode,
-            onSelected: (value) {
-              setState(() {
-                _identificationType = value == 'passport'
-                    ? IdentificationType.passport
-                    : IdentificationType.birthCertificate;
-                _identificationController.text =
-                    _numberFor(_identificationType) ?? '';
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          _FieldLabel(
-            label: _identificationType == IdentificationType.passport
-                ? 'Passport Number'
-                : 'Birth Certificate Number',
-            isDarkMode: isDarkMode,
-          ),
-          const SizedBox(height: 6),
-          _TextField(
-            controller: _identificationController,
-            hintText: _identificationType == IdentificationType.passport
-                ? 'Passport Number'
-                : 'Birth Certificate Number',
-            isDarkMode: isDarkMode,
-            onChanged: (_) => setState(() {}),
-          ),
-        ],
-      ),
-      if (_errorMessage != null) ...[
-        const SizedBox(height: 14),
-        Text(
-          _errorMessage!,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.error,
-          ),
+            const SizedBox(height: 16),
+            _FieldLabel(label: 'Gender', isDarkMode: isDarkMode),
+            const SizedBox(height: 6),
+            _SegmentedToggle(
+              options: const ['female', 'male'],
+              labels: const ['Female', 'Male'],
+              selected: _gender,
+              isDarkMode: isDarkMode,
+              onSelected: (value) =>
+                  setState(() => _gender = _gender == value ? null : value),
+            ),
+            const SizedBox(height: 16),
+            _FieldLabel(label: 'Phone', isDarkMode: isDarkMode),
+            const SizedBox(height: 6),
+            _TextField(
+              controller: _phoneController,
+              hintText: '+998',
+              keyboardType: TextInputType.phone,
+              isDarkMode: isDarkMode,
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 16),
+            _FieldLabel(label: 'Address', isDarkMode: isDarkMode),
+            const SizedBox(height: 6),
+            _TextField(
+              controller: _addressController,
+              hintText: 'e.g., Street, City, Country',
+              isDarkMode: isDarkMode,
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
         ),
-      ],
-      const SizedBox(height: 18),
-      Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: _isSaving || !_isDirty ? null : _cancel,
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: const Text('Cancel'),
+        const SizedBox(height: 16),
+        _FormCard(
+          title: 'Identification Type',
+          icon: Icons.badge_outlined,
+          headerColor: const Color(0xFF2F9E77),
+          isDarkMode: isDarkMode,
+          children: [
+            _SegmentedToggle(
+              options: const ['passport', 'birth_certificate'],
+              labels: const ['Passport', 'Birth Certificate'],
+              selected: _identificationType == IdentificationType.passport
+                  ? 'passport'
+                  : 'birth_certificate',
+              isDarkMode: isDarkMode,
+              onSelected: (value) {
+                setState(() {
+                  _identificationType = value == 'passport'
+                      ? IdentificationType.passport
+                      : IdentificationType.birthCertificate;
+                  _identificationController.text =
+                      _numberFor(_identificationType) ?? '';
+                });
+              },
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: FilledButton(
-              onPressed: _isSaving || !_isDirty ? null : _save,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save changes'),
+            const SizedBox(height: 16),
+            _FieldLabel(
+              label: _identificationType == IdentificationType.passport
+                  ? 'Passport Number'
+                  : 'Birth Certificate Number',
+              isDarkMode: isDarkMode,
+            ),
+            const SizedBox(height: 6),
+            _TextField(
+              controller: _identificationController,
+              hintText: _identificationType == IdentificationType.passport
+                  ? 'Passport Number'
+                  : 'Birth Certificate Number',
+              isDarkMode: isDarkMode,
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+        ),
+        if (_errorMessage != null) ...[
+          const SizedBox(height: 14),
+          Text(
+            _errorMessage!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
             ),
           ),
         ],
-      ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _isSaving || !_isDirty ? null : _cancel,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text('Cancel'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton(
+                onPressed: _isSaving || !_isDirty ? null : _save,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save changes'),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -537,21 +537,15 @@ class _IdentityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
+    final mutedColor = appColorsOf(context).mutedText;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF121A24) : Colors.white,
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDarkMode
-              ? const Color(0xFF273445)
-              : const Color(0xFFD7E1EE),
-        ),
+        border: Border.all(color: appColorsOf(context).line),
       ),
       child: Row(
         children: [
@@ -630,13 +624,9 @@ class _FormCard extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF121A24) : Colors.white,
+        color: appColorsOf(context).card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDarkMode
-              ? const Color(0xFF273445)
-              : const Color(0xFFD7E1EE),
-        ),
+        border: Border.all(color: appColorsOf(context).line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -684,7 +674,7 @@ class _FieldLabel extends StatelessWidget {
       label,
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
         fontWeight: FontWeight.w700,
-        color: isDarkMode ? const Color(0xFFC6D3E1) : const Color(0xFF44566B),
+        color: appColorsOf(context).mutedText,
       ),
     );
   }
@@ -707,9 +697,7 @@ class _TextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isDarkMode
-        ? const Color(0xFF3A4B5F)
-        : const Color(0xFFD7E1EE);
+    final borderColor = appColorsOf(context).line;
 
     return TextField(
       controller: controller,
@@ -719,7 +707,7 @@ class _TextField extends StatelessWidget {
         hintText: hintText,
         isDense: true,
         filled: true,
-        fillColor: isDarkMode ? const Color(0xFF19202A) : Colors.white,
+        fillColor: appColorsOf(context).card,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
@@ -760,12 +748,8 @@ class _DateField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = isDarkMode
-        ? const Color(0xFF9DB0C1)
-        : const Color(0xFF5C738B);
-    final borderColor = isDarkMode
-        ? const Color(0xFF3A4B5F)
-        : const Color(0xFFD7E1EE);
+    final mutedColor = appColorsOf(context).mutedText;
+    final borderColor = appColorsOf(context).line;
 
     return InkWell(
       onTap: onTap,
@@ -773,7 +757,7 @@ class _DateField extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF19202A) : Colors.white,
+          color: appColorsOf(context).card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: borderColor),
         ),
@@ -784,9 +768,7 @@ class _DateField extends StatelessWidget {
                 value == null ? 'dd/mm/yyyy' : _format(value!),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: value == null ? mutedColor : null,
-                  fontWeight: value == null
-                      ? FontWeight.w400
-                      : FontWeight.w600,
+                  fontWeight: value == null ? FontWeight.w400 : FontWeight.w600,
                 ),
               ),
             ),
@@ -828,12 +810,8 @@ class _SegmentedToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final borderColor = isDarkMode
-        ? const Color(0xFF3A4B5F)
-        : const Color(0xFFD7E1EE);
-    final unselectedForeground = isDarkMode
-        ? const Color(0xFFC6D3E1)
-        : const Color(0xFF44566B);
+    final borderColor = appColorsOf(context).line;
+    final unselectedForeground = appColorsOf(context).mutedText;
 
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -848,7 +826,7 @@ class _SegmentedToggle extends StatelessWidget {
               child: Material(
                 color: selected == options[index]
                     ? primary
-                    : (isDarkMode ? const Color(0xFF19202A) : Colors.white),
+                    : (appColorsOf(context).card),
                 child: InkWell(
                   onTap: () => onSelected(options[index]),
                   child: Padding(
@@ -868,7 +846,11 @@ class _SegmentedToggle extends StatelessWidget {
               ),
             ),
             if (index != options.length - 1)
-              SizedBox(width: 1, height: 46, child: ColoredBox(color: borderColor)),
+              SizedBox(
+                width: 1,
+                height: 46,
+                child: ColoredBox(color: borderColor),
+              ),
           ],
         ],
       ),

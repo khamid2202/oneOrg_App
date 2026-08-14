@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:one_org_staff/features/BottomBar/bottom_menu.dart';
 import 'package:one_org_staff/app/swipe_back_detector.dart';
+import 'package:one_org_staff/app/theme.dart';
+import 'package:one_org_staff/app/theme_controller.dart';
 import 'package:one_org_staff/features/MyClass/my_class.dart';
 import 'package:one_org_staff/features/MyClass/student_info_view.dart';
 import 'package:one_org_staff/features/MyClass/student_people_sync.dart';
@@ -10,22 +12,23 @@ import 'package:one_org_staff/features/Profile/profilepage.dart';
 import 'package:one_org_staff/features/TimeTable/TimeTable.dart';
 import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
+import 'package:one_org_staff/features/colleagues/presentation/colleagues_page.dart';
+import 'package:one_org_staff/features/point_report/presentation/point_report_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({
     super.key,
     required this.controller,
-    required this.themeMode,
-    required this.onThemeModeChanged,
+    required this.themeController,
   });
 
   final AuthController controller;
-  final ThemeMode themeMode;
-  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ThemeController themeController;
 
   @override
   State<LandingPage> createState() => _LandingPageState();
 }
+
 // Home Tab Content 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁
 class _LandingPageState extends State<LandingPage> {
   static const _bottomMenuOverlaySpace = 156.0;
@@ -44,10 +47,10 @@ class _LandingPageState extends State<LandingPage> {
       subtitle: 'Your lessons section will appear here.',
     ),
     _LandingTabItem(
-      label: 'Timetable',
-      icon: Icons.calendar_month_rounded,
-      title: 'Timetable',
-      subtitle: 'Your class schedule and timing blocks will appear here.',
+      label: 'Colleagues',
+      icon: Icons.groups_rounded,
+      title: 'Colleagues',
+      subtitle: 'The staff directory with phone numbers.',
     ),
     _LandingTabItem(
       label: 'Profile',
@@ -56,6 +59,18 @@ class _LandingPageState extends State<LandingPage> {
       subtitle: 'Your staff profile and settings will appear here.',
     ),
   ];
+
+  // Tab indices. The first [_items].length are the navbar buttons, in order;
+  // the rest deliberately sit past the end — Timetable, My Class and the point
+  // report have no navbar button and are opened from the dashboard, which is
+  // also why the navbar highlights nothing while one of them is showing.
+  static const _homeTab = 0;
+  static const _lessonsTab = 1;
+  static const _colleaguesTab = 2;
+  static const _profileTab = 3;
+  static const _timetableTab = 4;
+  static const _myClassTab = 5;
+  static const _pointReportTab = 6;
 
   int _selectedIndex = 0;
   bool _returningViaSwipe = false;
@@ -72,7 +87,9 @@ class _LandingPageState extends State<LandingPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out of the staff application?'),
+        content: const Text(
+          'Are you sure you want to sign out of the staff application?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -94,47 +111,115 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
+  /// Opens the header avatar full size. With no photo set there is nothing to
+  /// enlarge, so the tap does nothing rather than showing a blown-up initial.
+  void _showAvatarPreview(String name, String? avatarUrl) {
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.85),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.all(24),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            // Tapping the photo closes it too — the whole surface is the
+            // dismiss target, which is what people expect of a lightbox.
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: InteractiveViewer(
+                  minScale: 1.0,
+                  maxScale: 4.0,
+                  child: Image.network(
+                    avatarUrl,
+                    fit: BoxFit.contain,
+                    semanticLabel: '$name profile photo',
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) {
+                        return child;
+                      }
+                      return const SizedBox(
+                        height: 240,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox(
+                          height: 240,
+                          child: Center(
+                            child: Text(
+                              'Could not load the photo',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close_rounded, color: Colors.white),
+              tooltip: 'Close',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeader(bool isDarkMode) {
     return FutureBuilder<AppUserProfile>(
       future: _profileFuture ??= widget.controller.loadCurrentUserProfile(),
       builder: (context, snapshot) {
+        final colors = appColorsOf(context);
         final profile = snapshot.data;
         final String name = profile?.fullName ?? 'Staff Member';
         final String? avatarUrl = profile?.profileImageUrl;
 
         return Row(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF64AFFF).withValues(alpha: 0.3),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF64AFFF).withValues(alpha: 0.15),
-                    blurRadius: 12,
-                    spreadRadius: 2,
+            GestureDetector(
+              onTap: () => _showAvatarPreview(name, avatarUrl),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: colors.ring.withValues(alpha: 0.3),
+                    width: 2,
                   ),
-                ],
-              ),
-              child: CircleAvatar(
-                radius: 28,
-                backgroundColor: isDarkMode ? const Color(0xFF1F2E40) : const Color(0xFFE1EDFA),
-                backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                    ? NetworkImage(avatarUrl)
-                    : null,
-                child: avatarUrl == null || avatarUrl.isEmpty
-                    ? Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: isDarkMode ? const Color(0xFF64AFFF) : const Color(0xFF1E5C99),
-                        ),
-                      )
-                    : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.ring.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: colors.softBg,
+                  backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                      ? NetworkImage(avatarUrl)
+                      : null,
+                  child: avatarUrl == null || avatarUrl.isEmpty
+                      ? Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: colors.softText,
+                          ),
+                        )
+                      : null,
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -145,11 +230,9 @@ class _LandingPageState extends State<LandingPage> {
                   Text(
                     name,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: isDarkMode
-                              ? const Color(0xFFF5F7FB)
-                              : const Color(0xFF16324A),
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -159,29 +242,22 @@ class _LandingPageState extends State<LandingPage> {
             const SizedBox(width: 12),
             Container(
               decoration: BoxDecoration(
-                color: isDarkMode
-                    ? const Color(0xFF1E2D3D).withValues(alpha: 0.6)
-                    : const Color(0xFFE6F0FA).withValues(alpha: 0.6),
+                color: colors.softBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDarkMode
-                      ? const Color(0xFF273445)
-                      : const Color(0xFFD7E1EE),
-                  width: 1,
-                ),
+                border: Border.all(color: colors.line, width: 1),
               ),
               child: IconButton(
-                onPressed: () {
-                  widget.onThemeModeChanged(
-                    isDarkMode ? ThemeMode.light : ThemeMode.dark,
-                  );
-                },
+                onPressed: widget.themeController.toggleThemeMode,
                 icon: Icon(
-                  isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                  color: isDarkMode ? const Color(0xFFFFD043) : const Color(0xFF1F5E89),
+                  isDarkMode
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
+                  color: isDarkMode ? const Color(0xFFFFD043) : colors.softText,
                   size: 22,
                 ),
-                tooltip: isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                tooltip: isDarkMode
+                    ? 'Switch to Light Mode'
+                    : 'Switch to Dark Mode',
               ),
             ),
           ],
@@ -201,17 +277,18 @@ class _LandingPageState extends State<LandingPage> {
           Text(
             'Quick Access',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: isDarkMode
-                      ? const Color(0xFF8A9EB5)
-                      : const Color(0xFF4A5F73),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
+              color: appColorsOf(context).mutedText,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
           ),
           const SizedBox(height: 16),
-          _DashboardCard(
+
+          // One full-width row per destination. Profile and Sign Out are not
+          // here: the avatar in the header opens the profile, and signing out
+          // lives on the profile page behind its confirmation dialog.
+          _DashboardListTile(
             title: 'My Class',
-            subtitle: 'Homeroom roster, info & contacts',
             icon: Icons.school_rounded,
             iconColor: const Color(0xFF4ADE80),
             iconBgColor: isDarkMode
@@ -220,85 +297,69 @@ class _LandingPageState extends State<LandingPage> {
             isDarkMode: isDarkMode,
             onTap: () {
               setState(() {
-                _selectedIndex = 4;
+                _selectedIndex = _myClassTab;
               });
             },
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _DashboardCard(
-                  title: 'Lessons',
-                  subtitle: 'Grade & track',
-                  icon: Icons.menu_book_rounded,
-                  iconColor: const Color(0xFF64AFFF),
-                  iconBgColor: isDarkMode
-                      ? const Color(0xFF1E2D3D)
-                      : const Color(0xFFE6F0FA),
-                  isDarkMode: isDarkMode,
-                  onTap: () {
-                    setState(() {
-                      _selectedIndex = 1;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _DashboardCard(
-                  title: 'Timetable',
-                  subtitle: 'View schedule',
-                  icon: Icons.calendar_month_rounded,
-                  iconColor: const Color(0xFFC084FC),
-                  iconBgColor: isDarkMode
-                      ? const Color(0xFF2C1E3D)
-                      : const Color(0xFFF3E8FF),
-                  isDarkMode: isDarkMode,
-                  onTap: () {
-                    setState(() {
-                      _selectedIndex = 2;
-                    });
-                  },
-                ),
-              ),
-            ],
+          const SizedBox(height: 12),
+          _DashboardListTile(
+            title: 'Lessons',
+            icon: Icons.menu_book_rounded,
+            iconColor: const Color(0xFF64AFFF),
+            iconBgColor: isDarkMode
+                ? const Color(0xFF1E2D3D)
+                : const Color(0xFFE6F0FA),
+            isDarkMode: isDarkMode,
+            onTap: () {
+              setState(() {
+                _selectedIndex = _lessonsTab;
+              });
+            },
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _DashboardCard(
-                  title: 'Profile',
-                  subtitle: 'Manage account',
-                  icon: Icons.person_rounded,
-                  iconColor: const Color(0xFF2DD4BF),
-                  iconBgColor: isDarkMode
-                      ? const Color(0xFF183330)
-                      : const Color(0xFFE6FBF7),
-                  isDarkMode: isDarkMode,
-                  onTap: () {
-                    setState(() {
-                      _selectedIndex = 3;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _DashboardCard(
-                  title: 'Sign Out',
-                  subtitle: 'Exit application',
-                  icon: Icons.logout_rounded,
-                  iconColor: const Color(0xFFFB7185),
-                  iconBgColor: isDarkMode
-                      ? const Color(0xFF3D1D24)
-                      : const Color(0xFFFFEAEB),
-                  isDarkMode: isDarkMode,
-                  onTap: _showSignOutDialog,
-                ),
-              ),
-            ],
+          const SizedBox(height: 12),
+          _DashboardListTile(
+            title: 'Point report',
+            icon: Icons.emoji_events_rounded,
+            iconColor: const Color(0xFF38BDF8),
+            iconBgColor: isDarkMode
+                ? const Color(0xFF12303F)
+                : const Color(0xFFE0F2FE),
+            isDarkMode: isDarkMode,
+            onTap: () {
+              setState(() {
+                _selectedIndex = _pointReportTab;
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+          _DashboardListTile(
+            title: 'Colleagues',
+            icon: Icons.groups_rounded,
+            iconColor: const Color(0xFFF59E0B),
+            iconBgColor: isDarkMode
+                ? const Color(0xFF3D2F14)
+                : const Color(0xFFFEF3C7),
+            isDarkMode: isDarkMode,
+            onTap: () {
+              setState(() {
+                _selectedIndex = _colleaguesTab;
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+          _DashboardListTile(
+            title: 'Timetable',
+            icon: Icons.calendar_month_rounded,
+            iconColor: const Color(0xFFC084FC),
+            iconBgColor: isDarkMode
+                ? const Color(0xFF2C1E3D)
+                : const Color(0xFFF3E8FF),
+            isDarkMode: isDarkMode,
+            onTap: () {
+              setState(() {
+                _selectedIndex = _timetableTab;
+              });
+            },
           ),
         ],
       ),
@@ -308,7 +369,9 @@ class _LandingPageState extends State<LandingPage> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final selectedItemLabel = _selectedIndex >= 0 && _selectedIndex < _items.length
+    final accentColors = appColorsOf(context);
+    final selectedItemLabel =
+        _selectedIndex >= 0 && _selectedIndex < _items.length
         ? _items[_selectedIndex].label
         : 'My Class';
 
@@ -317,12 +380,20 @@ class _LandingPageState extends State<LandingPage> {
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
+          // A faint wash of the accent over the scaffold colour, so the chosen
+          // colour reads on the page itself and not only on the controls.
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isDarkMode
-                ? const [Color(0xFF0D1218), Color(0xFF19232E)]
-                : const [Color(0xFFF9FBFF), Color(0xFFE7EFF8)],
+            colors: [
+              Theme.of(context).scaffoldBackgroundColor,
+              Color.alphaBlend(
+                accentColors.accent.solid.withValues(
+                  alpha: isDarkMode ? 0.10 : 0.07,
+                ),
+                Theme.of(context).scaffoldBackgroundColor,
+              ),
+            ],
           ),
         ),
         child: Stack(
@@ -343,11 +414,11 @@ class _LandingPageState extends State<LandingPage> {
                         switchOutCurve: Curves.easeIn,
                         child: SwipeBackDetector(
                           key: ValueKey(selectedItemLabel),
-                          enabled: _selectedIndex != 0,
+                          enabled: _selectedIndex != _homeTab,
                           onSwipeBack: () {
                             setState(() {
                               _returningViaSwipe = true;
-                              _selectedIndex = 0;
+                              _selectedIndex = _homeTab;
                             });
                             // Reset the flag after the frame so future
                             // tab switches animate normally.
@@ -357,7 +428,7 @@ class _LandingPageState extends State<LandingPage> {
                               }
                             });
                           },
-                          underneathChild: _selectedIndex == 0
+                          underneathChild: _selectedIndex == _homeTab
                               ? null
                               : SizedBox(
                                   height: constraints.maxHeight,
@@ -370,14 +441,18 @@ class _LandingPageState extends State<LandingPage> {
                                       ),
                                       child: ConstrainedBox(
                                         constraints: BoxConstraints(
-                                          minHeight: (constraints.maxHeight -
+                                          minHeight:
+                                              (constraints.maxHeight -
                                                       _bottomMenuOverlaySpace) >
                                                   0
                                               ? constraints.maxHeight -
-                                                  _bottomMenuOverlaySpace
+                                                    _bottomMenuOverlaySpace
                                               : 0,
                                         ),
-                                        child: _buildHomeDashboard(context, isDarkMode),
+                                        child: _buildHomeDashboard(
+                                          context,
+                                          isDarkMode,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -393,84 +468,140 @@ class _LandingPageState extends State<LandingPage> {
                                 ),
                                 child: ConstrainedBox(
                                   constraints: BoxConstraints(
-                                    minHeight: (constraints.maxHeight -
+                                    minHeight:
+                                        (constraints.maxHeight -
                                                 _bottomMenuOverlaySpace) >
                                             0
                                         ? constraints.maxHeight -
-                                            _bottomMenuOverlaySpace
+                                              _bottomMenuOverlaySpace
                                         : 0,
                                   ),
-                                  child: _selectedIndex == 0
+                                  child: _selectedIndex == _homeTab
                                       ? _buildHomeDashboard(context, isDarkMode)
-                                      : _selectedIndex == 1
-                                          ? MyLessonsPage(
-                                              loadLessons: widget
-                                                  .controller
-                                                  .loadMyLessonsForDate,
-                                              loadStudentsForGroup: widget
-                                                  .controller
-                                                  .loadStudentsForGroup,
-                                              savePointsBulk: widget
-                                                  .controller
-                                                  .savePointsBulk,
-                                              loadPointsForGroupAndDate: widget
-                                                  .controller
-                                                  .loadPointsForGroupAndDate,
-                                            )
-                                          : _selectedIndex == 2
-                                              ? TimeTablePage(
-                                                  loadTimetable: widget
-                                                      .controller
-                                                      .loadFullTimetable,
-                                                )
-                                              : _selectedIndex == 3
-                                                  ? ProfilePage(
-                                                      themeMode: widget.themeMode,
-                                                      onThemeModeChanged:
-                                                          widget.onThemeModeChanged,
-                                                      loadProfile: widget
-                                                          .controller
-                                                          .loadCurrentUserProfile,
-                                                      updatePassword: widget
-                                                          .controller
-                                                          .updatePassword,
-                                                      uploadProfilePicture: widget
-                                                          .controller
-                                                          .uploadProfilePicture,
-                                                      removeProfilePicture: widget
-                                                          .controller
-                                                          .removeProfilePicture,
-                                                      onLogout:
-                                                          widget.controller.signOut,
-                                                    )
-                                                  : MyClassPage(
-                                                      loadProfile: widget.controller.loadCurrentUserProfile,
-                                                      loadGroups: widget.controller.loadGroups,
-                                                      loadAcademicYears: widget.controller.loadAcademicYears,
-                                                      loadStudentsForGroup: widget.controller.loadStudentsForGroup,
-                                                      updatePersonDetails: widget.controller.updatePersonDetails,
-                                                      uploadPersonPicture: widget.controller.uploadPersonPicture,
-                                                      removePersonPicture: widget.controller.removePersonPicture,
-                                                      guardians: StudentGuardiansApi(
-                                                        load: widget.controller.loadGuardians,
-                                                        create: widget.controller.createGuardian,
-                                                        update: widget.controller.updateGuardian,
-                                                        delete: widget.controller.deleteGuardian,
-                                                      ),
-                                                      peopleSync: StudentPeopleSync(
-                                                        loadContacts: widget.controller.loadContactsForStudent,
-                                                        createContact: widget.controller.createContact,
-                                                        updateContact: widget.controller.updateContact,
-                                                        loadGuardians: widget.controller.loadGuardians,
-                                                        createGuardian: widget.controller.createGuardian,
-                                                        updateGuardian: widget.controller.updateGuardian,
-                                                      ),
-                                                      documents: StudentDocumentsApi(
-                                                        load: widget.controller.loadDocuments,
-                                                        create: widget.controller.createDocument,
-                                                        delete: widget.controller.deleteDocument,
-                                                      ),
-                                                    ),
+                                      : _selectedIndex == _lessonsTab
+                                      ? MyLessonsPage(
+                                          loadLessons: widget
+                                              .controller
+                                              .loadMyLessonsForDate,
+                                          loadStudentsForGroup: widget
+                                              .controller
+                                              .loadStudentsForGroup,
+                                          savePointsBulk:
+                                              widget.controller.savePointsBulk,
+                                          loadPointsForGroupAndDate: widget
+                                              .controller
+                                              .loadPointsForGroupAndDate,
+                                        )
+                                      : _selectedIndex == _timetableTab
+                                      ? TimeTablePage(
+                                          loadTimetable: widget
+                                              .controller
+                                              .loadFullTimetable,
+                                        )
+                                      : _selectedIndex == _colleaguesTab
+                                      ? ColleaguesPage(
+                                          loadColleagues:
+                                              widget.controller.loadColleagues,
+                                        )
+                                      : _selectedIndex == _profileTab
+                                      ? ProfilePage(
+                                          themeController:
+                                              widget.themeController,
+                                          loadProfile: widget
+                                              .controller
+                                              .loadCurrentUserProfile,
+                                          updatePassword:
+                                              widget.controller.updatePassword,
+                                          uploadProfilePicture: widget
+                                              .controller
+                                              .uploadProfilePicture,
+                                          removeProfilePicture: widget
+                                              .controller
+                                              .removeProfilePicture,
+                                          // Never sign out
+                                          // straight from the tap
+                                          // — confirm first.
+                                          onLogout: _showSignOutDialog,
+                                        )
+                                      : _selectedIndex == _myClassTab
+                                      ? MyClassPage(
+                                          loadProfile: widget
+                                              .controller
+                                              .loadCurrentUserProfile,
+                                          loadGroups:
+                                              widget.controller.loadGroups,
+                                          loadAcademicYears: widget
+                                              .controller
+                                              .loadAcademicYears,
+                                          loadStudentsForGroup: widget
+                                              .controller
+                                              .loadStudentsForGroup,
+                                          updatePersonDetails: widget
+                                              .controller
+                                              .updatePersonDetails,
+                                          uploadPersonPicture: widget
+                                              .controller
+                                              .uploadPersonPicture,
+                                          removePersonPicture: widget
+                                              .controller
+                                              .removePersonPicture,
+                                          guardians: StudentGuardiansApi(
+                                            load:
+                                                widget.controller.loadGuardians,
+                                            create: widget
+                                                .controller
+                                                .createGuardian,
+                                            update: widget
+                                                .controller
+                                                .updateGuardian,
+                                            delete: widget
+                                                .controller
+                                                .deleteGuardian,
+                                          ),
+                                          peopleSync: StudentPeopleSync(
+                                            loadContacts: widget
+                                                .controller
+                                                .loadContactsForStudent,
+                                            createContact:
+                                                widget.controller.createContact,
+                                            updateContact:
+                                                widget.controller.updateContact,
+                                            loadGuardians:
+                                                widget.controller.loadGuardians,
+                                            createGuardian: widget
+                                                .controller
+                                                .createGuardian,
+                                            updateGuardian: widget
+                                                .controller
+                                                .updateGuardian,
+                                          ),
+                                          documents: StudentDocumentsApi(
+                                            load:
+                                                widget.controller.loadDocuments,
+                                            create: widget
+                                                .controller
+                                                .createDocument,
+                                            delete: widget
+                                                .controller
+                                                .deleteDocument,
+                                          ),
+                                        )
+                                      : PointReportPage(
+                                          loadAcademicYears: widget
+                                              .controller
+                                              .loadAcademicYears,
+                                          loadGroups:
+                                              widget.controller.loadGroups,
+                                          loadStudentsForGroup: widget
+                                              .controller
+                                              .loadStudentsForGroup,
+                                          loadPoints: widget
+                                              .controller
+                                              .loadPointsForReport,
+                                          loadTimetable: widget
+                                              .controller
+                                              .loadFullTimetable,
+                                        ),
                                 ),
                               ),
                             ),
@@ -520,10 +651,9 @@ class _LandingTabItem {
   final String subtitle;
 }
 
-class _DashboardCard extends StatefulWidget {
-  const _DashboardCard({
+class _DashboardListTile extends StatefulWidget {
+  const _DashboardListTile({
     required this.title,
-    required this.subtitle,
     required this.icon,
     required this.iconColor,
     required this.iconBgColor,
@@ -532,7 +662,6 @@ class _DashboardCard extends StatefulWidget {
   });
 
   final String title;
-  final String subtitle;
   final IconData icon;
   final Color iconColor;
   final Color iconBgColor;
@@ -540,96 +669,93 @@ class _DashboardCard extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<_DashboardCard> createState() => _DashboardCardState();
+  State<_DashboardListTile> createState() => _DashboardListTileState();
 }
 
-class _DashboardCardState extends State<_DashboardCard> {
-  bool _isHovered = false;
+class _DashboardListTileState extends State<_DashboardListTile> {
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDarkMode;
+    final colors = appColorsOf(context);
+
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
+      onEnter: (_) => setState(() => _isPressed = true),
+      onExit: (_) => setState(() => _isPressed = false),
       child: GestureDetector(
-        onTapDown: (_) => setState(() => _isHovered = true),
-        onTapUp: (_) => setState(() => _isHovered = false),
-        onTapCancel: () => setState(() => _isHovered = false),
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
           transform: Matrix4.diagonal3Values(
-            _isHovered ? 0.97 : 1.0,
-            _isHovered ? 0.97 : 1.0,
+            _isPressed ? 0.99 : 1.0,
+            _isPressed ? 0.99 : 1.0,
             1.0,
           ),
+          transformAlignment: Alignment.center,
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: widget.onTap,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(22),
               child: Ink(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
-                  color: widget.isDarkMode
-                      ? const Color(0xFF121A24).withValues(alpha: 0.92)
-                      : Colors.white.withValues(alpha: 0.84),
-                  borderRadius: BorderRadius.circular(24),
+                  color: colors.card.withValues(alpha: isDark ? 0.92 : 0.9),
+                  borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: _isHovered
-                        ? widget.iconColor.withValues(alpha: 0.5)
-                        : (widget.isDarkMode
-                            ? const Color(0xFF273445)
-                            : const Color(0xFFD7E1EE)),
-                    width: 1.5,
+                    color: _isPressed
+                        ? colors.ring.withValues(alpha: 0.55)
+                        : colors.line,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: _isHovered
-                          ? widget.iconColor.withValues(alpha: 0.15)
-                          : const Color(0x0A000000),
-                      blurRadius: _isHovered ? 20 : 10,
-                      offset: const Offset(0, 8),
+                      color: isDark
+                          ? const Color(0x33000000)
+                          : const Color(0x14000000),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         color: widget.iconBgColor,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
                         widget.icon,
                         color: widget.iconColor,
-                        size: 24,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      widget.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: widget.isDarkMode
-                                ? const Color(0xFFF5F7FB)
-                                : const Color(0xFF16324A),
-                            fontWeight: FontWeight.bold,
-                          ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      widget.subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: widget.isDarkMode
-                                ? const Color(0xFF8A9EB5)
-                                : const Color(0xFF59718A),
-                            height: 1.3,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 24,
+                      color: colors.mutedText,
                     ),
                   ],
                 ),

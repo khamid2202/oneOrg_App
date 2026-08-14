@@ -9,8 +9,8 @@ class HttpTimetableRepository implements TimetableRepository {
   HttpTimetableRepository({
     required http.Client client,
     required String baseUrl,
-  })  : _client = client,
-        _baseUrl = _normalizeBaseUrl(baseUrl);
+  }) : _client = client,
+       _baseUrl = _normalizeBaseUrl(baseUrl);
 
   final http.Client _client;
   final String _baseUrl;
@@ -24,10 +24,7 @@ class HttpTimetableRepository implements TimetableRepository {
   Future<List<TimetableLesson>> getTimetable(String token) async {
     final response = await _client.get(
       _buildUri('/timetable'),
-      headers: {
-        ..._jsonHeaders,
-        'Authorization': 'Bearer $token',
-      },
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
 
     final responseBody = _decodeBody(response.body);
@@ -37,10 +34,9 @@ class HttpTimetableRepository implements TimetableRepository {
       );
     }
 
-    final lessons = _extractLessons(responseBody)
-        .map(TimetableLesson.fromJson)
-        .toList()
-      ..sort(_compareTimetableEntries);
+    final lessons = _extractLessons(
+      responseBody,
+    ).map(TimetableLesson.fromJson).toList()..sort(_compareTimetableEntries);
 
     return lessons;
   }
@@ -53,14 +49,9 @@ class HttpTimetableRepository implements TimetableRepository {
     final response = await _client.get(
       _buildUri(
         '/timetable/my-lessons',
-        queryParameters: {
-          'date': _formatDate(date),
-        },
+        queryParameters: {'date': _formatDate(date)},
       ),
-      headers: {
-        ..._jsonHeaders,
-        'Authorization': 'Bearer $token',
-      },
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
 
     final responseBody = _decodeBody(response.body);
@@ -70,10 +61,9 @@ class HttpTimetableRepository implements TimetableRepository {
       );
     }
 
-    final lessons = _extractLessons(responseBody)
-        .map(TimetableLesson.fromJson)
-        .toList()
-      ..sort(_compareMyLessons);
+    final lessons = _extractLessons(
+      responseBody,
+    ).map(TimetableLesson.fromJson).toList()..sort(_compareMyLessons);
 
     return TimetableDaySchedule(
       date: DateTime(date.year, date.month, date.day),
@@ -89,10 +79,7 @@ class HttpTimetableRepository implements TimetableRepository {
     return trimmed;
   }
 
-  Uri _buildUri(
-    String path, {
-    Map<String, String>? queryParameters,
-  }) {
+  Uri _buildUri(String path, {Map<String, String>? queryParameters}) {
     final uri = Uri.parse('$_baseUrl$path');
     if (queryParameters == null || queryParameters.isEmpty) {
       return uri;
@@ -171,7 +158,9 @@ class HttpTimetableRepository implements TimetableRepository {
   }
 
   int _compareTimetableEntries(TimetableLesson left, TimetableLesson right) {
-    final dayComparison = (left.dayIndex ?? 999).compareTo(right.dayIndex ?? 999);
+    final dayComparison = (left.dayIndex ?? 999).compareTo(
+      right.dayIndex ?? 999,
+    );
     if (dayComparison != 0) {
       return dayComparison;
     }
