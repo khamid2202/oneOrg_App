@@ -28,20 +28,16 @@ class StudentRowCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
       // Without a destination there is nothing to press.
       canRequestFocus: onTap != null,
-      child: Ink(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: appColorsOf(context).card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: appColorsOf(context).line),
-        ),
+      child: Padding(
+        // Rows are separated by a rule now rather than by being bordered
+        // cards, so the padding only has to keep the content off the edges.
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Row(
           children: [
             _StudentAvatar(student: student, isDarkMode: isDarkMode),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,8 +82,12 @@ class _StudentAvatar extends StatelessWidget {
     final hasPicture = pictureUrl != null && pictureUrl.isNotEmpty;
 
     return CircleAvatar(
-      radius: 20,
-      backgroundColor: appColorsOf(context).softBg,
+      radius: 17,
+      // The placeholder is tinted more strongly than a photo's backing colour,
+      // so an empty slot still reads as a person rather than a gap.
+      backgroundColor: hasPicture
+          ? appColorsOf(context).softBg
+          : appColorsOf(context).avatarPlaceholder,
       backgroundImage: hasPicture ? NetworkImage(pictureUrl) : null,
       // A broken or offline photo must not take the row down with it.
       onBackgroundImageError: hasPicture ? (_, _) {} : null,
@@ -95,8 +95,8 @@ class _StudentAvatar extends StatelessWidget {
           ? null
           : Icon(
               Icons.person_rounded,
-              size: 20,
-              color: appColorsOf(context).softText,
+              size: 18,
+              color: appColorsOf(context).accent.solid,
             ),
     );
   }

@@ -56,15 +56,27 @@ class Colleague {
     return name.isEmpty ? '?' : name[0].toUpperCase();
   }
 
-  /// `tel:` target for the call button. Dialers choke on the spaces the API
-  /// formats numbers with, so everything but digits and a leading `+` goes.
-  String? get dialUri {
+  /// The number with formatting stripped — dialers and SMS apps choke on the
+  /// spaces the API returns, so everything but digits and a leading `+` goes.
+  String? get _cleanNumber {
     final phone = phoneNumber?.trim();
     if (phone == null || phone.isEmpty) {
       return null;
     }
     final cleaned = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    return cleaned.isEmpty ? null : 'tel:$cleaned';
+    return cleaned.isEmpty ? null : cleaned;
+  }
+
+  /// `tel:` target for the call button.
+  String? get dialUri {
+    final number = _cleanNumber;
+    return number == null ? null : 'tel:$number';
+  }
+
+  /// `sms:` target for the message button.
+  String? get smsUri {
+    final number = _cleanNumber;
+    return number == null ? null : 'sms:$number';
   }
 
   /// True when [term] appears in the name, username, phone or email — the same

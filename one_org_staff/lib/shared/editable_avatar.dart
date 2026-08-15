@@ -282,7 +282,13 @@ class _EditableAvatarState extends State<EditableAvatar> {
           children: [
             CircleAvatar(
               radius: widget.radius,
-              backgroundColor: appColorsOf(context).softBg,
+              // Tinted more strongly with no photo set, so the empty circle
+              // reads as somewhere a picture belongs. Kept lighter than the
+              // small avatars: at this size a heavy fill competes with the
+              // camera badge sitting on it.
+              backgroundColor: imageUrl == null
+                  ? appColorsOf(context).avatarPlaceholder
+                  : appColorsOf(context).softBg,
               backgroundImage: imageUrl == null ? null : NetworkImage(imageUrl),
               onBackgroundImageError: imageUrl == null
                   ? null

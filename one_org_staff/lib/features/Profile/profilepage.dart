@@ -242,9 +242,12 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 20),
               switch (_tab) {
-                ProfileTab.profile => _ProfileDetails(
-                  profile: profile,
-                  isDarkMode: _isDarkMode,
+                ProfileTab.profile => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ProfileDetails(profile: profile, isDarkMode: _isDarkMode),
+                    _buildSignOutButton(),
+                  ],
                 ),
                 ProfileTab.password => _buildPasswordSection(),
                 ProfileTab.help => _HelpSection(onOpenTelegram: _openTelegram),
@@ -385,23 +388,32 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
         ),
-        if (widget.onLogout != null) ...[
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: widget.onLogout,
-              icon: const Icon(Icons.logout_rounded),
-              label: const Text('Sign out'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                foregroundColor: Theme.of(context).colorScheme.error,
-                side: BorderSide(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
-          ),
-        ],
       ],
+    );
+  }
+
+  /// Signing out belongs with the account it ends, not with appearance
+  /// settings — so it sits at the bottom of the Profile tab.
+  Widget _buildSignOutButton() {
+    if (widget.onLogout == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: widget.onLogout,
+          icon: const Icon(Icons.logout_rounded),
+          label: const Text('Sign out'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            foregroundColor: Theme.of(context).colorScheme.error,
+            side: BorderSide(color: Theme.of(context).colorScheme.error),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -458,8 +470,6 @@ class _AccentPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = appColorsOf(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -507,78 +517,6 @@ class _AccentPicker extends StatelessWidget {
           style: Theme.of(
             context,
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 12),
-
-        // Live preview, so the effect of a pick is visible without leaving the
-        // page — same idea as the web's swatch preview strip.
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: colors.card,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: colors.line),
-          ),
-          child: Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  gradient: selected.gradient,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'Primary button',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.softBg,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Highlight',
-                  style: TextStyle(
-                    color: colors.softText,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              Text(
-                'Accent text',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: selected.solid,
-                child: const Text(
-                  'A',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     );

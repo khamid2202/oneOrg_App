@@ -266,6 +266,109 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
+  /// The page for the selected tab, without any scroll wrapper — see
+  /// [_buildTabViewport], which decides whether the page scrolls itself.
+  Widget _buildTabPage(BuildContext context, bool isDarkMode) {
+    return _selectedIndex == _homeTab
+        ? _buildHomeDashboard(context, isDarkMode)
+        : _selectedIndex == _lessonsTab
+        ? MyLessonsPage(
+            loadLessons: widget.controller.loadMyLessonsForDate,
+            loadStudentsForGroup: widget.controller.loadStudentsForGroup,
+            savePointsBulk: widget.controller.savePointsBulk,
+            loadPointsForGroupAndDate:
+                widget.controller.loadPointsForGroupAndDate,
+          )
+        : _selectedIndex == _timetableTab
+        ? TimeTablePage(loadTimetable: widget.controller.loadFullTimetable)
+        : _selectedIndex == _colleaguesTab
+        ? ColleaguesPage(
+            loadColleagues: widget.controller.loadColleagues,
+            bottomInset: _bottomMenuOverlaySpace,
+          )
+        : _selectedIndex == _profileTab
+        ? ProfilePage(
+            themeController: widget.themeController,
+            loadProfile: widget.controller.loadCurrentUserProfile,
+            updatePassword: widget.controller.updatePassword,
+            uploadProfilePicture: widget.controller.uploadProfilePicture,
+            removeProfilePicture: widget.controller.removeProfilePicture,
+            // Never sign out
+            // straight from the tap
+            // — confirm first.
+            onLogout: _showSignOutDialog,
+          )
+        : _selectedIndex == _myClassTab
+        ? MyClassPage(
+            loadProfile: widget.controller.loadCurrentUserProfile,
+            loadGroups: widget.controller.loadGroups,
+            loadAcademicYears: widget.controller.loadAcademicYears,
+            loadStudentsForGroup: widget.controller.loadStudentsForGroup,
+            updatePersonDetails: widget.controller.updatePersonDetails,
+            uploadPersonPicture: widget.controller.uploadPersonPicture,
+            removePersonPicture: widget.controller.removePersonPicture,
+            guardians: StudentGuardiansApi(
+              load: widget.controller.loadGuardians,
+              create: widget.controller.createGuardian,
+              update: widget.controller.updateGuardian,
+              delete: widget.controller.deleteGuardian,
+            ),
+            peopleSync: StudentPeopleSync(
+              loadContacts: widget.controller.loadContactsForStudent,
+              createContact: widget.controller.createContact,
+              updateContact: widget.controller.updateContact,
+              loadGuardians: widget.controller.loadGuardians,
+              createGuardian: widget.controller.createGuardian,
+              updateGuardian: widget.controller.updateGuardian,
+            ),
+            documents: StudentDocumentsApi(
+              load: widget.controller.loadDocuments,
+              create: widget.controller.createDocument,
+              delete: widget.controller.deleteDocument,
+            ),
+          )
+        : PointReportPage(
+            loadAcademicYears: widget.controller.loadAcademicYears,
+            loadGroups: widget.controller.loadGroups,
+            loadStudentsForGroup: widget.controller.loadStudentsForGroup,
+            loadPoints: widget.controller.loadPointsForReport,
+            loadTimetable: widget.controller.loadFullTimetable,
+          );
+  }
+
+  /// Wraps [_buildTabPage] for display.
+  ///
+  /// Most tabs are plain columns and get the shared scroll view. A list page
+  /// owns its scrolling instead, so it can build rows lazily and control its
+  /// own offset — nesting one inside this scroll view would give it unbounded
+  /// height. It is handed the nav bar's overlay height to pad its own list.
+  Widget _buildTabViewport(BoxConstraints constraints, bool isDarkMode) {
+    final page = _buildTabPage(context, isDarkMode);
+    final scrollsItself = _selectedIndex == _colleaguesTab;
+
+    return SizedBox(
+      height: constraints.maxHeight,
+      width: double.infinity,
+      child: scrollsItself
+          ? page
+          : SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: _bottomMenuOverlaySpace),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight:
+                        (constraints.maxHeight - _bottomMenuOverlaySpace) > 0
+                        ? constraints.maxHeight - _bottomMenuOverlaySpace
+                        : 0,
+                  ),
+                  child: page,
+                ),
+              ),
+            ),
+    );
+  }
+
   Widget _buildHomeDashboard(BuildContext context, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
@@ -457,155 +560,7 @@ class _LandingPageState extends State<LandingPage> {
                                     ),
                                   ),
                                 ),
-                          child: SizedBox(
-                            height: constraints.maxHeight,
-                            width: double.infinity,
-                            child: SingleChildScrollView(
-                              physics: const ClampingScrollPhysics(),
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: _bottomMenuOverlaySpace,
-                                ),
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    minHeight:
-                                        (constraints.maxHeight -
-                                                _bottomMenuOverlaySpace) >
-                                            0
-                                        ? constraints.maxHeight -
-                                              _bottomMenuOverlaySpace
-                                        : 0,
-                                  ),
-                                  child: _selectedIndex == _homeTab
-                                      ? _buildHomeDashboard(context, isDarkMode)
-                                      : _selectedIndex == _lessonsTab
-                                      ? MyLessonsPage(
-                                          loadLessons: widget
-                                              .controller
-                                              .loadMyLessonsForDate,
-                                          loadStudentsForGroup: widget
-                                              .controller
-                                              .loadStudentsForGroup,
-                                          savePointsBulk:
-                                              widget.controller.savePointsBulk,
-                                          loadPointsForGroupAndDate: widget
-                                              .controller
-                                              .loadPointsForGroupAndDate,
-                                        )
-                                      : _selectedIndex == _timetableTab
-                                      ? TimeTablePage(
-                                          loadTimetable: widget
-                                              .controller
-                                              .loadFullTimetable,
-                                        )
-                                      : _selectedIndex == _colleaguesTab
-                                      ? ColleaguesPage(
-                                          loadColleagues:
-                                              widget.controller.loadColleagues,
-                                        )
-                                      : _selectedIndex == _profileTab
-                                      ? ProfilePage(
-                                          themeController:
-                                              widget.themeController,
-                                          loadProfile: widget
-                                              .controller
-                                              .loadCurrentUserProfile,
-                                          updatePassword:
-                                              widget.controller.updatePassword,
-                                          uploadProfilePicture: widget
-                                              .controller
-                                              .uploadProfilePicture,
-                                          removeProfilePicture: widget
-                                              .controller
-                                              .removeProfilePicture,
-                                          // Never sign out
-                                          // straight from the tap
-                                          // — confirm first.
-                                          onLogout: _showSignOutDialog,
-                                        )
-                                      : _selectedIndex == _myClassTab
-                                      ? MyClassPage(
-                                          loadProfile: widget
-                                              .controller
-                                              .loadCurrentUserProfile,
-                                          loadGroups:
-                                              widget.controller.loadGroups,
-                                          loadAcademicYears: widget
-                                              .controller
-                                              .loadAcademicYears,
-                                          loadStudentsForGroup: widget
-                                              .controller
-                                              .loadStudentsForGroup,
-                                          updatePersonDetails: widget
-                                              .controller
-                                              .updatePersonDetails,
-                                          uploadPersonPicture: widget
-                                              .controller
-                                              .uploadPersonPicture,
-                                          removePersonPicture: widget
-                                              .controller
-                                              .removePersonPicture,
-                                          guardians: StudentGuardiansApi(
-                                            load:
-                                                widget.controller.loadGuardians,
-                                            create: widget
-                                                .controller
-                                                .createGuardian,
-                                            update: widget
-                                                .controller
-                                                .updateGuardian,
-                                            delete: widget
-                                                .controller
-                                                .deleteGuardian,
-                                          ),
-                                          peopleSync: StudentPeopleSync(
-                                            loadContacts: widget
-                                                .controller
-                                                .loadContactsForStudent,
-                                            createContact:
-                                                widget.controller.createContact,
-                                            updateContact:
-                                                widget.controller.updateContact,
-                                            loadGuardians:
-                                                widget.controller.loadGuardians,
-                                            createGuardian: widget
-                                                .controller
-                                                .createGuardian,
-                                            updateGuardian: widget
-                                                .controller
-                                                .updateGuardian,
-                                          ),
-                                          documents: StudentDocumentsApi(
-                                            load:
-                                                widget.controller.loadDocuments,
-                                            create: widget
-                                                .controller
-                                                .createDocument,
-                                            delete: widget
-                                                .controller
-                                                .deleteDocument,
-                                          ),
-                                        )
-                                      : PointReportPage(
-                                          loadAcademicYears: widget
-                                              .controller
-                                              .loadAcademicYears,
-                                          loadGroups:
-                                              widget.controller.loadGroups,
-                                          loadStudentsForGroup: widget
-                                              .controller
-                                              .loadStudentsForGroup,
-                                          loadPoints: widget
-                                              .controller
-                                              .loadPointsForReport,
-                                          loadTimetable: widget
-                                              .controller
-                                              .loadFullTimetable,
-                                        ),
-                                ),
-                              ),
-                            ),
-                          ),
+                          child: _buildTabViewport(constraints, isDarkMode),
                         ),
                       ),
                     ),

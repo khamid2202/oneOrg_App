@@ -58,7 +58,7 @@ class AppAccent {
   );
 }
 
-/// The eight selectable accents, in the order the picker shows them.
+/// The selectable accents, in the order the picker shows them.
 const List<AppAccent> kAccents = [
   AppAccent(
     key: 'purple',
@@ -103,17 +103,6 @@ const List<AppAccent> kAccents = [
     softText: Color(0xFFBE123C),
     ring: Color(0xFFFB7185),
     border: Color(0xFFFECDD3),
-  ),
-  AppAccent(
-    key: 'amber',
-    label: 'Amber',
-    from: Color(0xFFF59E0B),
-    to: Color(0xFFF97316),
-    solid: Color(0xFFEA580C),
-    softBg: Color(0xFFFFF7ED),
-    softText: Color(0xFFC2410C),
-    ring: Color(0xFFFB923C),
-    border: Color(0xFFFED7AA),
   ),
   AppAccent(
     key: 'cyan',
@@ -240,6 +229,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.card,
     required this.line,
     required this.mutedText,
+    required this.avatarPlaceholder,
   });
 
   /// The full accent, for the rare case a widget needs `from`/`to` directly.
@@ -263,6 +253,13 @@ class AppColors extends ThemeExtension<AppColors> {
   /// Secondary text (labels, captions, timestamps).
   final Color mutedText;
 
+  /// Fill for an avatar with no photo set.
+  ///
+  /// Deliberately stronger than [softBg]: the pale -50 tint reads as an empty
+  /// gap in the layout rather than as a person, so the circle needs enough
+  /// weight to register as a placeholder holding a space.
+  final Color avatarPlaceholder;
+
   /// Builds the extension for one accent + mode. Mirrors the web's
   /// `applyAccent`: the gradient, solid and ring stay vivid in both modes, and
   /// only the *soft* surfaces flip, since a pale -50 tint is unreadable on a
@@ -284,6 +281,12 @@ class AppColors extends ThemeExtension<AppColors> {
       card: isDark ? darkVariant.card : Colors.white,
       line: isDark ? darkVariant.line : const Color(0xFFE3EBF4),
       mutedText: isDark ? const Color(0xFF9DB0C1) : const Color(0xFF5C738B),
+      // Blended rather than translucent so it stays solid over any row
+      // background, including the tinted one an expanded row uses.
+      avatarPlaceholder: Color.alphaBlend(
+        accent.solid.withValues(alpha: isDark ? 0.38 : 0.22),
+        isDark ? darkVariant.card : Colors.white,
+      ),
     );
   }
 
@@ -298,6 +301,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? card,
     Color? line,
     Color? mutedText,
+    Color? avatarPlaceholder,
   }) {
     return AppColors(
       accent: accent ?? this.accent,
@@ -309,6 +313,7 @@ class AppColors extends ThemeExtension<AppColors> {
       card: card ?? this.card,
       line: line ?? this.line,
       mutedText: mutedText ?? this.mutedText,
+      avatarPlaceholder: avatarPlaceholder ?? this.avatarPlaceholder,
     );
   }
 
@@ -329,6 +334,11 @@ class AppColors extends ThemeExtension<AppColors> {
       card: Color.lerp(card, other.card, t)!,
       line: Color.lerp(line, other.line, t)!,
       mutedText: Color.lerp(mutedText, other.mutedText, t)!,
+      avatarPlaceholder: Color.lerp(
+        avatarPlaceholder,
+        other.avatarPlaceholder,
+        t,
+      )!,
     );
   }
 }

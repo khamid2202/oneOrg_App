@@ -14,6 +14,8 @@ import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 import 'package:one_org_staff/features/auth/data/token_storage.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/BottomBar/bottom_menu.dart';
+import 'package:one_org_staff/features/Profile/profilepage.dart';
+import 'package:one_org_staff/shared/underline_tabs.dart';
 import 'package:one_org_staff/features/MyClass/my_class.dart';
 import 'package:one_org_staff/features/colleagues/domain/colleagues_repository.dart';
 import 'package:one_org_staff/features/point_report/domain/point_report_repository.dart';
@@ -112,9 +114,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Update password'), findsWidgets);
 
-    // Theme lives under System.
+    // Sign out sits with the account, on the Profile tab.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(UnderlineTabs<ProfileTab>),
+        matching: find.text('Profile'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(OutlinedButton, 'Sign out'), findsOneWidget);
+
+    // Theme lives under System, and no longer carries the sign-out button or
+    // the swatch preview strip.
     await tester.tap(find.text('System'));
     await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(OutlinedButton, 'Sign out'), findsNothing);
+    expect(find.text('Primary button'), findsNothing);
+    expect(find.text('Highlight'), findsNothing);
+    expect(find.text('Accent text'), findsNothing);
 
     final switchFinder = find.byType(Switch);
     await tester.ensureVisible(switchFinder);

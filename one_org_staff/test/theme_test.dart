@@ -12,17 +12,19 @@ void main() {
       expect(accentForKey('cyan').label, 'Cyan');
     });
 
-    test('offers the same eight accents as the web app', () {
+    test('offers the web palette minus amber', () {
+      // Amber was dropped on purpose: it is the one accent that reads as a
+      // warning colour, so it is a deliberate divergence from the web's eight.
       expect(kAccents.map((a) => a.key), const [
         'purple',
         'blue',
         'emerald',
         'rose',
-        'amber',
         'cyan',
         'pink',
         'slate',
       ]);
+      expect(accentForKey('amber').key, kDefaultAccent.key);
     });
 
     test('offers the three web dark flavors', () {

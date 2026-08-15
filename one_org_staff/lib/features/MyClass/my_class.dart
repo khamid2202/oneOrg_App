@@ -430,8 +430,13 @@ class _MyClassPageState extends State<MyClassPage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: filtered.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 10),
+                // A hairline between rows instead of a gap: the rows are no
+                // longer bordered cards, so the rule is what separates them.
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: appColorsOf(context).line,
+                ),
                 itemBuilder: (context, index) {
                   final student = filtered[index];
                   return StudentRowCard(
