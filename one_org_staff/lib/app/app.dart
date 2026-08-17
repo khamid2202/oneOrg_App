@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
-import '../features/TimeTable/http_time_table_repository.dart';
+import '../features/timetable/http_time_table_repository.dart';
 import '../features/MyLessons/http_lesson_points_repository.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/data/http_auth_repository.dart';

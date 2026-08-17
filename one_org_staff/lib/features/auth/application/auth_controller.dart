@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:one_org_staff/config/api_config.dart';
-import '../../TimeTable/time_table_repository.dart';
+import '../../timetable/time_table_repository.dart';
 import '../../MyLessons/lesson_points_repository.dart';
 import '../../colleagues/domain/colleagues_repository.dart';
 import '../../point_report/domain/point_report_repository.dart';
@@ -168,7 +168,7 @@ class AuthController extends ChangeNotifier {
     return loadMyLessonsForDate(date);
   }
 
-  Future<List<TimetableLesson>> loadFullTimetable() async {
+  Future<List<TimetableLesson>> loadFullTimetable({int? academicYearId}) async {
     final timetableRepository = _timetableRepository;
     if (timetableRepository == null) {
       throw const AuthFailure('Timetable is not configured.');
@@ -179,7 +179,10 @@ class AuthController extends ChangeNotifier {
       throw const AuthFailure('No active session found.');
     }
 
-    return timetableRepository.getTimetable(token);
+    return timetableRepository.getTimetable(
+      token,
+      academicYearId: academicYearId,
+    );
   }
 
   Future<List<Colleague>> loadColleagues() async {

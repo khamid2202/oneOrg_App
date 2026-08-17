@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:one_org_staff/features/TimeTable/time_table_repository.dart';
+import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 
 void main() {
   test('parses subject id from timetable json', () {

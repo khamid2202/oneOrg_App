@@ -27,25 +27,25 @@ class BottomMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: Align(
         alignment: Alignment.bottomCenter,
         heightFactor: 1,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(40),
+            borderRadius: BorderRadius.circular(28),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
               child: Container(
-                padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+                padding: const EdgeInsets.fromLTRB(8, 3, 8, 3),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [Color(0xCC2A2F38), Color(0xB31B1F26)],
                   ),
-                  borderRadius: BorderRadius.circular(40),
+                  borderRadius: BorderRadius.circular(28),
                   border: Border.all(color: const Color(0x40FFFFFF)),
                   boxShadow: const [
                     BoxShadow(
@@ -104,11 +104,11 @@ class _BottomMenuButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(36),
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 6),
           decoration: BoxDecoration(
             color: isSelected
                 ? accent.solid.withValues(alpha: 0.34)
@@ -116,24 +116,29 @@ class _BottomMenuButton extends StatelessWidget {
             border: isSelected
                 ? Border.all(color: accent.ring.withValues(alpha: 0.55))
                 : null,
-            borderRadius: BorderRadius.circular(36),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 item.icon,
                 color: isSelected ? accent.ring : const Color(0xFFF5F7FA),
-                size: 22,
+                size: 19,
               ),
-              const SizedBox(height: 6),
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: isSelected ? accent.ring : const Color(0xFFF5F7FA),
-                  fontWeight: FontWeight.w700,
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: isSelected ? accent.ring : const Color(0xFFF5F7FA),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
                 ),
               ),
             ],

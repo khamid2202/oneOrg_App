@@ -21,9 +21,17 @@ class HttpTimetableRepository implements TimetableRepository {
   };
 
   @override
-  Future<List<TimetableLesson>> getTimetable(String token) async {
+  Future<List<TimetableLesson>> getTimetable(
+    String token, {
+    int? academicYearId,
+  }) async {
     final response = await _client.get(
-      _buildUri('/timetable'),
+      _buildUri(
+        '/timetable',
+        queryParameters: {
+          if (academicYearId != null) 'academic_year_id': '$academicYearId',
+        },
+      ),
       headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
 

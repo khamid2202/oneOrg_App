@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:one_org_staff/app/app.dart';
-import 'package:one_org_staff/features/TimeTable/time_table_repository.dart';
+import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 import 'package:one_org_staff/features/auth/data/token_storage.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
@@ -305,7 +305,7 @@ void main() {
     expect(find.text('John Doe'), findsOneWidget);
   });
 
-  testWidgets('timetable tab shows grouped weekly timetable entries', (
+  testWidgets('the timetable opens on the by-teacher grid', (
     WidgetTester tester,
   ) async {
     final controller = AuthController(
@@ -320,14 +320,17 @@ void main() {
     // Timetable has no navbar button — it opens from its dashboard row, which
     // sits below the fold at this window size.
     await tester.ensureVisible(find.text('Timetable'));
+    await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, -120));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timetable'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Full timetable'), findsOneWidget);
-    expect(find.text('Monday'), findsOneWidget);
-    expect(find.text('Group #7 • John Doe'), findsOneWidget);
-    expect(find.text('Slot 2'), findsOneWidget);
+    // My week is the default view.
+    expect(find.text('My week'), findsOneWidget);
+    expect(find.text('By class'), findsOneWidget);
+
+    // The signed-in user is not in this timetable, so they are told so.
+    expect(find.text('You have no lessons in this timetable.'), findsOneWidget);
   });
 
   testWidgets('navigates to landing after a successful login', (
@@ -496,7 +499,10 @@ class FakeTimetableRepository implements TimetableRepository {
   }
 
   @override
-  Future<List<TimetableLesson>> getTimetable(String token) async {
+  Future<List<TimetableLesson>> getTimetable(
+    String token, {
+    int? academicYearId,
+  }) async {
     return const [
       TimetableLesson(
         id: 11,

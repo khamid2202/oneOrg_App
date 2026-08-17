@@ -9,7 +9,7 @@ import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/point_report/domain/point_report_repository.dart';
-import 'package:one_org_staff/features/TimeTable/time_table_repository.dart';
+import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 import 'package:one_org_staff/features/point_report/data/point_report_preferences.dart';
 import 'package:one_org_staff/features/point_report/presentation/column_picker.dart';
 import 'package:one_org_staff/features/point_report/presentation/point_report_table.dart';
@@ -47,8 +47,10 @@ class PointReportPage extends StatefulWidget {
   loadPoints;
 
   /// The class timetable, used to list every subject taught that week — a
-  /// subject with no points yet still needs a column.
-  final Future<List<TimetableLesson>> Function() loadTimetable;
+  /// subject with no points yet still needs a column. Scoped by academic year,
+  /// without which the endpoint returns nothing.
+  final Future<List<TimetableLesson>> Function({int? academicYearId})
+  loadTimetable;
 
   /// Injected by tests; production shares through the OS share sheet.
   final Future<void> Function(Uint8List png, String fileName)? shareImage;
@@ -65,6 +67,9 @@ class _PointReportPageState extends State<PointReportPage> {
       widget.preferences ?? PointReportPreferences();
 
   late Future<List<GroupEntry>> _groupsFuture;
+
+  /// Resolved alongside the groups and reused for the timetable request.
+  int? _academicYearId;
 
   GroupEntry? _selectedGroup;
   PointReportDateMode _dateMode = PointReportDateMode.weekly;
@@ -138,6 +143,7 @@ class _PointReportPageState extends State<PointReportPage> {
       (year) => year.isActive,
       orElse: () => years.first,
     );
+    _academicYearId = activeYear.id;
     return widget.loadGroups(academicYearId: activeYear.id);
   }
 
@@ -228,7 +234,7 @@ class _PointReportPageState extends State<PointReportPage> {
   /// type and blows up on a `Future<Never>`.
   Future<List<TimetableLesson>> _timetableOrEmpty() async {
     try {
-      return await widget.loadTimetable();
+      return await widget.loadTimetable(academicYearId: _academicYearId);
     } catch (_) {
       return const [];
     }

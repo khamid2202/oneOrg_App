@@ -15,6 +15,7 @@ class TimetableLesson {
     this.teacherLabel,
     this.groupId,
     this.subjectId,
+    this.teacherId,
     this.room,
     this.dayLabel,
     this.dayIndex,
@@ -32,6 +33,11 @@ class TimetableLesson {
   final String? teacherLabel;
   final int? groupId;
   final int? subjectId;
+
+  /// Preferred teacher identity. Two teachers can share a name, so the id is
+  /// what the by-teacher view groups and detects clashes by; the label is only
+  /// a fallback when the API omits it.
+  final int? teacherId;
   final String? room;
   final String? dayLabel;
   final int? dayIndex;
@@ -51,6 +57,7 @@ class TimetableLesson {
         _dayIndexFromLabel(parsedDayLabel);
     final groupId = _asInt(json['group_id'] ?? json['groupId']);
     final subjectId = _asInt(json['subject_id'] ?? json['subjectId']);
+    final teacherId = _asInt(json['teacher_id'] ?? json['teacherId']);
     final rawTitle = _firstString(json, const [
       'text',
       'subject',
@@ -98,6 +105,7 @@ class TimetableLesson {
       teacherLabel: teacherLabel,
       groupId: groupId,
       subjectId: subjectId,
+      teacherId: teacherId,
       room: room,
       dayLabel: dayLabel,
       dayIndex: dayIndex,
@@ -238,5 +246,12 @@ abstract class TimetableRepository {
     required DateTime date,
   });
 
-  Future<List<TimetableLesson>> getTimetable(String token);
+  /// The whole timetable for one academic year.
+  ///
+  /// [academicYearId] is not optional in practice: the timetable is stored per
+  /// year, and the API returns nothing when the year is left out.
+  Future<List<TimetableLesson>> getTimetable(
+    String token, {
+    int? academicYearId,
+  });
 }

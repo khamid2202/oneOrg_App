@@ -4,7 +4,7 @@ import 'package:one_org_staff/app/theme.dart';
 
 import 'package:one_org_staff/features/MyLessons/lesson_points.dart';
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
-import 'package:one_org_staff/features/TimeTable/time_table_repository.dart';
+import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 
 class MyLessonsPage extends StatefulWidget {
   const MyLessonsPage({

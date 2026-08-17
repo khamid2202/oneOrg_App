@@ -9,7 +9,7 @@ import 'package:one_org_staff/features/MyClass/student_info_view.dart';
 import 'package:one_org_staff/features/MyClass/student_people_sync.dart';
 import 'package:one_org_staff/features/MyLessons/my_lessons.dart';
 import 'package:one_org_staff/features/Profile/profilepage.dart';
-import 'package:one_org_staff/features/TimeTable/TimeTable.dart';
+import 'package:one_org_staff/features/timetable/presentation/timetable_page.dart';
 import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/colleagues/presentation/colleagues_page.dart';
@@ -280,7 +280,11 @@ class _LandingPageState extends State<LandingPage> {
                 widget.controller.loadPointsForGroupAndDate,
           )
         : _selectedIndex == _timetableTab
-        ? TimeTablePage(loadTimetable: widget.controller.loadFullTimetable)
+        ? TimetablePage(
+            loadTimetable: widget.controller.loadFullTimetable,
+            loadProfile: widget.controller.loadCurrentUserProfile,
+            loadAcademicYears: widget.controller.loadAcademicYears,
+          )
         : _selectedIndex == _colleaguesTab
         ? ColleaguesPage(
             loadColleagues: widget.controller.loadColleagues,

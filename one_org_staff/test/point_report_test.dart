@@ -11,7 +11,7 @@ import 'package:one_org_staff/features/point_report/data/http_point_report_repos
 import 'package:one_org_staff/features/point_report/domain/point_report_repository.dart';
 import 'package:one_org_staff/features/point_report/presentation/point_report_page.dart';
 import 'package:one_org_staff/features/point_report/presentation/point_report_table.dart';
-import 'package:one_org_staff/features/TimeTable/time_table_repository.dart';
+import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 import 'package:one_org_staff/features/point_report/data/point_report_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -75,7 +75,7 @@ Widget _wrap({
   void Function(DateTime start, DateTime end)? onFetch,
   Future<void> Function(Uint8List png, String fileName)? shareImage,
   PointReportPreferences? preferences,
-  Future<List<TimetableLesson>> Function()? loadTimetable,
+  Future<List<TimetableLesson>> Function({int? academicYearId})? loadTimetable,
 }) {
   return MaterialApp(
     home: Scaffold(
@@ -90,7 +90,8 @@ Widget _wrap({
             onFetch?.call(start, end);
             return points;
           },
-          loadTimetable: loadTimetable ?? () async => timetable,
+          loadTimetable:
+              loadTimetable ?? ({int? academicYearId}) async => timetable,
           shareImage: shareImage,
           preferences: preferences,
         ),
@@ -766,7 +767,8 @@ void main() {
     testWidgets('a timetable failure still renders the report', (tester) async {
       await tester.pumpWidget(
         _wrap(
-          loadTimetable: () async => throw const AuthFailure('nope'),
+          loadTimetable: ({int? academicYearId}) async =>
+              throw const AuthFailure('nope'),
           points: [_point(points: 5, date: DateTime.now())],
         ),
       );
@@ -971,7 +973,7 @@ void main() {
                 loadPoints:
                     ({required groupId, required start, required end}) async =>
                         const [],
-                loadTimetable: () async => const [],
+                loadTimetable: ({int? academicYearId}) async => const [],
               ),
             ),
           ),

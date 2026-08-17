@@ -472,8 +472,7 @@ class _ColleagueRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: rowGap),
       decoration: BoxDecoration(
         color: expanded ? colors.card : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: expanded ? Border.all(color: colors.border) : null,
+        border: Border(bottom: BorderSide(color: colors.line)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -497,15 +496,6 @@ class _ColleagueRow extends StatelessWidget {
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    AnimatedRotation(
-                      turns: expanded ? 0.5 : 0.0,
-                      duration: const Duration(milliseconds: 180),
-                      child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 20,
-                        color: colors.mutedText,
                       ),
                     ),
                   ],
