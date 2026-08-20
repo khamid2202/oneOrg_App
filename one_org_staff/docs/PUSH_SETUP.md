@@ -95,6 +95,75 @@ to 15.0.
 
 ---
 
+## The two config files are not in git
+
+`android/app/google-services.json` and `ios/Runner/GoogleService-Info.plist`
+are **gitignored**. This repo is public, and GitHub secret scanning raises an
+alert on the API keys inside every time they change.
+
+**Get them from the Firebase console** for project `oneorg-578eb`:
+
+- Android → Project settings → Your apps → `com.oneorg.staff` → download
+  `google-services.json` → place at `android/app/google-services.json`.
+- iOS → same screen, iOS app → download `GoogleService-Info.plist` → add it to
+  `ios/Runner/` **through Xcode** (drag into the `Runner` group, "Copy items if
+  needed", target `Runner` ticked). A plain `cp` leaves it out of the app
+  bundle and Firebase will not find it at runtime.
+
+Consequences of them being untracked, so nobody loses an afternoon to these:
+
+- **A fresh clone will not build for iOS.** `Runner.xcodeproj` still references
+  `GoogleService-Info.plist`, so Xcode fails with "Build input file cannot be
+  found" until you add the file back. Android is softer: the Gradle plugin is
+  applied conditionally, so the build succeeds and push is simply off.
+- **CI needs them injected** — as a secret file or a base64 env var written out
+  in a pre-build step. There is no such pipeline today; whoever adds one has to
+  handle this.
+
+### Restricting the keys is still required
+
+Gitignoring is hygiene, not protection. Both keys are already in git history at
+commit `12a5262`, and they are compiled into every APK and IPA we ship —
+anyone can extract them from a downloaded build. Removing them from history
+would need a rewrite and a force-push and would still not reach shipped
+binaries.
+
+What actually limits exposure is a restriction on each key. An unrestricted key
+can be used from anywhere to call billable Google APIs on this project —
+charged to us — and to hit Firebase Auth REST endpoints.
+
+In [Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials)
+for project `oneorg-578eb`:
+
+| Key | Application restriction | API restriction |
+|---|---|---|
+| Android | *Android apps* — package `com.oneorg.staff` + the SHA-1s below | Firebase Cloud Messaging API **and** Firebase Installations API |
+| iOS | *iOS apps* — bundle id `com.oneorg.staff` | same |
+
+Both APIs are needed: FCM cannot mint a device token without Installations, and
+restricting to Messaging alone breaks push in a way that looks exactly like
+"nothing happens".
+
+Regenerate the Android fingerprints with:
+
+```bash
+# debug
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android | grep SHA1
+# release / upload key (path and alias come from android/key.properties)
+keytool -list -v -keystore <storeFile> -alias <keyAlias> | grep SHA1
+```
+
+Add **all three**: debug, upload, and — if the app is distributed through Google
+Play App Signing, which the `upload`-aliased keystore implies — the
+**Play-managed app signing certificate** from Play Console → Setup → App
+signing. Users install the Play-signed build, so leaving that one out breaks
+push in production while it keeps working locally.
+
+Rotate a key only if usage metrics show abuse. Rotating without restricting
+just publishes a fresh key on the next release.
+
+---
+
 ## If nothing arrives with the app closed
 
 Work down this list — the first two are what catch almost everyone.

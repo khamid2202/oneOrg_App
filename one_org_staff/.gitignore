@@ -45,3 +45,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase config. Not tracked: the API keys inside are flagged by GitHub
+# secret scanning on every change, and this repo is public. They are client
+# keys that ship inside every build anyway, so keeping them out of git is
+# hygiene, not protection — the keys must still be restricted in Cloud Console.
+# See docs/PUSH_SETUP.md for where to get these files and how to restrict.
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist

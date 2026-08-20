@@ -12,6 +12,31 @@ Newest first. Every notable change to **this Flutter app** gets an entry here
 
 ---
 
+## 2026-08-20 — Push: Firebase config files removed from git
+
+GitHub secret scanning flagged the Android and iOS Firebase API keys after
+`google-services.json` and `GoogleService-Info.plist` were committed to this
+public repo (`12a5262`).
+
+- Both files are now gitignored and untracked (`git rm --cached`); they remain
+  on disk, so local builds are unaffected.
+- `.gitignore` — the two paths, with a note on why.
+- `docs/PUSH_SETUP.md` — rewritten section: where to download the files, and
+  the two consequences of them being untracked. A fresh clone **will not build
+  for iOS**, because `Runner.xcodeproj` still references the plist and Xcode
+  fails on the missing input; Android degrades quietly instead, since the
+  Gradle plugin is applied conditionally. CI, when there is one, will need them
+  injected.
+- **This does not undo the leak, and does not remove the need to restrict the
+  keys.** Both are still in history at `12a5262` and are compiled into every
+  shipped binary, so a history rewrite would not reach them either. The doc
+  keeps the full restriction procedure — application + API restriction per key,
+  all three signing fingerprints including the Play-managed one.
+- Verified not exposed: `android/key.properties` is gitignored and untracked,
+  no `.jks`/`.keystore`/`.p8`/`.p12` is in the repo, and the FCM server
+  credentials live on the backend rather than in either config file. App
+  signing and push-sending are both unaffected.
+
 ## 2026-08-20 — Notifications: fix the prompt being spent before it could be shown
 
 Reported as "no notification when the app is closed". The immediate cause was
