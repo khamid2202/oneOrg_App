@@ -62,6 +62,107 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
   }
 
   @override
+  Future<List<StudentEntry>> getAllStudents(String token, {int? groupId}) async {
+    final students = <StudentEntry>[];
+    final seen = <int>{};
+
+    // `limit` maxes out at 100, so a school-wide roster needs several trips.
+    // The 50-page cap is a safety net against a runaway `meta.pages`.
+    for (var page = 1; page <= 50; page += 1) {
+      final response = await _client.get(
+        _buildUri(
+          '/students',
+          queryParameters: {
+            if (groupId != null) 'group_id': groupId.toString(),
+            'page': page.toString(),
+            'limit': '100',
+          },
+        ),
+        headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+      );
+
+      final responseBody = _decodeBody(response.body);
+      if (!_isSuccess(response.statusCode)) {
+        throw AuthFailure(
+          _extractMessage(responseBody, 'Unable to load students.'),
+        );
+      }
+
+      final rows = _extractStudents(responseBody);
+      for (final json in rows) {
+        // A leave date means the enrollment has ended — the student is no
+        // longer in the class and cannot be awarded points for it.
+        if (json['leave_date'] != null) {
+          continue;
+        }
+        final StudentEntry student;
+        try {
+          student = StudentEntry.fromJson(json);
+        } on FormatException {
+          continue;
+        }
+        if (seen.add(student.id)) {
+          students.add(student);
+        }
+      }
+
+      final pages = responseBody is Map<String, dynamic>
+          ? _asInt(responseBody['meta'] is Map<String, dynamic>
+                ? (responseBody['meta'] as Map<String, dynamic>)['pages']
+                : null)
+          : null;
+      final done = pages != null ? page >= pages : rows.length < 100;
+      if (done) {
+        break;
+      }
+    }
+
+    students.sort((a, b) => a.fullName.compareTo(b.fullName));
+    return students;
+  }
+
+  @override
+  Future<Map<int, double>> getPointTotalsByStudent(
+    String token, {
+    int? groupId,
+  }) async {
+    final response = await _client.get(
+      _buildUri(
+        '/student-points/statistics/by-student',
+        queryParameters: {
+          if (groupId != null) 'group_id': groupId.toString(),
+        },
+      ),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+    );
+
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to load point totals.'),
+      );
+    }
+
+    final totals = <int, double>{};
+    if (responseBody is Map<String, dynamic>) {
+      final result = responseBody['result'];
+      if (result is List) {
+        for (final item in result) {
+          if (item is! Map<String, dynamic>) {
+            continue;
+          }
+          final personId = _asInt(item['person_id']);
+          final total = _asDouble(item['total_points']);
+          if (personId != null && total != null) {
+            totals[personId] = total;
+          }
+        }
+      }
+    }
+    return totals;
+  }
+
+  @override
   Future<void> createPointsBulk(
     String token,
     List<StudentPointDraft> points,

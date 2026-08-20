@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- APNs environment for push notifications. `development` is right for
+	     debug builds and TestFlight; Xcode rewrites it to `production` for a
+	     release archive when the Push Notifications capability is enabled.
+
+	     This file is not referenced by the Xcode project yet. Add it via
+	     Runner target > Signing & Capabilities > + Capability > Push
+	     Notifications, which wires it up and refreshes the provisioning
+	     profile in one step. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

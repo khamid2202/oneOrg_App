@@ -4,6 +4,8 @@ import 'package:one_org_staff/config/api_config.dart';
 import '../../timetable/time_table_repository.dart';
 import '../../MyLessons/lesson_points_repository.dart';
 import '../../colleagues/domain/colleagues_repository.dart';
+import '../../exams/domain/exams_repository.dart';
+import '../../notifications/domain/notifications_repository.dart';
 import '../../point_report/domain/point_report_repository.dart';
 import '../data/token_storage.dart';
 import '../domain/auth_repository.dart';
@@ -18,12 +20,16 @@ class AuthController extends ChangeNotifier {
     LessonPointsRepository? pointsRepository,
     ColleaguesRepository? colleaguesRepository,
     PointReportRepository? pointReportRepository,
+    ExamsRepository? examsRepository,
+    NotificationsRepository? notificationsRepository,
   }) : _authRepository = authRepository,
        _tokenStorage = tokenStorage,
        _timetableRepository = timetableRepository,
        _pointsRepository = pointsRepository,
        _colleaguesRepository = colleaguesRepository,
-       _pointReportRepository = pointReportRepository;
+       _pointReportRepository = pointReportRepository,
+       _examsRepository = examsRepository,
+       _notificationsRepository = notificationsRepository;
 
   final AuthRepository _authRepository;
   final TokenStorage _tokenStorage;
@@ -31,6 +37,15 @@ class AuthController extends ChangeNotifier {
   final LessonPointsRepository? _pointsRepository;
   final ColleaguesRepository? _colleaguesRepository;
   final PointReportRepository? _pointReportRepository;
+  final ExamsRepository? _examsRepository;
+  final NotificationsRepository? _notificationsRepository;
+
+  /// Runs just before the session token is discarded on sign-out, while an
+  /// authenticated call is still possible. [PushService] hangs the
+  /// device-token teardown off this — a token left registered would keep
+  /// pushing this user's notifications to a phone they signed out of.
+  /// Failures here never block the sign-out.
+  Future<void> Function()? onBeforeSignOut;
 
   AuthStatus _status = AuthStatus.checking;
   bool _isSubmitting = false;
@@ -222,6 +237,81 @@ class AuthController extends ChangeNotifier {
     );
   }
 
+  /// Shared guard for the exam calls: both a configured repository and a live
+  /// session are required before any of them can run.
+  Future<T> _withExams<T>(
+    Future<T> Function(ExamsRepository repo, String token) action,
+  ) async {
+    final examsRepository = _examsRepository;
+    if (examsRepository == null) {
+      throw const AuthFailure('Exams are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return action(examsRepository, token);
+  }
+
+  Future<List<ExamPeriod>> loadExamPeriods({
+    bool? isActive,
+    int? academicYearId,
+  }) {
+    return _withExams(
+      (repo, token) => repo.getExamPeriods(
+        token,
+        isActive: isActive,
+        academicYearId: academicYearId,
+      ),
+    );
+  }
+
+  Future<List<Exam>> loadExams({int? examPeriodId}) => _withExams(
+    (repo, token) => repo.getExams(token, examPeriodId: examPeriodId),
+  );
+
+  Future<Exam> createExam({
+    required int examPeriodId,
+    required int subjectId,
+    required List<int> groupIds,
+    required int maxScore,
+  }) {
+    return _withExams(
+      (repo, token) => repo.createExam(
+        token,
+        examPeriodId: examPeriodId,
+        subjectId: subjectId,
+        groupIds: groupIds,
+        maxScore: maxScore,
+      ),
+    );
+  }
+
+  Future<void> deleteExam(int examId) =>
+      _withExams((repo, token) => repo.deleteExam(token, examId: examId));
+
+  Future<List<SubjectEntry>> loadSubjects() =>
+      _withExams((repo, token) => repo.getSubjects(token));
+
+  Future<List<ExamResult>> loadExamResults(int examId) =>
+      _withExams((repo, token) => repo.getExamResults(token, examId: examId));
+
+  Future<void> createExamResultsBulk(List<ExamResultDraft> drafts) =>
+      _withExams((repo, token) => repo.createExamResultsBulk(token, drafts));
+
+  Future<void> updateExamResult({required int resultId, required double score}) {
+    return _withExams(
+      (repo, token) =>
+          repo.updateExamResult(token, resultId: resultId, score: score),
+    );
+  }
+
+  Future<void> deleteExamResult(int resultId) => _withExams(
+    (repo, token) => repo.deleteExamResult(token, resultId: resultId),
+  );
+
   Future<List<AcademicYearEntry>> loadAcademicYears() async {
     final pointsRepository = _pointsRepository;
     if (pointsRepository == null) {
@@ -410,6 +500,37 @@ class AuthController extends ChangeNotifier {
     );
   }
 
+  /// The rewards roster: one class, or every student when [groupId] is null.
+  Future<List<StudentEntry>> loadAllStudents({int? groupId}) async {
+    final pointsRepository = _pointsRepository;
+    if (pointsRepository == null) {
+      throw const AuthFailure('Points are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return pointsRepository.getAllStudents(token, groupId: groupId);
+  }
+
+  /// Net point balances keyed by person id, for the same scope as
+  /// [loadAllStudents].
+  Future<Map<int, double>> loadPointTotalsByStudent({int? groupId}) async {
+    final pointsRepository = _pointsRepository;
+    if (pointsRepository == null) {
+      throw const AuthFailure('Points are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return pointsRepository.getPointTotalsByStudent(token, groupId: groupId);
+  }
+
   Future<void> savePointsBulk(List<StudentPointDraft> points) async {
     if (points.isEmpty) {
       return;
@@ -548,9 +669,119 @@ class AuthController extends ChangeNotifier {
     await pointsRepository.deleteContact(token, contactId: contactId);
   }
 
+  Future<NotificationPage> loadNotifications({
+    int page = 1,
+    int limit = 20,
+    bool? isRead,
+  }) async {
+    final notificationsRepository = _notificationsRepository;
+    if (notificationsRepository == null) {
+      throw const AuthFailure('Notifications are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return notificationsRepository.getNotifications(
+      token,
+      page: page,
+      limit: limit,
+      isRead: isRead,
+    );
+  }
+
+  Future<int> loadUnreadNotificationCount() async {
+    final notificationsRepository = _notificationsRepository;
+    if (notificationsRepository == null) {
+      throw const AuthFailure('Notifications are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return notificationsRepository.getUnreadCount(token);
+  }
+
+  Future<void> markNotificationRead(int id) async {
+    final notificationsRepository = _notificationsRepository;
+    if (notificationsRepository == null) {
+      throw const AuthFailure('Notifications are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    await notificationsRepository.markAsRead(token, id: id);
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    final notificationsRepository = _notificationsRepository;
+    if (notificationsRepository == null) {
+      throw const AuthFailure('Notifications are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    await notificationsRepository.markAllAsRead(token);
+  }
+
+  Future<void> registerDeviceToken({
+    required String deviceToken,
+    required String platform,
+  }) async {
+    final notificationsRepository = _notificationsRepository;
+    if (notificationsRepository == null) {
+      throw const AuthFailure('Notifications are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    await notificationsRepository.registerDeviceToken(
+      token,
+      deviceToken: deviceToken,
+      platform: platform,
+    );
+  }
+
+  Future<void> unregisterDeviceToken(String deviceToken) async {
+    final notificationsRepository = _notificationsRepository;
+    if (notificationsRepository == null) {
+      throw const AuthFailure('Notifications are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    await notificationsRepository.unregisterDeviceToken(
+      token,
+      deviceToken: deviceToken,
+    );
+  }
+
   Future<void> signOut() async {
     final token = await _tokenStorage.readToken();
     if (token != null && token.isNotEmpty) {
+      try {
+        await onBeforeSignOut?.call();
+      } catch (_) {
+        // Best effort — a device left registered is better than a user stuck
+        // on a screen they asked to leave.
+      }
+
       try {
         await _authRepository.revoke(token);
       } catch (_) {

@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+ gates notifications behind a runtime permission. The app
+         asks for it through PushService, after its own explainer sheet. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="Dombit School"
         android:name="${applicationName}"
@@ -31,6 +34,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Channel the system uses for pushes that arrive while the app is
+             not running, when Dart never gets a say. Must match the channel id
+             PushService creates, or background notifications land silently on
+             a low-importance default channel. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="one_org_staff_high_importance" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

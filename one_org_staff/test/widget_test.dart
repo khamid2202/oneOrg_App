@@ -18,6 +18,7 @@ import 'package:one_org_staff/features/Profile/profilepage.dart';
 import 'package:one_org_staff/shared/underline_tabs.dart';
 import 'package:one_org_staff/features/MyClass/my_class.dart';
 import 'package:one_org_staff/features/colleagues/domain/colleagues_repository.dart';
+import 'package:one_org_staff/features/exams/presentation/exams_page.dart';
 import 'package:one_org_staff/features/point_report/domain/point_report_repository.dart';
 import 'package:one_org_staff/features/point_report/presentation/point_report_page.dart';
 import 'package:one_org_staff/app/theme.dart';
@@ -277,6 +278,36 @@ void main() {
       find.text('Choose a class to view the point report.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('the dashboard Exams row opens the exams hub', (
+    WidgetTester tester,
+  ) async {
+    final controller = AuthController(
+      authRepository: FakeAuthRepository(validTokens: const {'saved-token'}),
+      tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
+    );
+
+    await tester.pumpWidget(OneOrgStaffApp(controller: controller));
+    await tester.pumpAndSettle();
+
+    // No navbar button by design — exams open from the dashboard.
+    expect(
+      find.descendant(
+        of: find.byType(BottomMenu),
+        matching: find.text('Exams'),
+      ),
+      findsNothing,
+    );
+
+    await tester.ensureVisible(find.text('Exams'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Exams'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ExamsPage), findsOneWidget);
+    expect(find.text('Create a new exam'), findsOneWidget);
+    expect(find.text('Score the exam'), findsOneWidget);
   });
 
   testWidgets('lessons tab shows scheduled lessons for the selected day', (

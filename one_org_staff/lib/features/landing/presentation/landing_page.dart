@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:one_org_staff/features/BottomBar/bottom_menu.dart';
@@ -13,17 +15,31 @@ import 'package:one_org_staff/features/timetable/presentation/timetable_page.dar
 import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/colleagues/presentation/colleagues_page.dart';
+import 'package:one_org_staff/features/exams/presentation/exams_page.dart';
+import 'package:one_org_staff/features/notifications/application/notifications_controller.dart';
+import 'package:one_org_staff/features/notifications/application/push_service.dart';
+import 'package:one_org_staff/features/notifications/presentation/notification_bell.dart';
+import 'package:one_org_staff/features/notifications/presentation/notification_permission_sheet.dart';
+import 'package:one_org_staff/features/notifications/presentation/notifications_page.dart';
 import 'package:one_org_staff/features/point_report/presentation/point_report_page.dart';
+import 'package:one_org_staff/features/rewards/presentation/rewards_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({
     super.key,
     required this.controller,
     required this.themeController,
+    this.notificationsController,
+    this.pushService,
   });
 
   final AuthController controller;
   final ThemeController themeController;
+
+  /// Both null in a test harness that injects its own [AuthController]; the
+  /// header then renders without a bell and the inbox tab is unreachable.
+  final NotificationsController? notificationsController;
+  final PushService? pushService;
 
   @override
   State<LandingPage> createState() => _LandingPageState();
@@ -71,15 +87,100 @@ class _LandingPageState extends State<LandingPage> {
   static const _timetableTab = 4;
   static const _myClassTab = 5;
   static const _pointReportTab = 6;
+  static const _examsTab = 7;
+  static const _rewardsTab = 8;
+  static const _notificationsTab = 9;
 
   int _selectedIndex = 0;
   bool _returningViaSwipe = false;
   Future<AppUserProfile>? _profileFuture;
 
+  /// The last profile the future produced. A `FutureBuilder` always starts a
+  /// fresh subscription in the waiting state, even on an already-completed
+  /// future, so every remount of the header — and the swipe back to the
+  /// dashboard remounts it twice — would otherwise paint one frame of
+  /// "Staff Member" and a placeholder avatar before the real name popped in.
+  AppUserProfile? _profile;
+
   @override
   void initState() {
     super.initState();
-    _profileFuture = widget.controller.loadCurrentUserProfile();
+    _profileFuture = _loadProfile();
+
+    final notifications = widget.notificationsController;
+    final push = widget.pushService;
+    if (notifications != null) {
+      notifications.start();
+    }
+    if (push != null) {
+      push.onNotificationOpened = _openNotificationsTab;
+    }
+
+    // Deferred a frame: the ask needs a mounted `Scaffold` for the snackbar it
+    // may show, and a permission sheet racing the dashboard's first paint
+    // reads as a pop-up out of nowhere.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (push != null && push.consumeOpenInboxRequest()) {
+        // Cold-started by tapping a push — the inbox is what they asked for.
+        _openNotificationsTab();
+      }
+      _askForNotificationPermission();
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.pushService?.onNotificationOpened = null;
+    widget.notificationsController?.stop();
+    super.dispose();
+  }
+
+  void _openNotificationsTab() {
+    widget.pushService?.consumeOpenInboxRequest();
+    if (widget.notificationsController == null || widget.pushService == null) {
+      return;
+    }
+    if (!mounted || _selectedIndex == _notificationsTab) return;
+    setState(() {
+      _selectedIndex = _notificationsTab;
+    });
+  }
+
+  /// Asks once per install, and only after sign-in — a teacher who has just
+  /// seen what the app is for has some basis for answering, which someone
+  /// staring at a login screen does not.
+  Future<void> _askForNotificationPermission() async {
+    final push = widget.pushService;
+    if (push == null) return;
+
+    // [PushService.initialize] is fire-and-forget from the app shell, so the
+    // real permission state is very likely still settling when this frame
+    // lands. Asking before it does would read the placeholder `unavailable`
+    // and burn the once-per-install prompt on it.
+    await push.ready;
+    if (!mounted) return;
+
+    await maybeAskForNotificationPermission(context, push);
+  }
+
+  /// Starts the profile request, recording the result for [_profile] on the
+  /// way through. Returns the same future, so callers still await the request
+  /// rather than the bookkeeping.
+  Future<AppUserProfile> _loadProfile() {
+    final future = widget.controller.loadCurrentUserProfile();
+    unawaited(
+      future
+          .then((profile) {
+            if (mounted) {
+              _profile = profile;
+            }
+          })
+          // Failures are the FutureBuilder's to report; this listener only
+          // caches, and an unhandled rejection here would crash the zone.
+          .catchError((_) {}),
+    );
+    return future;
   }
 
   void _showSignOutDialog() {
@@ -177,7 +278,8 @@ class _LandingPageState extends State<LandingPage> {
 
   Widget _buildHeader(bool isDarkMode) {
     return FutureBuilder<AppUserProfile>(
-      future: _profileFuture ??= widget.controller.loadCurrentUserProfile(),
+      future: _profileFuture ??= _loadProfile(),
+      initialData: _profile,
       builder: (context, snapshot) {
         final colors = appColorsOf(context);
         final profile = snapshot.data;
@@ -239,7 +341,15 @@ class _LandingPageState extends State<LandingPage> {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
+            if (widget.notificationsController != null &&
+                widget.pushService != null) ...[
+              NotificationBell(
+                controller: widget.notificationsController!,
+                onTap: _openNotificationsTab,
+              ),
+              const SizedBox(width: 8),
+            ],
             Container(
               decoration: BoxDecoration(
                 color: colors.softBg,
@@ -269,6 +379,11 @@ class _LandingPageState extends State<LandingPage> {
   /// The page for the selected tab, without any scroll wrapper — see
   /// [_buildTabViewport], which decides whether the page scrolls itself.
   Widget _buildTabPage(BuildContext context, bool isDarkMode) {
+    // Hoisted so the notifications branch promotes them instead of asserting
+    // non-null on a pair that a test harness legitimately leaves out.
+    final notifications = widget.notificationsController;
+    final push = widget.pushService;
+
     return _selectedIndex == _homeTab
         ? _buildHomeDashboard(context, isDarkMode)
         : _selectedIndex == _lessonsTab
@@ -301,6 +416,41 @@ class _LandingPageState extends State<LandingPage> {
             // straight from the tap
             // — confirm first.
             onLogout: _showSignOutDialog,
+          )
+        : _selectedIndex == _examsTab
+        ? ExamsPage(
+            api: ExamsApi(
+              loadProfile: widget.controller.loadCurrentUserProfile,
+              loadAcademicYears: widget.controller.loadAcademicYears,
+              loadExamPeriods: widget.controller.loadExamPeriods,
+              loadExams: widget.controller.loadExams,
+              createExam: widget.controller.createExam,
+              deleteExam: widget.controller.deleteExam,
+              loadSubjects: widget.controller.loadSubjects,
+              loadGroups: widget.controller.loadGroups,
+              loadColleagues: widget.controller.loadColleagues,
+              loadTimetable: widget.controller.loadFullTimetable,
+              loadStudentsForGroup: widget.controller.loadStudentsForGroup,
+              loadExamResults: widget.controller.loadExamResults,
+              createExamResultsBulk: widget.controller.createExamResultsBulk,
+              updateExamResult: widget.controller.updateExamResult,
+              deleteExamResult: widget.controller.deleteExamResult,
+            ),
+          )
+        : _selectedIndex == _rewardsTab
+        ? RewardsPage(
+            loadGroups: widget.controller.loadGroups,
+            loadStudents: widget.controller.loadAllStudents,
+            loadPointTotals: widget.controller.loadPointTotalsByStudent,
+            savePoints: widget.controller.savePointsBulk,
+          )
+        : (_selectedIndex == _notificationsTab &&
+              notifications != null &&
+              push != null)
+        ? NotificationsPage(
+            controller: notifications,
+            pushService: push,
+            bottomInset: _bottomMenuOverlaySpace,
           )
         : _selectedIndex == _myClassTab
         ? MyClassPage(
@@ -348,7 +498,10 @@ class _LandingPageState extends State<LandingPage> {
   /// height. It is handed the nav bar's overlay height to pad its own list.
   Widget _buildTabViewport(BoxConstraints constraints, bool isDarkMode) {
     final page = _buildTabPage(context, isDarkMode);
-    final scrollsItself = _selectedIndex == _colleaguesTab;
+    final scrollsItself =
+        _selectedIndex == _colleaguesTab ||
+        _selectedIndex == _rewardsTab ||
+        _selectedIndex == _notificationsTab;
 
     return SizedBox(
       height: constraints.maxHeight,
@@ -440,6 +593,36 @@ class _LandingPageState extends State<LandingPage> {
           ),
           const SizedBox(height: 12),
           _DashboardListTile(
+            title: 'Rewards',
+            icon: Icons.card_giftcard_rounded,
+            iconColor: const Color(0xFFA78BFA),
+            iconBgColor: isDarkMode
+                ? const Color(0xFF2A2145)
+                : const Color(0xFFEDE9FE),
+            isDarkMode: isDarkMode,
+            onTap: () {
+              setState(() {
+                _selectedIndex = _rewardsTab;
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+          _DashboardListTile(
+            title: 'Exams',
+            icon: Icons.assignment_turned_in_rounded,
+            iconColor: const Color(0xFFF472B6),
+            iconBgColor: isDarkMode
+                ? const Color(0xFF3B1D2C)
+                : const Color(0xFFFCE7F3),
+            isDarkMode: isDarkMode,
+            onTap: () {
+              setState(() {
+                _selectedIndex = _examsTab;
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+          _DashboardListTile(
             title: 'Colleagues',
             icon: Icons.groups_rounded,
             iconColor: const Color(0xFFF59E0B),
@@ -517,6 +700,19 @@ class _LandingPageState extends State<LandingPage> {
                         duration: _returningViaSwipe
                             ? Duration.zero
                             : const Duration(milliseconds: 220),
+                        // The page being left has to go at once, not fade.
+                        // Tabs paint no background of their own — the gradient
+                        // behind them belongs to the shell — so an outgoing
+                        // page is *visible through* the incoming one for as
+                        // long as it lingers, which read as the old page
+                        // flashing back before the dashboard settled. It has to
+                        // be a constant: `AnimatedSwitcher` hands each entry
+                        // its durations when the entry is created and never
+                        // revisits them, so the conditional `duration` above
+                        // only ever shortens the fade *in* — the outgoing page
+                        // still left on whatever duration was in force when it
+                        // arrived.
+                        reverseDuration: Duration.zero,
                         switchInCurve: Curves.easeOut,
                         switchOutCurve: Curves.easeIn,
                         child: SwipeBackDetector(
@@ -655,33 +851,41 @@ class _DashboardListTileState extends State<_DashboardListTile> {
             1.0,
           ),
           transformAlignment: Alignment.center,
+          // The card's own painting, deliberately *outside* the `Material`.
+          // It used to live on an `Ink` inside it, but a `Material` clips its
+          // ink layer to its own bounds, so the shadow could not reach past
+          // the card: the outer half of the blur was cut off and the inner
+          // half stayed, drawn under a fill that is not quite opaque. That is
+          // the grey wash people saw hugging every edge in light mode. Painted
+          // out here it is an ordinary decoration, free to fall outside the
+          // box the way a drop shadow is supposed to.
+          decoration: BoxDecoration(
+            color: colors.card.withValues(alpha: isDark ? 0.92 : 0.9),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: _isPressed
+                  ? colors.ring.withValues(alpha: 0.55)
+                  : colors.line,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? const Color(0x33000000)
+                    : const Color(0x14000000),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: widget.onTap,
               borderRadius: BorderRadius.circular(22),
-              child: Ink(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.card.withValues(alpha: isDark ? 0.92 : 0.9),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: _isPressed
-                        ? colors.ring.withValues(alpha: 0.55)
-                        : colors.line,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDark
-                          ? const Color(0x33000000)
-                          : const Color(0x14000000),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: Row(
                   children: [

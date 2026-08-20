@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -9,6 +11,10 @@ import '../features/auth/data/http_auth_repository.dart';
 import '../features/auth/data/token_storage.dart';
 import '../features/auth/presentation/auth_gate.dart';
 import '../features/colleagues/data/http_colleagues_repository.dart';
+import '../features/exams/data/http_exams_repository.dart';
+import '../features/notifications/application/notifications_controller.dart';
+import '../features/notifications/application/push_service.dart';
+import '../features/notifications/data/http_notifications_repository.dart';
 import '../features/point_report/data/http_point_report_repository.dart';
 import 'theme.dart';
 import 'theme_controller.dart';
@@ -32,6 +38,12 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
   late final bool _ownsThemeController;
   late final ThemeController _themeController;
   http.Client? _client;
+
+  /// Present only when this widget built the auth controller. A test that
+  /// injects its own controller has no repositories to hang notifications off,
+  /// so the shell renders without an inbox rather than with a broken one.
+  NotificationsController? _notificationsController;
+  PushService? _pushService;
 
   @override
   void initState() {
@@ -62,7 +74,17 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
           client: _client!,
           baseUrl: ApiConfig.baseUrl,
         ),
+        examsRepository: HttpExamsRepository(
+          client: _client!,
+          baseUrl: ApiConfig.baseUrl,
+        ),
+        notificationsRepository: HttpNotificationsRepository(
+          client: _client!,
+          baseUrl: ApiConfig.baseUrl,
+        ),
       );
+
+      _setUpNotifications();
     } else {
       _controller = widget.controller!;
     }
@@ -78,8 +100,42 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
     }
   }
 
+  /// Builds the inbox controller and the push service, and ties them to each
+  /// other and to the session.
+  void _setUpNotifications() {
+    final notifications = NotificationsController(
+      loadNotifications: _controller.loadNotifications,
+      loadUnreadCount: _controller.loadUnreadNotificationCount,
+      markRead: _controller.markNotificationRead,
+      markAllRead: _controller.markAllNotificationsRead,
+    );
+
+    final push = PushService(
+      registerDeviceToken: _controller.registerDeviceToken,
+      unregisterDeviceToken: _controller.unregisterDeviceToken,
+    );
+
+    // A push landing while the app is open should move the badge now, not on
+    // the next 60-second poll.
+    push.onForegroundMessage = notifications.refreshUnreadCount;
+
+    // The device token has to go before the session token does, or the DELETE
+    // has nothing to authenticate with.
+    _controller.onBeforeSignOut = push.unregisterDeviceToken;
+
+    _notificationsController = notifications;
+    _pushService = push;
+
+    // Fire-and-forget: a missing Firebase config resolves to
+    // `PushPermission.unavailable` inside the service rather than throwing,
+    // and the REST inbox does not wait on any of it.
+    unawaited(push.initialize());
+  }
+
   @override
   void dispose() {
+    _notificationsController?.dispose();
+    _pushService?.dispose();
     if (_ownsController) {
       _controller.dispose();
       _client?.close();
@@ -114,6 +170,8 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
           home: AuthGate(
             controller: _controller,
             themeController: _themeController,
+            notificationsController: _notificationsController,
+            pushService: _pushService,
           ),
         );
       },

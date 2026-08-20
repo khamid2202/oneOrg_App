@@ -22,6 +22,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Required by flutter_local_notifications, which uses java.time APIs
+        // that predate this app's minSdk.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -58,6 +61,19 @@ android {
             }
         }
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+
+// The Google Services plugin reads google-services.json and hard-fails the
+// build when it is missing. Applying it only when the file is present keeps
+// the app buildable before the Firebase project is wired up — push is simply
+// off until then, the same way the release signing config above falls back to
+// debug when there is no keystore.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 flutter {

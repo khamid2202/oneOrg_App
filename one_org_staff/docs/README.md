@@ -19,6 +19,8 @@ Two kinds of docs live here:
 |-----|------|
 | [STRUCTURE.md](STRUCTURE.md) | Target file structure |
 | [CHANGELOG.md](CHANGELOG.md) | Change history |
+| [PUSH_SETUP.md](PUSH_SETUP.md) | Firebase/APNs steps needed before push works |
 | [attendance.md](attendance.md) | Attendance API |
 | [points.md](points.md) | Student points API |
 | [contacts.md](contacts.md) | Contacts API |
+| [staff/notifications.md](staff/notifications.md) | Notifications API — inbox, device tokens, send |

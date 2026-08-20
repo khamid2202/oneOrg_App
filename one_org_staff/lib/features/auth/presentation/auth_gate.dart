@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../../app/theme_controller.dart';
 import '../../landing/presentation/landing_page.dart';
+import '../../notifications/application/notifications_controller.dart';
+import '../../notifications/application/push_service.dart';
 import '../application/auth_controller.dart';
 import 'login_page.dart';
 
@@ -11,10 +13,17 @@ class AuthGate extends StatelessWidget {
     super.key,
     required this.controller,
     required this.themeController,
+    this.notificationsController,
+    this.pushService,
   });
 
   final AuthController controller;
   final ThemeController themeController;
+
+  /// Null when the shell was handed a pre-built [AuthController] — a test
+  /// harness — in which case the dashboard simply has no bell.
+  final NotificationsController? notificationsController;
+  final PushService? pushService;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +37,8 @@ class AuthGate extends StatelessWidget {
             return LandingPage(
               controller: controller,
               themeController: themeController,
+              notificationsController: notificationsController,
+              pushService: pushService,
             );
           case AuthStatus.unauthenticated:
             return LoginPage(controller: controller);

@@ -117,6 +117,8 @@ class StudentEntry {
     this.code,
     this.pictureUrl,
     this.status,
+    this.groupId,
+    this.classPair,
     this.contacts = const [],
     this.details = const PersonDetails(),
   });
@@ -137,6 +139,15 @@ class StudentEntry {
 
   /// Enrollment status, e.g. `present` or `left`.
   final String? status;
+
+  /// The group this enrollment belongs to. Known for free when the roster was
+  /// fetched per group, and read off the row when it was not — awarding points
+  /// needs it, and a school-wide search has no single group to fall back on.
+  final int? groupId;
+
+  /// `10-A`, from the attached group. Shown next to a name when the list spans
+  /// more than one class.
+  final String? classPair;
 
   /// Only populated when the roster was fetched with `include=["contacts"]`.
   final List<ContactEntry> contacts;
@@ -162,6 +173,24 @@ class StudentEntry {
     final personMap = person is Map<String, dynamic>
         ? person
         : const <String, dynamic>{};
+
+    // The list endpoint attaches the group; `group_id` sits on the enrollment
+    // itself, so either one alone is enough to identify the class.
+    final group = json['group'];
+    final groupMap = group is Map<String, dynamic>
+        ? group
+        : const <String, dynamic>{};
+    final groupId =
+        _asInt(json['group_id'] ?? json['groupId']) ?? _asInt(groupMap['id']);
+    final grade = _asInt(groupMap['grade']);
+    final className = _firstString(groupMap, const [
+      'class',
+      'className',
+      'class_name',
+    ]);
+    final classPair =
+        _firstString(json, const ['class_pair', 'classPair']) ??
+        (grade != null && className != null ? '$grade-$className' : null);
 
     final contacts = <ContactEntry>[];
     final rawContacts = json['contacts'];
@@ -191,6 +220,8 @@ class StudentEntry {
           _firstString(json, const ['picture_url', 'pictureUrl']) ??
           _firstString(personMap, const ['picture_url', 'pictureUrl']),
       status: _firstString(json, const ['status']),
+      groupId: groupId,
+      classPair: classPair,
       contacts: contacts,
       details: PersonDetails.fromJson(personMap),
     );
@@ -207,6 +238,8 @@ class StudentEntry {
       code: code,
       pictureUrl: pictureUrl,
       status: status,
+      groupId: groupId,
+      classPair: classPair,
       contacts: contacts,
       details: details,
     );
@@ -221,6 +254,8 @@ class StudentEntry {
       code: code,
       pictureUrl: pictureUrl,
       status: status,
+      groupId: groupId,
+      classPair: classPair,
       contacts: contacts,
       details: details,
     );
@@ -574,6 +609,21 @@ abstract class LessonPointsRepository {
     String token, {
     required int groupId,
     bool includeContacts = false,
+  });
+
+  /// The roster for one class, or the whole school when [groupId] is null.
+  ///
+  /// Unlike [getStudentsForGroup] this pages through every result rather than
+  /// stopping at the first hundred, because the rewards search filters the
+  /// roster locally — a student past page one would otherwise be unreachable.
+  Future<List<StudentEntry>> getAllStudents(String token, {int? groupId});
+
+  /// Net point totals keyed by **person id**, for one class or the whole
+  /// school. Awarded and deducted points net out, matching the balance the web
+  /// shows next to each name.
+  Future<Map<int, double>> getPointTotalsByStudent(
+    String token, {
+    int? groupId,
   });
 
   Future<List<AcademicYearEntry>> getAcademicYears(String token);
