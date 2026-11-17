@@ -358,9 +358,11 @@ class _LandingPageState extends State<LandingPage> {
             updatePassword: widget.controller.updatePassword,
             uploadProfilePicture: widget.controller.uploadProfilePicture,
             removeProfilePicture: widget.controller.removeProfilePicture,
-            // Never sign out
-            // straight from the tap
-            // — confirm first.
+            loadContact: widget.controller.loadContact,
+            saveContact: widget.controller.saveContact,
+            sendSuggestion: widget.controller.sendSuggestion,
+            branchController: widget.branchController,
+            // Never sign out straight from the tap — confirm first.
             onLogout: _showSignOutDialog,
           )
         : _selectedIndex == _examsTab

@@ -994,4 +994,74 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get oldGradingLesson =>
       'bu dars yangi baholashdan oldin belgilangan, shuning uchun eski toifalar ishlaydi';
+
+  @override
+  String get profileAccount => 'Hisob';
+
+  @override
+  String get profileApp => 'Ilova';
+
+  @override
+  String get profileEmail => 'Email';
+
+  @override
+  String get profilePhone => 'Telefon';
+
+  @override
+  String get profilePassword => 'Parol';
+
+  @override
+  String get profileSystem => 'Tizim';
+
+  @override
+  String get profileSystemHint => 'Til, rang, tungi rejim';
+
+  @override
+  String get profileSuggestions => 'Takliflar';
+
+  @override
+  String get profileLogOut => 'Chiqish';
+
+  @override
+  String get profileNotSet => 'Kiritilmagan';
+
+  @override
+  String get profileContactTitle => 'Aloqa ma\'lumotlari';
+
+  @override
+  String get profileInvalidEmail => 'To\'g\'ri email kiriting';
+
+  @override
+  String get profileInvalidPhone => 'To\'g\'ri telefon raqam kiriting';
+
+  @override
+  String get profileContactSaved => 'Aloqa ma\'lumotlari yangilandi';
+
+  @override
+  String get profileContactFailed => 'Aloqa ma\'lumotlarini yangilab bo\'lmadi';
+
+  @override
+  String get suggestionsLead =>
+      'G\'oyalar, muammolar, savollar — har birini o\'qiymiz.';
+
+  @override
+  String get suggestionsPrompt => 'Nimani yaxshilashimiz kerak?';
+
+  @override
+  String get suggestionsHint => 'Taklifingizni yozing…';
+
+  @override
+  String get suggestionsAnonymous => 'Anonim';
+
+  @override
+  String get suggestionsSend => 'Yuborish';
+
+  @override
+  String get suggestionsSentButton => 'Yuborildi';
+
+  @override
+  String get suggestionsSent => 'Yuborildi — rahmat!';
+
+  @override
+  String get suggestionsFailed => 'Yuborib bo\'lmadi. Qayta urinib ko\'ring.';
 }

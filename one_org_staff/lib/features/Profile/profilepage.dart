@@ -3,16 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:one_org_staff/app/language_controller.dart';
 import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/app/theme_controller.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
+import 'package:one_org_staff/features/branches/application/branch_controller.dart';
+import 'package:one_org_staff/features/branches/presentation/branch_switcher.dart';
 
 import 'package:one_org_staff/l10n/generated/app_localizations.dart';
 import 'package:one_org_staff/shared/editable_avatar.dart';
-import 'package:one_org_staff/shared/underline_tabs.dart';
 
-enum ProfileTab { profile, password, help, system }
+/// What Profile shows: the list itself, or one of the screens it opens.
+enum ProfileView { list, password, system, suggestions }
 
+final _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+final _phonePattern = RegExp(r'^\+?[\d\s()-]{7,20}$');
+
+/// Profile, laid out like the web's phone Settings (`MobileView.jsx`): a
+/// profile card, then grouped rows. Password, System and Suggestions open as
+/// their own screen with a back arrow.
 class ProfilePage extends StatefulWidget {
   const ProfilePage({
     super.key,
@@ -22,6 +29,10 @@ class ProfilePage extends StatefulWidget {
     required this.updatePassword,
     required this.uploadProfilePicture,
     required this.removeProfilePicture,
+    this.loadContact,
+    this.saveContact,
+    this.sendSuggestion,
+    this.branchController,
     this.onLogout,
   });
 
@@ -40,6 +51,23 @@ class ProfilePage extends StatefulWidget {
   })
   uploadProfilePicture;
   final Future<String?> Function({required int userId}) removeProfilePicture;
+
+  /// `/settings/profile`. Without it the rows show what `/users/me` sent and
+  /// can't be edited.
+  final Future<ProfileContact> Function()? loadContact;
+  final Future<ProfileContact> Function({
+    required String email,
+    required String phone,
+  })?
+  saveContact;
+  final Future<void> Function({
+    required String message,
+    required bool anonymous,
+  })?
+  sendSuggestion;
+
+  /// Shown on the card when the person works at more than one branch.
+  final BranchController? branchController;
   final VoidCallback? onLogout;
 
   @override
@@ -47,20 +75,22 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  static const _telegramLink = 'https://t.me/+PLLPyJI2F6JhYWQy';
-
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   late Future<AppUserProfile> _profileFuture;
-  ProfileTab _tab = ProfileTab.profile;
+  ProfileView _view = ProfileView.list;
   bool _isUpdatingPassword = false;
+
+  ProfileContact? _contact;
+  bool _resolvingContact = false;
 
   @override
   void initState() {
     super.initState();
     _profileFuture = widget.loadProfile();
+    _resolveContact();
   }
 
   @override
@@ -81,6 +111,20 @@ class _ProfilePageState extends State<ProfilePage> {
 
   bool get _isDarkMode => widget.themeController.isDark;
 
+  Future<void> _resolveContact() async {
+    final load = widget.loadContact;
+    if (load == null) return;
+    setState(() => _resolvingContact = true);
+    try {
+      final contact = await load();
+      if (mounted) setState(() => _contact = contact);
+    } catch (_) {
+      // Fall back to what /users/me sent.
+    } finally {
+      if (mounted) setState(() => _resolvingContact = false);
+    }
+  }
+
   void _reloadProfile() {
     setState(() {
       _profileFuture = widget.loadProfile();
@@ -100,6 +144,8 @@ class _ProfilePageState extends State<ProfilePage> {
       ..clearSnackBars()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
+
+  void _open(ProfileView view) => setState(() => _view = view);
 
   Future<void> _handlePasswordUpdate() async {
     if (_isUpdatingPassword) {
@@ -170,97 +216,182 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _openTelegram() async {
-    final uri = Uri.parse(_telegramLink);
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && mounted) {
-      _showSnackBar('Unable to open Telegram.');
+  Future<void> _editContact({
+    required String email,
+    required String phone,
+    required bool focusPhone,
+  }) async {
+    final save = widget.saveContact;
+    if (save == null) return;
+    final saved = await showModalBottomSheet<ProfileContact>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _EditContactSheet(
+        email: email,
+        phone: phone,
+        focusPhone: focusPhone,
+        save: save,
+      ),
+    );
+    if (saved != null && mounted) {
+      setState(() => _contact = saved);
+      _showSnackBar(AppLocalizations.of(context).profileContactSaved);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      child: FutureBuilder<AppUserProfile>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const SizedBox(
-              height: 280,
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
+    return PopScope(
+      // The system back gesture leaves a sub-screen before it leaves Profile.
+      canPop: _view == ProfileView.list,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _open(ProfileView.list);
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+        child: FutureBuilder<AppUserProfile>(
+          future: _profileFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const SizedBox(
+                height: 280,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
 
-          if (snapshot.hasError || !snapshot.hasData) {
-            return _ProfileLoadError(
-              message: snapshot.error is AuthFailure
-                  ? (snapshot.error as AuthFailure).message
-                  : 'Unable to load the profile right now.',
-              onRetry: _reloadProfile,
-            );
-          }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return _ProfileLoadError(
+                message: snapshot.error is AuthFailure
+                    ? (snapshot.error as AuthFailure).message
+                    : 'Unable to load the profile right now.',
+                onRetry: _reloadProfile,
+              );
+            }
 
-          final profile = snapshot.data!;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _ProfileHeaderCard(
-                profile: profile,
-                isDarkMode: _isDarkMode,
-                uploadProfilePicture: widget.uploadProfilePicture,
-                removeProfilePicture: widget.removeProfilePicture,
-                onAvatarChanged: (url) => _applyAvatar(profile, url),
-                onError: _showSnackBar,
+            final profile = snapshot.data!;
+            final l = AppLocalizations.of(context);
+            return switch (_view) {
+              ProfileView.list => _buildList(profile),
+              ProfileView.password => _SubScreen(
+                title: l.profilePassword,
+                onBack: () => _open(ProfileView.list),
+                child: _buildPasswordSection(),
               ),
-              const SizedBox(height: 16),
-              // The same underlined bar the My Class student modal uses, so the
-              // two tabbed sections read as one component.
-              UnderlineTabs<ProfileTab>(
-                items: const [
-                  UnderlineTabItem(
-                    value: ProfileTab.profile,
-                    label: 'Profile',
-                    icon: Icons.person_rounded,
-                  ),
-                  UnderlineTabItem(
-                    value: ProfileTab.password,
-                    label: 'Password',
-                    icon: Icons.vpn_key_rounded,
-                  ),
-                  UnderlineTabItem(
-                    value: ProfileTab.help,
-                    label: 'Help',
-                    icon: Icons.help_outline_rounded,
-                  ),
-                  UnderlineTabItem(
-                    value: ProfileTab.system,
-                    label: 'System',
-                    icon: Icons.settings_rounded,
-                  ),
-                ],
-                selected: _tab,
-                isDarkMode: _isDarkMode,
-                onSelected: (tab) => setState(() => _tab = tab),
+              ProfileView.system => _SubScreen(
+                title: l.profileSystem,
+                onBack: () => _open(ProfileView.list),
+                child: _buildSystemSection(),
               ),
-              const SizedBox(height: 20),
-              switch (_tab) {
-                ProfileTab.profile => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _ProfileDetails(profile: profile, isDarkMode: _isDarkMode),
-                    _buildSignOutButton(),
-                  ],
-                ),
-                ProfileTab.password => _buildPasswordSection(),
-                ProfileTab.help => _HelpSection(onOpenTelegram: _openTelegram),
-                ProfileTab.system => _buildSystemSection(),
-              },
-            ],
-          );
-        },
+              ProfileView.suggestions => _SubScreen(
+                title: l.profileSuggestions,
+                onBack: () => _open(ProfileView.list),
+                child: _SuggestionsForm(send: widget.sendSuggestion),
+              ),
+            };
+          },
+        ),
       ),
+    );
+  }
+
+  Widget _buildList(AppUserProfile profile) {
+    final l = AppLocalizations.of(context);
+    final muted = appColorsOf(context).mutedText;
+
+    String fromProfile(String value) =>
+        value == 'Not specified' ? '' : value.trim();
+    final email = _contact?.email ?? fromProfile(profile.email);
+    final phone = _contact?.phone ?? fromProfile(profile.phone);
+    String shown(String value) =>
+        _resolvingContact ? '…' : (value.isEmpty ? l.profileNotSet : value);
+
+    final canEdit = widget.saveContact != null;
+    final pencil = Icon(Icons.edit_outlined, size: 18, color: muted);
+    final chevron = Icon(Icons.chevron_right_rounded, size: 22, color: muted);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ProfileCard(
+          profile: profile,
+          isDarkMode: _isDarkMode,
+          branchController: widget.branchController,
+          uploadProfilePicture: widget.uploadProfilePicture,
+          removeProfilePicture: widget.removeProfilePicture,
+          onAvatarChanged: (url) => _applyAvatar(profile, url),
+          onError: _showSnackBar,
+        ),
+        _Group(
+          label: l.profileAccount,
+          children: [
+            _Item(
+              icon: Icons.mail_outline_rounded,
+              title: l.profileEmail,
+              subtitle: shown(email),
+              trailing: canEdit ? pencil : null,
+              onTap: canEdit
+                  ? () => _editContact(
+                      email: email,
+                      phone: phone,
+                      focusPhone: false,
+                    )
+                  : null,
+            ),
+            _Item(
+              icon: Icons.phone_outlined,
+              title: l.profilePhone,
+              subtitle: shown(phone),
+              trailing: canEdit ? pencil : null,
+              onTap: canEdit
+                  ? () => _editContact(
+                      email: email,
+                      phone: phone,
+                      focusPhone: true,
+                    )
+                  : null,
+            ),
+            _Item(
+              icon: Icons.key_outlined,
+              title: l.profilePassword,
+              trailing: chevron,
+              onTap: () => _open(ProfileView.password),
+            ),
+          ],
+        ),
+        _Group(
+          label: l.profileApp,
+          children: [
+            _Item(
+              icon: Icons.palette_outlined,
+              title: l.profileSystem,
+              subtitle: l.profileSystemHint,
+              trailing: chevron,
+              onTap: () => _open(ProfileView.system),
+            ),
+            if (widget.sendSuggestion != null)
+              _Item(
+                icon: Icons.lightbulb_outline_rounded,
+                title: l.profileSuggestions,
+                trailing: chevron,
+                onTap: () => _open(ProfileView.suggestions),
+              ),
+          ],
+        ),
+        if (widget.onLogout != null) ...[
+          const SizedBox(height: 12),
+          _Group(
+            children: [
+              _Item(
+                icon: Icons.logout_rounded,
+                title: l.profileLogOut,
+                danger: true,
+                onTap: widget.onLogout,
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
@@ -268,12 +399,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
-          icon: Icons.vpn_key_rounded,
-          title: 'Reset Password',
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 16),
         TextField(
           controller: _currentPasswordController,
           obscureText: true,
@@ -333,21 +458,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
-          icon: Icons.settings_rounded,
-          title: 'System',
-          color: colors.accent.solid,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Manage how the app looks. Changes apply across the whole app and '
-          'are saved for next time.',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: colors.mutedText),
-        ),
-        const SizedBox(height: 22),
-
         if (widget.languageController != null) ...[
           _SettingsSection(
             title: AppLocalizations.of(context).language.toUpperCase(),
@@ -404,29 +514,652 @@ class _ProfilePageState extends State<ProfilePage> {
       ],
     );
   }
+}
 
-  /// Signing out belongs with the account it ends, not with appearance
-  /// settings — so it sits at the bottom of the Profile tab.
-  Widget _buildSignOutButton() {
-    if (widget.onLogout == null) {
-      return const SizedBox.shrink();
-    }
+/// A sub-screen: a back arrow and title, then its body.
+class _SubScreen extends StatelessWidget {
+  const _SubScreen({
+    required this.title,
+    required this.onBack,
+    required this.child,
+  });
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: widget.onLogout,
-          icon: const Icon(Icons.logout_rounded),
-          label: const Text('Sign out'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            foregroundColor: Theme.of(context).colorScheme.error,
-            side: BorderSide(color: Theme.of(context).colorScheme.error),
+  final String title;
+  final VoidCallback onBack;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            IconButton(
+              onPressed: onBack,
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              icon: const Icon(Icons.arrow_back_rounded),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: child,
+        ),
+      ],
+    );
+  }
+}
+
+/// The card at the top: photo, name, @username and roles, then the branch.
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({
+    required this.profile,
+    required this.isDarkMode,
+    required this.branchController,
+    required this.uploadProfilePicture,
+    required this.removeProfilePicture,
+    required this.onAvatarChanged,
+    required this.onError,
+  });
+
+  final AppUserProfile profile;
+  final bool isDarkMode;
+  final BranchController? branchController;
+  final Future<String?> Function({
+    required int userId,
+    required List<int> bytes,
+    required String filename,
+  })
+  uploadProfilePicture;
+  final Future<String?> Function({required int userId}) removeProfilePicture;
+  final ValueChanged<String?> onAvatarChanged;
+  final ValueChanged<String> onError;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = appColorsOf(context);
+    final branches = branchController;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              EditableAvatar(
+                fullName: profile.fullName,
+                imageUrl: profile.profileImageUrl,
+                ownerId: profile.id,
+                isDarkMode: isDarkMode,
+                radius: 30,
+                uploadPicture:
+                    ({required ownerId, required bytes, required filename}) =>
+                        uploadProfilePicture(
+                          userId: ownerId,
+                          bytes: bytes,
+                          filename: filename,
+                        ),
+                removePicture: ({required ownerId}) =>
+                    removeProfilePicture(userId: ownerId),
+                onChanged: onAvatarChanged,
+                onError: onError,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.fullName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (profile.username != null)
+                      Text(
+                        '@${profile.username}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 13,
+                          color: colors.mutedText,
+                        ),
+                      ),
+                    if (profile.roles.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: [
+                          for (final role in profile.roles)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.softBg,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                role,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colors.softText,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (branches != null)
+            ListenableBuilder(
+              listenable: branches,
+              builder: (context, _) {
+                final branch = branches.activeBranch;
+                if (!branches.canSwitch || branch == null) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: colors.line),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () => BranchSwitcher.pick(context, branches),
+                      child: SizedBox(
+                        height: 44,
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.apartment_rounded,
+                              size: 18,
+                              color: colors.accent.solid,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                branch.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.expand_more_rounded,
+                              size: 18,
+                              color: colors.mutedText,
+                            ),
+                            const SizedBox(width: 10),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A labelled block of rows on one rounded surface, like the web's `Group`.
+class _Group extends StatelessWidget {
+  const _Group({this.label, required this.children});
+
+  final String? label;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = appColorsOf(context);
+    final gap = Theme.of(context).scaffoldBackgroundColor;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (label != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(
+              label!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: colors.softText,
+              ),
+            ),
+          ),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: colors.line),
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) Divider(height: 2, thickness: 2, color: gap),
+                children[i],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One row: leading icon, title with optional subtitle, trailing icon.
+class _Item extends StatelessWidget {
+  const _Item({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = appColorsOf(context);
+    final error = theme.colorScheme.error;
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 56),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: danger ? error : colors.mutedText),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontSize: 15,
+                        color: danger ? error : null,
+                        fontWeight: danger ? FontWeight.w600 : null,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 13,
+                          color: colors.mutedText,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+            ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Email and phone in one sheet, as the web's `EditContactModal`. Pops with
+/// what the server saved.
+class _EditContactSheet extends StatefulWidget {
+  const _EditContactSheet({
+    required this.email,
+    required this.phone,
+    required this.focusPhone,
+    required this.save,
+  });
+
+  final String email;
+  final String phone;
+  final bool focusPhone;
+  final Future<ProfileContact> Function({
+    required String email,
+    required String phone,
+  })
+  save;
+
+  @override
+  State<_EditContactSheet> createState() => _EditContactSheetState();
+}
+
+class _EditContactSheetState extends State<_EditContactSheet> {
+  late final _email = TextEditingController(text: widget.email);
+  late final _phone = TextEditingController(text: widget.phone);
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _phone.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final l = AppLocalizations.of(context);
+    final email = _email.text.trim();
+    final phone = _phone.text.trim();
+    if (email.isNotEmpty && !_emailPattern.hasMatch(email)) {
+      setState(() => _error = l.profileInvalidEmail);
+      return;
+    }
+    if (phone.isNotEmpty && !_phonePattern.hasMatch(phone)) {
+      setState(() => _error = l.profileInvalidPhone);
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final saved = await widget.save(email: email, phone: phone);
+      if (mounted) Navigator.pop(context, saved);
+    } on AuthFailure catch (failure) {
+      if (mounted) setState(() => _error = failure.message);
+    } catch (_) {
+      if (mounted) setState(() => _error = l.profileContactFailed);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        0,
+        20,
+        20 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l.profileContactTitle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _email,
+              autofocus: !widget.focusPhone,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: l.profileEmail,
+                prefixIcon: const Icon(Icons.mail_outline_rounded),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _phone,
+              autofocus: widget.focusPhone,
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
+              decoration: InputDecoration(
+                labelText: l.profilePhone,
+                prefixIcon: const Icon(Icons.phone_outlined),
+              ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _error!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _saving ? null : () => Navigator.pop(context),
+                    child: Text(l.cancel),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _saving ? null : _submit,
+                    child: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(l.save),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The web's Help page: a suggestion box that goes to the school's Telegram
+/// group through the bot.
+class _SuggestionsForm extends StatefulWidget {
+  const _SuggestionsForm({required this.send});
+
+  final Future<void> Function({
+    required String message,
+    required bool anonymous,
+  })?
+  send;
+
+  @override
+  State<_SuggestionsForm> createState() => _SuggestionsFormState();
+}
+
+class _SuggestionsFormState extends State<_SuggestionsForm> {
+  final _message = TextEditingController();
+  bool _anonymous = false;
+  bool _sending = false;
+  bool _sent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _message.addListener(() {
+      if (_sent) _sent = false;
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _message.dispose();
+    super.dispose();
+  }
+
+  bool get _canSend =>
+      widget.send != null && _message.text.trim().length >= 3 && !_sending;
+
+  Future<void> _submit() async {
+    if (!_canSend) return;
+    final l = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _sending = true);
+    try {
+      await widget.send!(message: _message.text.trim(), anonymous: _anonymous);
+      _message.clear();
+      if (!mounted) return;
+      FocusScope.of(context).unfocus();
+      setState(() => _sent = true);
+      messenger
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text(l.suggestionsSent)));
+    } catch (error) {
+      messenger
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              error is AuthFailure ? error.message : l.suggestionsFailed,
+            ),
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final colors = appColorsOf(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l.suggestionsLead,
+          style: theme.textTheme.bodySmall?.copyWith(color: colors.mutedText),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: colors.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline_rounded,
+                    size: 18,
+                    color: colors.softText,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l.suggestionsPrompt,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _message,
+                minLines: 5,
+                maxLines: 8,
+                maxLength: 3000,
+                decoration: InputDecoration(
+                  hintText: l.suggestionsHint,
+                  counterText: '',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _anonymous,
+                    onChanged: (value) =>
+                        setState(() => _anonymous = value ?? false),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _anonymous = !_anonymous),
+                    child: Text(l.suggestionsAnonymous),
+                  ),
+                  const Spacer(),
+                  FilledButton.icon(
+                    onPressed: _canSend ? _submit : null,
+                    icon: _sending
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            _sent ? Icons.check_rounded : Icons.send_rounded,
+                            size: 18,
+                          ),
+                    label: Text(
+                      _sent ? l.suggestionsSentButton : l.suggestionsSend,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -660,506 +1393,6 @@ class _DarkVariantPicker extends StatelessWidget {
               ),
             ),
           ),
-      ],
-    );
-  }
-}
-
-class _ProfileHeaderCard extends StatelessWidget {
-  const _ProfileHeaderCard({
-    required this.profile,
-    required this.isDarkMode,
-    required this.uploadProfilePicture,
-    required this.removeProfilePicture,
-    required this.onAvatarChanged,
-    required this.onError,
-  });
-
-  final AppUserProfile profile;
-  final bool isDarkMode;
-  final Future<String?> Function({
-    required int userId,
-    required List<int> bytes,
-    required String filename,
-  })
-  uploadProfilePicture;
-  final Future<String?> Function({required int userId}) removeProfilePicture;
-  final ValueChanged<String?> onAvatarChanged;
-  final ValueChanged<String> onError;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final mutedColor = appColorsOf(context).mutedText;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: appColorsOf(context).card,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: appColorsOf(context).line),
-      ),
-      child: Row(
-        children: [
-          EditableAvatar(
-            fullName: profile.fullName,
-            imageUrl: profile.profileImageUrl,
-            ownerId: profile.id,
-            isDarkMode: isDarkMode,
-            uploadPicture:
-                ({required ownerId, required bytes, required filename}) =>
-                    uploadProfilePicture(
-                      userId: ownerId,
-                      bytes: bytes,
-                      filename: filename,
-                    ),
-            removePicture: ({required ownerId}) =>
-                removeProfilePicture(userId: ownerId),
-            onChanged: onAvatarChanged,
-            onError: onError,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  profile.fullName,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (profile.username != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    '@${profile.username}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: mutedColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 2),
-                Text(
-                  profile.email,
-                  style: theme.textTheme.bodySmall?.copyWith(color: mutedColor),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileDetails extends StatelessWidget {
-  const _ProfileDetails({required this.profile, required this.isDarkMode});
-
-  final AppUserProfile profile;
-  final bool isDarkMode;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeader(
-          icon: Icons.person_rounded,
-          title: 'My Profile',
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 16),
-        _InfoCard(
-          title: 'Personal Information',
-          icon: Icons.info_outline_rounded,
-          headerColor: appColorsOf(context).ring,
-          isDarkMode: isDarkMode,
-          children: [
-            _InfoRow(
-              label: 'FULL NAME',
-              value: profile.fullName,
-              icon: Icons.person_outline_rounded,
-              iconColor: Theme.of(context).colorScheme.primary,
-              isDarkMode: isDarkMode,
-            ),
-            _InfoRow(
-              label: 'EMAIL ADDRESS',
-              value: profile.email,
-              icon: Icons.mail_outline_rounded,
-              iconColor: const Color(0xFF2563EB),
-              isDarkMode: isDarkMode,
-            ),
-            _InfoRow(
-              label: 'PHONE NUMBER',
-              value: profile.phone,
-              icon: Icons.phone_outlined,
-              iconColor: const Color(0xFF16A34A),
-              isDarkMode: isDarkMode,
-            ),
-            _InfoRow(
-              label: 'USERNAME',
-              value: profile.username ?? 'Not set',
-              icon: Icons.key_outlined,
-              iconColor: const Color(0xFF7C6BC4),
-              isDarkMode: isDarkMode,
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _InfoCard(
-          title: 'Account Details',
-          icon: Icons.verified_user_outlined,
-          headerColor: const Color(0xFF2F9E77),
-          isDarkMode: isDarkMode,
-          children: [
-            _InfoRow(
-              label: 'STATUS',
-              value: _capitalize(profile.status ?? 'Unknown'),
-              valueColor: const Color(0xFF16A34A),
-              icon: Icons.check_circle_outline_rounded,
-              iconColor: const Color(0xFF16A34A),
-              isDarkMode: isDarkMode,
-            ),
-            if (profile.roles.isNotEmpty)
-              _RolesRow(roles: profile.roles, isDarkMode: isDarkMode),
-          ],
-        ),
-      ],
-    );
-  }
-
-  static String _capitalize(String value) {
-    if (value.isEmpty) {
-      return value;
-    }
-    return value[0].toUpperCase() + value.substring(1);
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.title,
-    required this.icon,
-    required this.headerColor,
-    required this.isDarkMode,
-    required this.children,
-  });
-
-  final String title;
-  final IconData icon;
-  final Color headerColor;
-  final bool isDarkMode;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: appColorsOf(context).card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: appColorsOf(context).line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            color: headerColor,
-            child: Row(
-              children: [
-                Icon(icon, size: 16, color: Colors.white),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(children: children),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.iconColor,
-    required this.isDarkMode,
-    this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color iconColor;
-  final bool isDarkMode;
-  final Color? valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final mutedColor = appColorsOf(context).mutedText;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: isDarkMode ? 0.2 : 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 18, color: iconColor),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: mutedColor,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  value,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: valueColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RolesRow extends StatelessWidget {
-  const _RolesRow({required this.roles, required this.isDarkMode});
-
-  final List<String> roles;
-  final bool isDarkMode;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-    final mutedColor = appColorsOf(context).mutedText;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: primary.withValues(alpha: isDarkMode ? 0.2 : 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(Icons.sell_outlined, size: 18, color: primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ROLES',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: mutedColor,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final role in roles)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: primary,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          role,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HelpSection extends StatelessWidget {
-  const _HelpSection({required this.onOpenTelegram});
-
-  final Future<void> Function() onOpenTelegram;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final mutedColor = appColorsOf(context).mutedText;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeader(
-          icon: Icons.help_outline_rounded,
-          title: 'Help & Support',
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Get assistance and connect with our community.',
-          style: theme.textTheme.bodyMedium?.copyWith(color: mutedColor),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: appColorsOf(context).card,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: appColorsOf(context).line),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: appColorsOf(context).gradient,
-                ),
-                child: const Icon(
-                  Icons.send_rounded,
-                  color: Colors.white,
-                  size: 26,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Need Help?',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Join our Telegram community for support and updates.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(color: mutedColor),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: onOpenTelegram,
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: const Text('Open Telegram'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        for (final item in const [
-          ('Instant Support', Icons.bolt_rounded),
-          ('Community Help', Icons.groups_rounded),
-          ('Latest Updates', Icons.campaign_rounded),
-        ]) ...[
-          Row(
-            children: [
-              Icon(item.$2, size: 18, color: theme.colorScheme.primary),
-              const SizedBox(width: 10),
-              Text(
-                item.$1,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-        ],
-      ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.icon,
-    required this.title,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String title;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 22, color: color),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
       ],
     );
   }

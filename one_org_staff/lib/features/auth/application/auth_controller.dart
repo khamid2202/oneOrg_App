@@ -210,6 +210,35 @@ class AuthController extends ChangeNotifier {
     );
   }
 
+  Future<String> _requireToken() async {
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+    return token;
+  }
+
+  Future<ProfileContact> loadContact() async =>
+      _authRepository.loadContact(await _requireToken());
+
+  Future<ProfileContact> saveContact({
+    required String email,
+    required String phone,
+  }) async => _authRepository.updateContact(
+    await _requireToken(),
+    email: email,
+    phone: phone,
+  );
+
+  Future<void> sendSuggestion({
+    required String message,
+    required bool anonymous,
+  }) async => _authRepository.sendSuggestion(
+    await _requireToken(),
+    message: message,
+    anonymous: anonymous,
+  );
+
   Future<TimetableDaySchedule> loadMyLessonsForDate(DateTime date) async {
     final timetableRepository = _timetableRepository;
     if (timetableRepository == null) {

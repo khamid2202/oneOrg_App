@@ -12,6 +12,19 @@ Newest first. Every notable change to **this Flutter app** gets an entry here
 
 ---
 
+## 2026-11-17 — Profile matches the web's phone Settings
+
+- **Profile** follows the web's `MobileView.jsx`:
+  - **The card:** photo, name, @username and role chips, and a branch row for people at more than one branch. It opens the same sheet as Home.
+  - **Account:** Email and Phone with a pencil, then Password.
+  - **App:** System (language, color, dark mode), then Suggestions.
+  - **Log out** sits on its own row, still behind the confirm dialog.
+- **Sub-screens:** Password, System and Suggestions each open as their own screen with a back arrow. The system back gesture returns to the list first.
+- **Email and phone** are read and saved through `GET`/`PATCH /settings/profile`, which needs only a session. The edit sheet checks the format the way the web does and shows the server's own refusal, e.g. "Email is already taken".
+- **Suggestions** replaces the Telegram help card. Like the web, it sends `POST /suggestions` with an Anonymous option, once 3 letters are typed.
+- **Removed:** the Profile / Password / Help / System tabs and the Personal Information and Account Details cards.
+- The new labels are in English, Uzbek and Russian.
+
 ## 2026-11-17 — Profile photos open full-size
 
 - Tapping an avatar in My Class, Colleagues, Rewards or Profile opens the photo full-screen (`shared/photo_viewer.dart`). Pinch zooms, and tapping outside or ✕ closes it. The avatar's tap wins over its row, so the row doesn't open. Without a photo the row keeps the tap.

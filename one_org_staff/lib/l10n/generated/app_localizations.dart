@@ -1887,6 +1887,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'this lesson was marked before the new grading, so it uses the old categories'**
   String get oldGradingLesson;
+
+  /// No description provided for @profileAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get profileAccount;
+
+  /// No description provided for @profileApp.
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get profileApp;
+
+  /// No description provided for @profileEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get profileEmail;
+
+  /// No description provided for @profilePhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get profilePhone;
+
+  /// No description provided for @profilePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get profilePassword;
+
+  /// No description provided for @profileSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get profileSystem;
+
+  /// No description provided for @profileSystemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Language, color, dark mode'**
+  String get profileSystemHint;
+
+  /// No description provided for @profileSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions'**
+  String get profileSuggestions;
+
+  /// No description provided for @profileLogOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get profileLogOut;
+
+  /// No description provided for @profileNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get profileNotSet;
+
+  /// No description provided for @profileContactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details'**
+  String get profileContactTitle;
+
+  /// No description provided for @profileInvalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address'**
+  String get profileInvalidEmail;
+
+  /// No description provided for @profileInvalidPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number'**
+  String get profileInvalidPhone;
+
+  /// No description provided for @profileContactSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details updated'**
+  String get profileContactSaved;
+
+  /// No description provided for @profileContactFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update contact details'**
+  String get profileContactFailed;
+
+  /// No description provided for @suggestionsLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Ideas, problems, questions — we read every one.'**
+  String get suggestionsLead;
+
+  /// No description provided for @suggestionsPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'What should we improve?'**
+  String get suggestionsPrompt;
+
+  /// No description provided for @suggestionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your suggestion…'**
+  String get suggestionsHint;
+
+  /// No description provided for @suggestionsAnonymous.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous'**
+  String get suggestionsAnonymous;
+
+  /// No description provided for @suggestionsSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get suggestionsSend;
+
+  /// No description provided for @suggestionsSentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get suggestionsSentButton;
+
+  /// No description provided for @suggestionsSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent — thank you!'**
+  String get suggestionsSent;
+
+  /// No description provided for @suggestionsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send. Try again.'**
+  String get suggestionsFailed;
 }
 
 class _AppLocalizationsDelegate

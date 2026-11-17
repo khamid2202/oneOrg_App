@@ -275,4 +275,45 @@ abstract class AuthRepository {
 
   /// Clears the stored avatar. Returns the (now null) picture URL.
   Future<String?> removeProfilePicture(String token, {required int userId});
+
+  /// The signed-in person's own email and phone, from `GET /settings/profile`.
+  /// That route needs only a session, unlike `/users/:id`, which needs the
+  /// admin-level `users.update`.
+  Future<ProfileContact> loadContact(String token);
+
+  /// Saves the person's own email and phone through `PATCH /settings/profile`
+  /// and returns what the server stored.
+  Future<ProfileContact> updateContact(
+    String token, {
+    required String email,
+    required String phone,
+  });
+
+  /// Sends a suggestion to the school's Telegram group (`POST /suggestions`).
+  Future<void> sendSuggestion(
+    String token, {
+    required String message,
+    required bool anonymous,
+  });
+}
+
+/// Email and phone as `/settings/profile` reads and writes them. Empty means
+/// not set.
+class ProfileContact {
+  const ProfileContact({this.email = '', this.phone = ''});
+
+  factory ProfileContact.fromJson(dynamic body) {
+    final user = body is Map<String, dynamic> && body['user'] is Map
+        ? body['user'] as Map
+        : const {};
+    String read(String key) {
+      final value = user[key];
+      return value is String ? value.trim() : '';
+    }
+
+    return ProfileContact(email: read('email'), phone: read('phone_number'));
+  }
+
+  final String email;
+  final String phone;
 }

@@ -217,6 +217,66 @@ class HttpAuthRepository implements AuthRepository {
     return _extractPictureUrl(responseBody);
   }
 
+  @override
+  Future<ProfileContact> loadContact(String token) async {
+    final response = await _client.get(
+      _buildUri('/settings/profile'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+    );
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to load contact details.'),
+      );
+    }
+    return ProfileContact.fromJson(responseBody);
+  }
+
+  @override
+  Future<ProfileContact> updateContact(
+    String token, {
+    required String email,
+    required String phone,
+  }) async {
+    final response = await _client.patch(
+      _buildUri('/settings/profile'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+      // UpdateProfileDto takes `phone_number`, the name reads return too.
+      body: jsonEncode({'email': email, 'phone_number': phone}),
+    );
+    final responseBody = _decodeBody(response.body);
+    if (!_isSuccess(response.statusCode)) {
+      // Duplicates come back as a 400 with "Email is already taken" etc.
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to update contact details.'),
+      );
+    }
+    final saved = ProfileContact.fromJson(responseBody);
+    // Prefer the server's copy; fall back to what was sent.
+    return ProfileContact(
+      email: saved.email.isNotEmpty ? saved.email : email,
+      phone: saved.phone.isNotEmpty ? saved.phone : phone,
+    );
+  }
+
+  @override
+  Future<void> sendSuggestion(
+    String token, {
+    required String message,
+    required bool anonymous,
+  }) async {
+    final response = await _client.post(
+      _buildUri('/suggestions'),
+      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+      body: jsonEncode({'message': message, 'anonymous': anonymous}),
+    );
+    if (!_isSuccess(response.statusCode)) {
+      throw AuthFailure(
+        _extractMessage(_decodeBody(response.body), 'Could not send.'),
+      );
+    }
+  }
+
   String? _extractPictureUrl(dynamic responseBody) {
     if (responseBody is! Map<String, dynamic>) {
       return null;

@@ -1004,4 +1004,73 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get oldGradingLesson =>
       'урок отмечен до новой системы оценок, поэтому действуют старые категории';
+
+  @override
+  String get profileAccount => 'Аккаунт';
+
+  @override
+  String get profileApp => 'Приложение';
+
+  @override
+  String get profileEmail => 'Email';
+
+  @override
+  String get profilePhone => 'Телефон';
+
+  @override
+  String get profilePassword => 'Пароль';
+
+  @override
+  String get profileSystem => 'Система';
+
+  @override
+  String get profileSystemHint => 'Язык, цвет, тёмная тема';
+
+  @override
+  String get profileSuggestions => 'Предложения';
+
+  @override
+  String get profileLogOut => 'Выйти';
+
+  @override
+  String get profileNotSet => 'Не указано';
+
+  @override
+  String get profileContactTitle => 'Контактные данные';
+
+  @override
+  String get profileInvalidEmail => 'Введите корректный email';
+
+  @override
+  String get profileInvalidPhone => 'Введите корректный номер телефона';
+
+  @override
+  String get profileContactSaved => 'Контактные данные обновлены';
+
+  @override
+  String get profileContactFailed => 'Не удалось обновить контактные данные';
+
+  @override
+  String get suggestionsLead => 'Идеи, проблемы, вопросы — мы читаем каждое.';
+
+  @override
+  String get suggestionsPrompt => 'Что нам улучшить?';
+
+  @override
+  String get suggestionsHint => 'Напишите предложение…';
+
+  @override
+  String get suggestionsAnonymous => 'Анонимно';
+
+  @override
+  String get suggestionsSend => 'Отправить';
+
+  @override
+  String get suggestionsSentButton => 'Отправлено';
+
+  @override
+  String get suggestionsSent => 'Отправлено — спасибо!';
+
+  @override
+  String get suggestionsFailed => 'Не удалось отправить. Попробуйте ещё раз.';
 }

@@ -9,7 +9,14 @@ class BranchSwitcher extends StatelessWidget {
 
   final BranchController controller;
 
-  Future<void> _open(BuildContext context) async {
+  Future<void> _open(BuildContext context) => pick(context, controller);
+
+  /// The branch list as a bottom sheet; switches when one is picked. Profile
+  /// opens the same sheet from its branch row.
+  static Future<void> pick(
+    BuildContext context,
+    BranchController controller,
+  ) async {
     final activeId = controller.activeBranchId;
     final picked = await showModalBottomSheet<int>(
       context: context,

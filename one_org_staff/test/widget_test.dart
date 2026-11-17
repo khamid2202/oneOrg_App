@@ -16,8 +16,6 @@ import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 import 'package:one_org_staff/features/auth/data/token_storage.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/BottomBar/bottom_menu.dart';
-import 'package:one_org_staff/features/Profile/profilepage.dart';
-import 'package:one_org_staff/shared/underline_tabs.dart';
 import 'package:one_org_staff/features/MyClass/my_class.dart';
 import 'package:one_org_staff/features/colleagues/domain/colleagues_repository.dart';
 import 'package:one_org_staff/features/exams/presentation/exams_page.dart';
@@ -93,82 +91,131 @@ void main() {
     expect(find.text('Sign Out'), findsNothing);
   });
 
-  testWidgets('profile tab shows user data, theme switch, and password form', (
+  testWidgets('Profile matches the web: card, Account and App rows', (
     WidgetTester tester,
   ) async {
-    final controller = AuthController(
-      authRepository: FakeAuthRepository(
-        validTokens: const {'saved-token'},
-        currentUser: const AppUserProfile(
-          id: 11,
-          fullName: 'Ahror Teacher',
-          subtitle: 'Teacher • Academic Department',
-          email: 'teacher@oneorg.uz',
-          phone: '+998 90 123 45 67',
-          department: 'Mathematics',
-          joinedDate: '12 Sep 2024',
-          username: 'ahror',
-          status: 'active',
-          roles: ['teacher'],
-        ),
+    final repository = FakeAuthRepository(
+      validTokens: const {'saved-token'},
+      currentUser: const AppUserProfile(
+        id: 11,
+        fullName: 'Ahror Teacher',
+        subtitle: 'Teacher • Academic Department',
+        email: 'teacher@oneorg.uz',
+        phone: '+998 90 123 45 67',
+        department: 'Mathematics',
+        joinedDate: '12 Sep 2024',
+        username: 'ahror',
+        status: 'active',
+        roles: ['teacher'],
       ),
+    )..contact = const ProfileContact(email: 'ahror@school.uz');
+    final controller = AuthController(
+      authRepository: repository,
       tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
     );
 
     await tester.pumpWidget(OneOrgStaffApp(controller: controller));
     await tester.pumpAndSettle();
+    await openProfile(tester);
 
-    await tester.tap(
-      find.descendant(
-        of: find.byType(BottomMenu),
-        matching: find.text('Profile'),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // The name and email show in the header card and again in the
-    // Personal Information rows, matching the web layout.
-    expect(find.text('Ahror Teacher'), findsNWidgets(2));
-    expect(find.text('teacher@oneorg.uz'), findsNWidgets(2));
+    // The card: name, @username and roles.
+    expect(find.text('Ahror Teacher'), findsOneWidget);
     expect(find.text('@ahror'), findsOneWidget);
-    expect(find.text('Personal Information'), findsOneWidget);
-    expect(find.text('Account Details'), findsOneWidget);
-    expect(find.text('Active'), findsOneWidget);
     expect(find.text('teacher'), findsOneWidget);
 
-    // Password moved behind its own tab.
+    // Contact comes from /settings/profile; an empty phone reads "Not set".
+    expect(find.text('Account'), findsOneWidget);
+    expect(find.text('ahror@school.uz'), findsOneWidget);
+    expect(find.text('Not set'), findsOneWidget);
+    expect(find.text('App'), findsOneWidget);
+    expect(find.text('Language, color, dark mode'), findsOneWidget);
+    expect(find.text('Log out'), findsOneWidget);
+
+    // Password opens its own screen, and back returns to the list.
     await tester.tap(find.text('Password'));
     await tester.pumpAndSettle();
     expect(find.text('Update password'), findsWidgets);
-
-    // Sign out sits with the account, on the Profile tab.
-    await tester.tap(
-      find.descendant(
-        of: find.byType(UnderlineTabs<ProfileTab>),
-        matching: find.text('Profile'),
-      ),
-    );
+    expect(find.text('Account'), findsNothing);
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(OutlinedButton, 'Sign out'), findsOneWidget);
+    expect(find.text('Account'), findsOneWidget);
 
-    // Theme lives under System, and no longer carries the sign-out button or
-    // the swatch preview strip.
+    // Dark mode lives under System.
     await tester.tap(find.text('System'));
     await tester.pumpAndSettle();
-
-    expect(find.widgetWithText(OutlinedButton, 'Sign out'), findsNothing);
-    expect(find.text('Primary button'), findsNothing);
-    expect(find.text('Highlight'), findsNothing);
-    expect(find.text('Accent text'), findsNothing);
-
     final switchFinder = find.byType(Switch);
     await tester.ensureVisible(switchFinder);
     expect(tester.widget<Switch>(switchFinder).value, isFalse);
-
     await tester.tap(switchFinder);
     await tester.pumpAndSettle();
-
     expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+  });
+
+  testWidgets('editing the phone saves through /settings/profile', (
+    WidgetTester tester,
+  ) async {
+    final repository = FakeAuthRepository(validTokens: const {'saved-token'});
+    final controller = AuthController(
+      authRepository: repository,
+      tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
+    );
+
+    await tester.pumpWidget(OneOrgStaffApp(controller: controller));
+    await tester.pumpAndSettle();
+    await openProfile(tester);
+
+    await tester.tap(find.text('Phone'));
+    await tester.pumpAndSettle();
+    expect(find.text('Contact details'), findsOneWidget);
+
+    final phoneField = find.widgetWithText(TextField, 'Phone');
+    await tester.enterText(phoneField, 'abc');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter a valid phone number'), findsOneWidget);
+
+    await tester.enterText(phoneField, '+998 99 111 22 33');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(repository.contact.phone, '+998 99 111 22 33');
+    expect(repository.contact.email, 'staff@oneorg.uz');
+    expect(find.text('+998 99 111 22 33'), findsOneWidget);
+    expect(find.text('Contact details updated'), findsOneWidget);
+  });
+
+  testWidgets('Suggestions sends once three letters are typed', (
+    WidgetTester tester,
+  ) async {
+    final repository = FakeAuthRepository(validTokens: const {'saved-token'});
+    final controller = AuthController(
+      authRepository: repository,
+      tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
+    );
+
+    await tester.pumpWidget(OneOrgStaffApp(controller: controller));
+    await tester.pumpAndSettle();
+    await openProfile(tester);
+
+    await tester.tap(find.text('Suggestions'));
+    await tester.pumpAndSettle();
+
+    FilledButton send() => tester.widget<FilledButton>(
+      find.ancestor(of: find.text('Send'), matching: find.byType(FilledButton)),
+    );
+    await tester.enterText(find.byType(TextField), 'hi');
+    await tester.pump();
+    expect(send().onPressed, isNull);
+
+    await tester.enterText(find.byType(TextField), '  Add a dark map  ');
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+
+    expect(repository.suggestions.single.message, 'Add a dark map');
+    expect(repository.suggestions.single.anonymous, isTrue);
+    expect(find.text('Sent'), findsOneWidget);
   });
 
   testWidgets('picking an accent in System recolours the whole app', (
@@ -255,7 +302,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Personal Information'), findsOneWidget);
+    expect(find.text('Account'), findsOneWidget);
 
     // Back to the dashboard, then into My Class from its row.
     await tester.tap(
@@ -517,6 +564,29 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<void> revoke(String token) async {}
 
+  ProfileContact contact = const ProfileContact(
+    email: 'staff@oneorg.uz',
+    phone: '+998901234567',
+  );
+  final List<({String message, bool anonymous})> suggestions = [];
+
+  @override
+  Future<ProfileContact> loadContact(String token) async => contact;
+
+  @override
+  Future<ProfileContact> updateContact(
+    String token, {
+    required String email,
+    required String phone,
+  }) async => contact = ProfileContact(email: email, phone: phone);
+
+  @override
+  Future<void> sendSuggestion(
+    String token, {
+    required String message,
+    required bool anonymous,
+  }) async => suggestions.add((message: message, anonymous: anonymous));
+
   @override
   Future<AppUserProfile> getCurrentUser(String token) async {
     if (!validTokens.contains(token)) {
@@ -637,4 +707,14 @@ class _FakePointReportRepository implements PointReportRepository {
     required DateTime start,
     required DateTime end,
   }) async => const [];
+}
+
+Future<void> openProfile(WidgetTester tester) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byType(BottomMenu),
+      matching: find.text('Profile'),
+    ),
+  );
+  await tester.pumpAndSettle();
 }

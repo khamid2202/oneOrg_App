@@ -1004,4 +1004,74 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get oldGradingLesson =>
       'this lesson was marked before the new grading, so it uses the old categories';
+
+  @override
+  String get profileAccount => 'Account';
+
+  @override
+  String get profileApp => 'App';
+
+  @override
+  String get profileEmail => 'Email';
+
+  @override
+  String get profilePhone => 'Phone';
+
+  @override
+  String get profilePassword => 'Password';
+
+  @override
+  String get profileSystem => 'System';
+
+  @override
+  String get profileSystemHint => 'Language, color, dark mode';
+
+  @override
+  String get profileSuggestions => 'Suggestions';
+
+  @override
+  String get profileLogOut => 'Log out';
+
+  @override
+  String get profileNotSet => 'Not set';
+
+  @override
+  String get profileContactTitle => 'Contact details';
+
+  @override
+  String get profileInvalidEmail => 'Enter a valid email address';
+
+  @override
+  String get profileInvalidPhone => 'Enter a valid phone number';
+
+  @override
+  String get profileContactSaved => 'Contact details updated';
+
+  @override
+  String get profileContactFailed => 'Couldn\'t update contact details';
+
+  @override
+  String get suggestionsLead =>
+      'Ideas, problems, questions — we read every one.';
+
+  @override
+  String get suggestionsPrompt => 'What should we improve?';
+
+  @override
+  String get suggestionsHint => 'Type your suggestion…';
+
+  @override
+  String get suggestionsAnonymous => 'Anonymous';
+
+  @override
+  String get suggestionsSend => 'Send';
+
+  @override
+  String get suggestionsSentButton => 'Sent';
+
+  @override
+  String get suggestionsSent => 'Sent — thank you!';
+
+  @override
+  String get suggestionsFailed => 'Could not send. Try again.';
 }

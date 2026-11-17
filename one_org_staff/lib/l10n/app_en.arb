@@ -590,5 +590,28 @@
       }
     }
   },
-  "oldGradingLesson": "this lesson was marked before the new grading, so it uses the old categories"
+  "oldGradingLesson": "this lesson was marked before the new grading, so it uses the old categories",
+  "profileAccount": "Account",
+  "profileApp": "App",
+  "profileEmail": "Email",
+  "profilePhone": "Phone",
+  "profilePassword": "Password",
+  "profileSystem": "System",
+  "profileSystemHint": "Language, color, dark mode",
+  "profileSuggestions": "Suggestions",
+  "profileLogOut": "Log out",
+  "profileNotSet": "Not set",
+  "profileContactTitle": "Contact details",
+  "profileInvalidEmail": "Enter a valid email address",
+  "profileInvalidPhone": "Enter a valid phone number",
+  "profileContactSaved": "Contact details updated",
+  "profileContactFailed": "Couldn't update contact details",
+  "suggestionsLead": "Ideas, problems, questions — we read every one.",
+  "suggestionsPrompt": "What should we improve?",
+  "suggestionsHint": "Type your suggestion…",
+  "suggestionsAnonymous": "Anonymous",
+  "suggestionsSend": "Send",
+  "suggestionsSentButton": "Sent",
+  "suggestionsSent": "Sent — thank you!",
+  "suggestionsFailed": "Could not send. Try again."
 }
