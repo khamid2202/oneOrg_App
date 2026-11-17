@@ -5,17 +5,38 @@ import 'package:flutter/material.dart';
 import 'package:one_org_staff/features/BottomBar/bottom_menu.dart';
 import 'package:one_org_staff/app/swipe_back_detector.dart';
 import 'package:one_org_staff/app/theme.dart';
+import 'package:one_org_staff/app/language_controller.dart';
 import 'package:one_org_staff/app/theme_controller.dart';
+import 'package:one_org_staff/features/MyClass/homeroom.dart';
 import 'package:one_org_staff/features/MyClass/my_class.dart';
 import 'package:one_org_staff/features/MyClass/student_info_view.dart';
 import 'package:one_org_staff/features/MyClass/student_people_sync.dart';
-import 'package:one_org_staff/features/MyLessons/my_lessons.dart';
 import 'package:one_org_staff/features/Profile/profilepage.dart';
 import 'package:one_org_staff/features/timetable/presentation/timetable_page.dart';
 import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
+import 'package:one_org_staff/features/behavior/presentation/behavior_page.dart';
+import 'package:one_org_staff/features/branches/application/branch_controller.dart';
+import 'package:one_org_staff/features/branches/presentation/branch_switcher.dart';
 import 'package:one_org_staff/features/colleagues/presentation/colleagues_page.dart';
+import 'package:one_org_staff/features/landing/presentation/coming_soon.dart';
+import 'package:one_org_staff/features/search/domain/app_search.dart';
+import 'package:one_org_staff/features/search/presentation/search_page.dart';
 import 'package:one_org_staff/features/exams/presentation/exams_page.dart';
+import 'package:one_org_staff/features/grades/domain/gradebook.dart';
+import 'package:one_org_staff/features/grades/presentation/gradebooks_page.dart';
+import 'package:one_org_staff/features/landing/application/next_lesson_day.dart';
+import 'package:one_org_staff/features/landing/domain/app_items.dart';
+import 'package:one_org_staff/features/landing/presentation/teacher_home.dart';
+import 'package:one_org_staff/features/lessons/domain/lessons_repository.dart';
+import 'package:one_org_staff/features/lessons/presentation/lessons_page.dart';
+import 'package:one_org_staff/features/lessons/presentation/uploads_sheet.dart';
+import 'package:one_org_staff/features/teaching_tools/presentation/teaching_tools_page.dart';
+import 'package:one_org_staff/l10n/generated/app_localizations.dart';
+import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
+import 'package:one_org_staff/features/me/presentation/my_fundings_page.dart';
+import 'package:one_org_staff/features/me/presentation/my_plan_page.dart';
+import 'package:one_org_staff/features/me/presentation/my_points_page.dart';
 import 'package:one_org_staff/features/notifications/application/notifications_controller.dart';
 import 'package:one_org_staff/features/notifications/application/push_service.dart';
 import 'package:one_org_staff/features/notifications/presentation/notification_bell.dart';
@@ -29,17 +50,21 @@ class LandingPage extends StatefulWidget {
     super.key,
     required this.controller,
     required this.themeController,
+    this.languageController,
     this.notificationsController,
     this.pushService,
+    this.branchController,
   });
 
   final AuthController controller;
   final ThemeController themeController;
+  final LanguageController? languageController;
 
   /// Both null in a test harness that injects its own [AuthController]; the
   /// header then renders without a bell and the inbox tab is unreachable.
   final NotificationsController? notificationsController;
   final PushService? pushService;
+  final BranchController? branchController;
 
   @override
   State<LandingPage> createState() => _LandingPageState();
@@ -47,39 +72,10 @@ class LandingPage extends StatefulWidget {
 
 // Home Tab Content 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁
 class _LandingPageState extends State<LandingPage> {
-  static const _bottomMenuOverlaySpace = 156.0;
+  static const _bottomMenuOverlaySpace = 112.0;
 
-  static const _items = [
-    _LandingTabItem(
-      label: 'Home',
-      icon: Icons.home_rounded,
-      title: 'Home',
-      subtitle: 'Your personal staff dashboard.',
-    ),
-    _LandingTabItem(
-      label: 'Lessons',
-      icon: Icons.menu_book_rounded,
-      title: 'Lessons',
-      subtitle: 'Your lessons section will appear here.',
-    ),
-    _LandingTabItem(
-      label: 'Colleagues',
-      icon: Icons.groups_rounded,
-      title: 'Colleagues',
-      subtitle: 'The staff directory with phone numbers.',
-    ),
-    _LandingTabItem(
-      label: 'Profile',
-      icon: Icons.person_rounded,
-      title: 'Profile',
-      subtitle: 'Your staff profile and settings will appear here.',
-    ),
-  ];
-
-  // Tab indices. The first [_items].length are the navbar buttons, in order;
-  // the rest deliberately sit past the end — Timetable, My Class and the point
-  // report have no navbar button and are opened from the dashboard, which is
-  // also why the navbar highlights nothing while one of them is showing.
+  // The pages this shell can show. Which ones get a button in the phone bar
+  // is [AppAccess.phoneBar]'s call; the bar highlights nothing on the others.
   static const _homeTab = 0;
   static const _lessonsTab = 1;
   static const _colleaguesTab = 2;
@@ -90,22 +86,37 @@ class _LandingPageState extends State<LandingPage> {
   static const _examsTab = 7;
   static const _rewardsTab = 8;
   static const _notificationsTab = 9;
+  static const _gradesTab = 10;
+  static const _behaviorTab = 11;
+  static const _toolsTab = 12;
+  static const _planTab = 13;
+  static const _pointsTab = 14;
+  static const _fundingsTab = 15;
 
   int _selectedIndex = 0;
   bool _returningViaSwipe = false;
-  Future<AppUserProfile>? _profileFuture;
+  DateTime? _lessonsDate;
+  RecentGrade? _gradebookRow;
+  int? _branchId;
+  NextLessonDayLoader? _today;
+  String? _homeroom;
+  List<RecentGrade>? _recentGrades;
 
-  /// The last profile the future produced. A `FutureBuilder` always starts a
-  /// fresh subscription in the waiting state, even on an already-completed
-  /// future, so every remount of the header — and the swipe back to the
-  /// dashboard remounts it twice — would otherwise paint one frame of
-  /// "Staff Member" and a placeholder avatar before the real name popped in.
+  /// Null until `/users/me` answers, and if it can't.
   AppUserProfile? _profile;
+
+  AppAccess get _access => AppAccess(_profile);
 
   @override
   void initState() {
     super.initState();
-    _profileFuture = _loadProfile();
+    final lessons = widget.controller.lessons;
+    if (lessons != null) {
+      _today = NextLessonDayLoader(getDay: lessons.getDay)..refreshIfStale();
+    }
+    _branchId = widget.branchController?.activeBranchId;
+    widget.branchController?.addListener(_branchChanged);
+    unawaited(_loadProfile());
 
     final notifications = widget.notificationsController;
     final push = widget.pushService;
@@ -131,6 +142,8 @@ class _LandingPageState extends State<LandingPage> {
 
   @override
   void dispose() {
+    widget.branchController?.removeListener(_branchChanged);
+    _today?.dispose();
     widget.pushService?.onNotificationOpened = null;
     widget.notificationsController?.stop();
     super.dispose();
@@ -164,32 +177,76 @@ class _LandingPageState extends State<LandingPage> {
     await maybeAskForNotificationPermission(context, push);
   }
 
-  /// Starts the profile request, recording the result for [_profile] on the
-  /// way through. Returns the same future, so callers still await the request
-  /// rather than the bookkeeping.
-  Future<AppUserProfile> _loadProfile() {
-    final future = widget.controller.loadCurrentUserProfile();
-    unawaited(
-      future
-          .then((profile) {
-            if (mounted) {
-              _profile = profile;
-            }
-          })
-          // Failures are the FutureBuilder's to report; this listener only
-          // caches, and an unhandled rejection here would crash the zone.
-          .catchError((_) {}),
-    );
-    return future;
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await widget.controller.loadCurrentUserProfile();
+      if (!mounted) return;
+      setState(() => _profile = profile);
+    } catch (_) {
+      // Home falls back to what a regular teacher sees.
+    }
+    if (mounted) unawaited(_loadBranchData());
+  }
+
+  /// The homeroom and recent grades belong to the branch being viewed.
+  void _branchChanged() {
+    final id = widget.branchController?.activeBranchId;
+    if (id == _branchId) return;
+    _branchId = id;
+    setState(() {
+      _homeroom = null;
+      _recentGrades = null;
+    });
+    unawaited(_loadBranchData());
+  }
+
+  Future<void> _loadBranchData() async {
+    final branch = _branchId;
+    await Future.wait([_loadHomeroom(branch), _loadRecentGrades(branch)]);
+  }
+
+  Future<void> _loadHomeroom(int? branch) async {
+    if (!_access.allows(AppItem.myClass) || _profile == null) return;
+    try {
+      final years = await widget.controller.loadAcademicYears();
+      final year =
+          years.where((e) => e.isActive).firstOrNull ?? years.firstOrNull;
+      final groups = await widget.controller.loadGroups(
+        academicYearId: year?.id,
+      );
+      final group = homeroomOf(groups, _profile);
+      if (!mounted || branch != _branchId) return;
+      setState(() {
+        _homeroom = group == null ? null : '${group.grade}${group.className}';
+      });
+    } catch (_) {
+      // Without it Home just leaves the class card out.
+    }
+  }
+
+  Future<void> _loadRecentGrades(int? branch) async {
+    final lessons = widget.controller.lessons;
+    if (lessons == null || !_access.allows(AppItem.grades)) return;
+    List<RecentGrade> recent;
+    try {
+      recent = await lessons.getRecentGrades();
+    } catch (_) {
+      recent = const [];
+    }
+    if (!mounted || branch != _branchId) return;
+    setState(() => _recentGrades = recent);
   }
 
   void _showSignOutDialog() {
+    final unsent = widget.controller.outbox?.waitingCount ?? 0;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Sign Out'),
-        content: const Text(
-          'Are you sure you want to sign out of the staff application?',
+        content: Text(
+          unsent > 0
+              ? AppLocalizations.of(context).signOutUnsent(unsent)
+              : 'Are you sure you want to sign out of the staff application?',
         ),
         actions: [
           TextButton(
@@ -212,188 +269,74 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  /// Opens the header avatar full size. With no photo set there is nothing to
-  /// enlarge, so the tap does nothing rather than showing a blown-up initial.
-  void _showAvatarPreview(String name, String? avatarUrl) {
-    if (avatarUrl == null || avatarUrl.isEmpty) {
-      return;
-    }
-
-    showDialog<void>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.85),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.all(24),
-        child: Stack(
-          alignment: Alignment.topRight,
-          children: [
-            // Tapping the photo closes it too — the whole surface is the
-            // dismiss target, which is what people expect of a lightbox.
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: InteractiveViewer(
-                  minScale: 1.0,
-                  maxScale: 4.0,
-                  child: Image.network(
-                    avatarUrl,
-                    fit: BoxFit.contain,
-                    semanticLabel: '$name profile photo',
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) {
-                        return child;
-                      }
-                      return const SizedBox(
-                        height: 240,
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox(
-                          height: 240,
-                          child: Center(
-                            child: Text(
-                              'Could not load the photo',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                  ),
+  Widget _buildHeader() {
+    final name = _profile?.fullName.trim().split(RegExp(r'\s+')).first ?? '';
+    final notifications = widget.notificationsController;
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name.isEmpty ? ' ' : AppLocalizations.of(context).hiName(name),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close_rounded, color: Colors.white),
-              tooltip: 'Close',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(bool isDarkMode) {
-    return FutureBuilder<AppUserProfile>(
-      future: _profileFuture ??= _loadProfile(),
-      initialData: _profile,
-      builder: (context, snapshot) {
-        final colors = appColorsOf(context);
-        final profile = snapshot.data;
-        final String name = profile?.fullName ?? 'Staff Member';
-        final String? avatarUrl = profile?.profileImageUrl;
-
-        return Row(
-          children: [
-            GestureDetector(
-              onTap: () => _showAvatarPreview(name, avatarUrl),
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: colors.ring.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.ring.withValues(alpha: 0.15),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 28,
-                  backgroundColor: colors.softBg,
-                  backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                      ? NetworkImage(avatarUrl)
-                      : null,
-                  child: avatarUrl == null || avatarUrl.isEmpty
-                      ? Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: colors.softText,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (widget.notificationsController != null &&
-                widget.pushService != null) ...[
-              NotificationBell(
-                controller: widget.notificationsController!,
-                onTap: _openNotificationsTab,
-              ),
-              const SizedBox(width: 8),
+              if (widget.branchController != null)
+                BranchSwitcher(controller: widget.branchController!),
             ],
-            Container(
-              decoration: BoxDecoration(
-                color: colors.softBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: colors.line, width: 1),
-              ),
-              child: IconButton(
-                onPressed: widget.themeController.toggleThemeMode,
-                icon: Icon(
-                  isDarkMode
-                      ? Icons.light_mode_rounded
-                      : Icons.dark_mode_rounded,
-                  color: isDarkMode ? const Color(0xFFFFD043) : colors.softText,
-                  size: 22,
-                ),
-                tooltip: isDarkMode
-                    ? 'Switch to Light Mode'
-                    : 'Switch to Dark Mode',
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+        IconButton(
+          key: const ValueKey('open-search'),
+          onPressed: _openSearch,
+          icon: const Icon(Icons.search_rounded),
+          tooltip: AppLocalizations.of(context).search,
+        ),
+        if (notifications != null && widget.pushService != null)
+          NotificationBell(
+            controller: notifications,
+            onTap: _openNotificationsTab,
+          ),
+      ],
     );
   }
 
   /// The page for the selected tab, without any scroll wrapper — see
   /// [_buildTabViewport], which decides whether the page scrolls itself.
-  Widget _buildTabPage(BuildContext context, bool isDarkMode) {
+  Widget _buildTabPage(BuildContext context) {
     // Hoisted so the notifications branch promotes them instead of asserting
     // non-null on a pair that a test harness legitimately leaves out.
     final notifications = widget.notificationsController;
     final push = widget.pushService;
 
     return _selectedIndex == _homeTab
-        ? _buildHomeDashboard(context, isDarkMode)
+        ? _buildHomeDashboard()
+        : _selectedIndex == _gradesTab
+        ? _buildGradebooks()
+        : _selectedIndex == _behaviorTab
+        ? _buildBehavior(context)
+        : _selectedIndex == _toolsTab
+        ? _buildTools()
+        : _selectedIndex == _planTab ||
+              _selectedIndex == _pointsTab ||
+              _selectedIndex == _fundingsTab
+        ? _buildMine()
         : _selectedIndex == _lessonsTab
-        ? MyLessonsPage(
-            loadLessons: widget.controller.loadMyLessonsForDate,
-            loadStudentsForGroup: widget.controller.loadStudentsForGroup,
-            savePointsBulk: widget.controller.savePointsBulk,
-            loadPointsForGroupAndDate:
-                widget.controller.loadPointsForGroupAndDate,
-          )
+        ? (widget.controller.lessons == null || widget.controller.outbox == null
+              ? const SizedBox.shrink()
+              : LessonsPage(
+                  repository: widget.controller.lessons!,
+                  outbox: widget.controller.outbox!,
+                  loadAcademicYears: widget.controller.loadAcademicYears,
+                  bottomInset: _bottomMenuOverlaySpace,
+                  initialDate: _lessonsDate,
+                ))
         : _selectedIndex == _timetableTab
         ? TimetablePage(
             loadTimetable: widget.controller.loadFullTimetable,
@@ -402,12 +345,15 @@ class _LandingPageState extends State<LandingPage> {
           )
         : _selectedIndex == _colleaguesTab
         ? ColleaguesPage(
+            // Each branch has its own staff list.
+            key: ValueKey('colleagues-$_branchId'),
             loadColleagues: widget.controller.loadColleagues,
             bottomInset: _bottomMenuOverlaySpace,
           )
         : _selectedIndex == _profileTab
         ? ProfilePage(
             themeController: widget.themeController,
+            languageController: widget.languageController,
             loadProfile: widget.controller.loadCurrentUserProfile,
             updatePassword: widget.controller.updatePassword,
             uploadProfilePicture: widget.controller.uploadProfilePicture,
@@ -461,25 +407,13 @@ class _LandingPageState extends State<LandingPage> {
             updatePersonDetails: widget.controller.updatePersonDetails,
             uploadPersonPicture: widget.controller.uploadPersonPicture,
             removePersonPicture: widget.controller.removePersonPicture,
-            guardians: StudentGuardiansApi(
-              load: widget.controller.loadGuardians,
-              create: widget.controller.createGuardian,
-              update: widget.controller.updateGuardian,
-              delete: widget.controller.deleteGuardian,
-            ),
-            peopleSync: StudentPeopleSync(
-              loadContacts: widget.controller.loadContactsForStudent,
-              createContact: widget.controller.createContact,
-              updateContact: widget.controller.updateContact,
-              loadGuardians: widget.controller.loadGuardians,
-              createGuardian: widget.controller.createGuardian,
-              updateGuardian: widget.controller.updateGuardian,
-            ),
-            documents: StudentDocumentsApi(
-              load: widget.controller.loadDocuments,
-              create: widget.controller.createDocument,
-              delete: widget.controller.deleteDocument,
-            ),
+            guardians: _guardiansApi,
+            peopleSync: _peopleSync,
+            documents: _documentsApi,
+            insights: widget.controller.classInsights,
+            onMark: _access.allows(AppItem.behavior)
+                ? () => _openTab(_tabOf(AppItem.behavior))
+                : null,
           )
         : PointReportPage(
             loadAcademicYears: widget.controller.loadAcademicYears,
@@ -496,10 +430,17 @@ class _LandingPageState extends State<LandingPage> {
   /// owns its scrolling instead, so it can build rows lazily and control its
   /// own offset — nesting one inside this scroll view would give it unbounded
   /// height. It is handed the nav bar's overlay height to pad its own list.
-  Widget _buildTabViewport(BoxConstraints constraints, bool isDarkMode) {
-    final page = _buildTabPage(context, isDarkMode);
+  Widget _buildTabViewport(BoxConstraints constraints) {
+    final page = _buildTabPage(context);
     final scrollsItself =
         _selectedIndex == _colleaguesTab ||
+        _selectedIndex == _lessonsTab ||
+        _selectedIndex == _gradesTab ||
+        _selectedIndex == _behaviorTab ||
+        _selectedIndex == _toolsTab ||
+        _selectedIndex == _planTab ||
+        _selectedIndex == _pointsTab ||
+        _selectedIndex == _fundingsTab ||
         _selectedIndex == _rewardsTab ||
         _selectedIndex == _notificationsTab;
 
@@ -526,133 +467,246 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  Widget _buildHomeDashboard(BuildContext context, bool isDarkMode) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(isDarkMode),
-          const SizedBox(height: 32),
-          Text(
-            'Quick Access',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: appColorsOf(context).mutedText,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 16),
+  StudentGuardiansApi get _guardiansApi => StudentGuardiansApi(
+    load: widget.controller.loadGuardians,
+    create: widget.controller.createGuardian,
+    update: widget.controller.updateGuardian,
+    delete: widget.controller.deleteGuardian,
+  );
 
-          // One full-width row per destination. Profile and Sign Out are not
-          // here: the avatar in the header opens the profile, and signing out
-          // lives on the profile page behind its confirmation dialog.
-          _DashboardListTile(
-            title: 'My Class',
-            icon: Icons.school_rounded,
-            iconColor: const Color(0xFF4ADE80),
-            iconBgColor: isDarkMode
-                ? const Color(0xFF1B3D2B)
-                : const Color(0xFFE6FDF0),
-            isDarkMode: isDarkMode,
-            onTap: () {
-              setState(() {
-                _selectedIndex = _myClassTab;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          _DashboardListTile(
-            title: 'Lessons',
-            icon: Icons.menu_book_rounded,
-            iconColor: const Color(0xFF64AFFF),
-            iconBgColor: isDarkMode
-                ? const Color(0xFF1E2D3D)
-                : const Color(0xFFE6F0FA),
-            isDarkMode: isDarkMode,
-            onTap: () {
-              setState(() {
-                _selectedIndex = _lessonsTab;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          _DashboardListTile(
-            title: 'Point report',
-            icon: Icons.emoji_events_rounded,
-            iconColor: const Color(0xFF38BDF8),
-            iconBgColor: isDarkMode
-                ? const Color(0xFF12303F)
-                : const Color(0xFFE0F2FE),
-            isDarkMode: isDarkMode,
-            onTap: () {
-              setState(() {
-                _selectedIndex = _pointReportTab;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          _DashboardListTile(
-            title: 'Rewards',
-            icon: Icons.card_giftcard_rounded,
-            iconColor: const Color(0xFFA78BFA),
-            iconBgColor: isDarkMode
-                ? const Color(0xFF2A2145)
-                : const Color(0xFFEDE9FE),
-            isDarkMode: isDarkMode,
-            onTap: () {
-              setState(() {
-                _selectedIndex = _rewardsTab;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          _DashboardListTile(
-            title: 'Exams',
-            icon: Icons.assignment_turned_in_rounded,
-            iconColor: const Color(0xFFF472B6),
-            iconBgColor: isDarkMode
-                ? const Color(0xFF3B1D2C)
-                : const Color(0xFFFCE7F3),
-            isDarkMode: isDarkMode,
-            onTap: () {
-              setState(() {
-                _selectedIndex = _examsTab;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          _DashboardListTile(
-            title: 'Colleagues',
-            icon: Icons.groups_rounded,
-            iconColor: const Color(0xFFF59E0B),
-            iconBgColor: isDarkMode
-                ? const Color(0xFF3D2F14)
-                : const Color(0xFFFEF3C7),
-            isDarkMode: isDarkMode,
-            onTap: () {
-              setState(() {
-                _selectedIndex = _colleaguesTab;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          _DashboardListTile(
-            title: 'Timetable',
-            icon: Icons.calendar_month_rounded,
-            iconColor: const Color(0xFFC084FC),
-            iconBgColor: isDarkMode
-                ? const Color(0xFF2C1E3D)
-                : const Color(0xFFF3E8FF),
-            isDarkMode: isDarkMode,
-            onTap: () {
-              setState(() {
-                _selectedIndex = _timetableTab;
-              });
-            },
-          ),
-        ],
+  StudentPeopleSync get _peopleSync => StudentPeopleSync(
+    loadContacts: widget.controller.loadContactsForStudent,
+    createContact: widget.controller.createContact,
+    updateContact: widget.controller.updateContact,
+    loadGuardians: widget.controller.loadGuardians,
+    createGuardian: widget.controller.createGuardian,
+    updateGuardian: widget.controller.updateGuardian,
+  );
+
+  StudentDocumentsApi get _documentsApi => StudentDocumentsApi(
+    load: widget.controller.loadDocuments,
+    create: widget.controller.createDocument,
+    delete: widget.controller.deleteDocument,
+  );
+
+  /// The web's ⌘K search, as a full screen.
+  void _openSearch() {
+    final canSearchPeople =
+        _profile?.hasAnyPermission(const [
+          'persons.read',
+          'persons.create',
+          'persons.update',
+          'persons.delete',
+          'students.read',
+          'students.create',
+          'students.update',
+          'students.delete',
+        ]) ??
+        false;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => SearchPage(
+          access: _access,
+          repository: widget.controller.search,
+          canSearchPeople: canSearchPeople,
+          hasNotifications:
+              widget.notificationsController != null &&
+              widget.pushService != null,
+          onOpenItem: (item) => _openTab(_tabOf(item)),
+          onOpenPlace: (place) => switch (place) {
+            SearchPlace.home => _openTab(_homeTab),
+            SearchPlace.profile => _openTab(_profileTab),
+            SearchPlace.notifications => _openNotificationsTab(),
+          },
+          profileBuilder: (context, student, classPair, onBack) =>
+              StudentInfoView(
+                key: ValueKey('search-${student.personId}'),
+                student: student,
+                classPair: classPair,
+                isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                onBack: onBack,
+                updatePersonDetails: widget.controller.updatePersonDetails,
+                uploadPersonPicture:
+                    ({required ownerId, required bytes, required filename}) =>
+                        widget.controller.uploadPersonPicture(
+                          personId: ownerId,
+                          bytes: bytes,
+                          filename: filename,
+                        ),
+                removePersonPicture: ({required ownerId}) =>
+                    widget.controller.removePersonPicture(personId: ownerId),
+                onSaved: (_, _) {},
+                onPictureChanged: (_, _) {},
+                guardians: _guardiansApi,
+                documents: _documentsApi,
+                peopleSync: _peopleSync,
+              ),
+        ),
       ),
+    );
+  }
+
+  int _tabOf(AppItem item) => switch (item) {
+    AppItem.lessons => _lessonsTab,
+    AppItem.myClass => _myClassTab,
+    AppItem.exams => _examsTab,
+    AppItem.timetable => _timetableTab,
+    AppItem.rewards => _rewardsTab,
+    AppItem.colleagues => _colleaguesTab,
+    AppItem.pointReport => _pointReportTab,
+    AppItem.grades => _gradesTab,
+    AppItem.behavior => _behaviorTab,
+    AppItem.teachingTools => _toolsTab,
+    AppItem.myPlan => _planTab,
+    AppItem.myPoints => _pointsTab,
+    AppItem.myFundings => _fundingsTab,
+  };
+
+  void _openTab(int tab) => setState(() {
+    _lessonsDate = null;
+    _gradebookRow = null;
+    _selectedIndex = tab;
+  });
+
+  Future<List<GradebookPair>> _loadGradebookPairs() async {
+    int? year;
+    try {
+      final years = await widget.controller.loadAcademicYears();
+      year =
+          (years.where((e) => e.isActive).firstOrNull ?? years.firstOrNull)?.id;
+    } catch (_) {
+      // The server falls back to the current year.
+    }
+    return widget.controller.lessons!.getMyGradebooks(academicYearId: year);
+  }
+
+  Widget _buildGradebooks() {
+    final lessons = widget.controller.lessons;
+    if (lessons == null) return const SizedBox.shrink();
+    return GradebooksPage(
+      key: ValueKey('gradebooks-$_branchId'),
+      loadPairs: _loadGradebookPairs,
+      loadGradebook: lessons.getGradebook,
+      initialGroupId: _gradebookRow?.groupId,
+      initialSubjectId: _gradebookRow?.subjectId,
+      bottomInset: _bottomMenuOverlaySpace,
+    );
+  }
+
+  Widget _buildBehavior(BuildContext context) {
+    final lessons = widget.controller.lessons;
+    final outbox = widget.controller.outbox;
+    if (lessons == null || outbox == null) return const SizedBox.shrink();
+    return BehaviorPage(
+      key: ValueKey('behavior-$_branchId'),
+      repository: lessons,
+      outbox: outbox,
+      // Keeps the action bar above the docked phone bar.
+      bottomInset: 60 + MediaQuery.paddingOf(context).bottom,
+    );
+  }
+
+  Widget _buildTools() {
+    final lessons = widget.controller.lessons;
+    if (lessons == null) return const SizedBox.shrink();
+    return TeachingToolsPage(
+      key: ValueKey('tools-$_branchId'),
+      repository: lessons,
+      bottomInset: _bottomMenuOverlaySpace,
+    );
+  }
+
+  Future<AcademicYearEntry?> _activeYear() async {
+    final years = await widget.controller.loadAcademicYears();
+    return years.where((e) => e.isActive).firstOrNull ?? years.firstOrNull;
+  }
+
+  Future<Map<int, String>> _staffNames() async => {
+    for (final person in await widget.controller.loadColleagues())
+      person.id: person.displayName,
+  };
+
+  /// Each of these asks for the person's own id, so they wait for the profile.
+  Widget _buildMine() {
+    // My Plan is built but not wanted yet; MyPlanPage comes back here later.
+    if (_selectedIndex == _planTab) {
+      return ComingSoonPage(
+        title: AppLocalizations.of(context).myPlan,
+        icon: Icons.edit_note_rounded,
+      );
+    }
+    final me = widget.controller.me;
+    final userId = _profile?.id;
+    if (me == null) return const SizedBox.shrink();
+    if (userId == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final key = '$_selectedIndex-$_branchId';
+    return _selectedIndex == _planTab
+        ? MyPlanPage(
+            key: ValueKey(key),
+            repository: me,
+            userId: userId,
+            loadYear: _activeYear,
+            bottomInset: _bottomMenuOverlaySpace,
+          )
+        : _selectedIndex == _pointsTab
+        ? MyPointsPage(
+            key: ValueKey(key),
+            repository: me,
+            userId: userId,
+            loadNames: _staffNames,
+            bottomInset: _bottomMenuOverlaySpace,
+          )
+        : MyFundingsPage(
+            key: ValueKey(key),
+            repository: me,
+            userId: userId,
+            bottomInset: _bottomMenuOverlaySpace,
+          );
+  }
+
+  Widget _buildHomeDashboard() {
+    return TeacherHome(
+      header: _buildHeader(),
+      access: _access,
+      today: _today,
+      homeroom: _homeroom,
+      recentGrades: _recentGrades,
+      onOpen: (item) => _openTab(_tabOf(item)),
+      onOpenGradebook: (row) => setState(() {
+        _gradebookRow = row;
+        _selectedIndex = _gradesTab;
+      }),
+      onOpenDay: (day) => setState(() {
+        _lessonsDate = day;
+        _selectedIndex = _lessonsTab;
+      }),
+    );
+  }
+
+  Widget _buildBottomMenu(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final bar = _access.phoneBar;
+    final tabs = [_homeTab, for (final item in bar) _tabOf(item), _profileTab];
+    final unread = widget.notificationsController?.unreadCount ?? 0;
+    return BottomMenu(
+      items: [
+        BottomMenuItem(
+          label: l.home,
+          icon: Icons.home_rounded,
+          showDot: unread > 0 && _selectedIndex != _homeTab,
+        ),
+        for (final item in bar)
+          BottomMenuItem(
+            label: appLabel(l, item, short: true),
+            icon: appIcon(item),
+            color: appHue(context, item).strong,
+          ),
+        BottomMenuItem(label: l.profile, icon: Icons.person_rounded),
+      ],
+      selectedIndex: tabs.indexOf(_selectedIndex),
+      onSelected: (index) => _openTab(tabs[index]),
     );
   }
 
@@ -660,10 +714,7 @@ class _LandingPageState extends State<LandingPage> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final accentColors = appColorsOf(context);
-    final selectedItemLabel =
-        _selectedIndex >= 0 && _selectedIndex < _items.length
-        ? _items[_selectedIndex].label
-        : 'My Class';
+    final notifications = widget.notificationsController;
 
     return Scaffold(
       extendBody: true,
@@ -716,7 +767,7 @@ class _LandingPageState extends State<LandingPage> {
                         switchInCurve: Curves.easeOut,
                         switchOutCurve: Curves.easeIn,
                         child: SwipeBackDetector(
-                          key: ValueKey(selectedItemLabel),
+                          key: ValueKey(_selectedIndex),
                           enabled: _selectedIndex != _homeTab,
                           onSwipeBack: () {
                             setState(() {
@@ -752,15 +803,12 @@ class _LandingPageState extends State<LandingPage> {
                                                     _bottomMenuOverlaySpace
                                               : 0,
                                         ),
-                                        child: _buildHomeDashboard(
-                                          context,
-                                          isDarkMode,
-                                        ),
+                                        child: _buildHomeDashboard(),
                                       ),
                                     ),
                                   ),
                                 ),
-                          child: _buildTabViewport(constraints, isDarkMode),
+                          child: _buildTabViewport(constraints),
                         ),
                       ),
                     ),
@@ -768,163 +816,24 @@ class _LandingPageState extends State<LandingPage> {
                 },
               ),
             ),
+            if (widget.controller.outbox != null)
+              Positioned(
+                right: 14,
+                bottom: 104,
+                child: UploadsPill(outbox: widget.controller.outbox!),
+              ),
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
-              child: BottomMenu(
-                items: [
-                  for (final item in _items)
-                    BottomMenuItem(label: item.label, icon: item.icon),
-                ],
-                selectedIndex: _selectedIndex,
-                onSelected: (index) {
-                  setState(() {
-                    _selectedIndex = index;
-                  });
-                },
-              ),
+              child: notifications == null
+                  ? _buildBottomMenu(context)
+                  : ListenableBuilder(
+                      listenable: notifications,
+                      builder: (context, _) => _buildBottomMenu(context),
+                    ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LandingTabItem {
-  const _LandingTabItem({
-    required this.label,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final String label;
-  final IconData icon;
-  final String title;
-  final String subtitle;
-}
-
-class _DashboardListTile extends StatefulWidget {
-  const _DashboardListTile({
-    required this.title,
-    required this.icon,
-    required this.iconColor,
-    required this.iconBgColor,
-    required this.isDarkMode,
-    required this.onTap,
-  });
-
-  final String title;
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBgColor;
-  final bool isDarkMode;
-  final VoidCallback onTap;
-
-  @override
-  State<_DashboardListTile> createState() => _DashboardListTileState();
-}
-
-class _DashboardListTileState extends State<_DashboardListTile> {
-  bool _isPressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = widget.isDarkMode;
-    final colors = appColorsOf(context);
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isPressed = true),
-      onExit: (_) => setState(() => _isPressed = false),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOut,
-          transform: Matrix4.diagonal3Values(
-            _isPressed ? 0.99 : 1.0,
-            _isPressed ? 0.99 : 1.0,
-            1.0,
-          ),
-          transformAlignment: Alignment.center,
-          // The card's own painting, deliberately *outside* the `Material`.
-          // It used to live on an `Ink` inside it, but a `Material` clips its
-          // ink layer to its own bounds, so the shadow could not reach past
-          // the card: the outer half of the blur was cut off and the inner
-          // half stayed, drawn under a fill that is not quite opaque. That is
-          // the grey wash people saw hugging every edge in light mode. Painted
-          // out here it is an ordinary decoration, free to fall outside the
-          // box the way a drop shadow is supposed to.
-          decoration: BoxDecoration(
-            color: colors.card.withValues(alpha: isDark ? 0.92 : 0.9),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: _isPressed
-                  ? colors.ring.withValues(alpha: 0.55)
-                  : colors.line,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? const Color(0x33000000)
-                    : const Color(0x14000000),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: widget.onTap,
-              borderRadius: BorderRadius.circular(22),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: widget.iconBgColor,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(
-                        widget.icon,
-                        color: widget.iconColor,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        widget.title,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              fontWeight: FontWeight.w700,
-                            ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 24,
-                      color: colors.mutedText,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ),
       ),
     );

@@ -1,15 +1,18 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:one_org_staff/features/MyClass/class_insights.dart';
 import 'package:one_org_staff/features/MyClass/my_class.dart';
 import 'package:one_org_staff/features/MyClass/student_info_view.dart';
 import 'package:one_org_staff/features/MyClass/student_people_sync.dart';
 import 'package:one_org_staff/features/MyLessons/http_lesson_points_repository.dart';
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
+import 'package:one_org_staff/l10n/generated/app_localizations.dart';
 import 'package:one_org_staff/shared/editable_avatar.dart';
 
 const _profile = AppUserProfile(
@@ -78,7 +81,29 @@ final _studentWithDetails = StudentEntry(
   ),
 );
 
+class _FakeInsights implements ClassInsightsRepository {
+  ClassGrades gradesResult = const ClassGrades();
+  List<ClassMark> marksResult = const [];
+  final askedGroups = <int>[];
+  final askedClasses = <String>[];
+
+  @override
+  Future<ClassGrades> grades(int groupId) async {
+    askedGroups.add(groupId);
+    return gradesResult;
+  }
+
+  @override
+  Future<List<ClassMark>> marks(String className) async {
+    askedClasses.add(className);
+    return marksResult;
+  }
+}
+
 Widget _wrapPage({
+  ClassInsightsRepository? insights,
+  VoidCallback? onMark,
+  Future<bool> Function(String uri)? launchDial,
   List<AcademicYearEntry> years = const [
     AcademicYearEntry(id: 4, name: '2026-2027', isActive: true),
     AcademicYearEntry(id: 3, name: '2025-2026', isActive: false),
@@ -98,9 +123,20 @@ Widget _wrapPage({
   List<ContactEntry>? existingContacts,
 }) {
   return MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
       body: SingleChildScrollView(
         child: MyClassPage(
+          insights: insights,
+          onMark: onMark,
+          launchDial: launchDial,
           loadProfile: () async => _profile,
           loadAcademicYears: () async => years,
           loadGroups: ({int? academicYearId}) async {
@@ -564,14 +600,124 @@ void main() {
     });
   });
 
+  group('class insights', () {
+    test('grades read Edupage first and fall back to daily scores', () {
+      final grades = ClassGrades.fromBodies(
+        imported: {
+          'result': {
+            'summary': {'average': 80.5},
+            'by_subject': [
+              {'subject': 'Math', 'average': 90, 'lowest': 60, 'highest': 100},
+            ],
+            'by_student': [
+              {'person_id': 1, 'average': 70},
+            ],
+          },
+        },
+        daily: {
+          'result': {'lessons': 3, 'average_score': 65, 'average_notes': 12},
+        },
+        byStudent: {
+          'result': [
+            {'person_id': 1, 'average_score': 50},
+            {'person_id': 2, 'average_score': 55},
+          ],
+        },
+      );
+      expect(grades.classAverage, 80.5);
+      expect(grades.subjects.single.subject, 'Math');
+      expect(grades.scoreOf(1), 70);
+      expect(grades.scoreOf(2), 55);
+      expect(grades.categories['average_notes'], 12);
+
+      final dailyOnly = ClassGrades.fromBodies(
+        daily: {
+          'result': {'lessons': 2, 'average_score': 64},
+        },
+      );
+      expect(dailyOnly.classAverage, 64);
+      expect(ClassGrades.fromBodies().isEmpty, isTrue);
+    });
+
+    test('marks are asked by compact class name, newest first', () async {
+      late Uri asked;
+      final repo = HttpClassInsightsRepository(
+        client: MockClient((request) async {
+          asked = request.url;
+          return http.Response(
+            jsonEncode({
+              'marks': [
+                {
+                  'id': 1,
+                  'studentId': '5',
+                  'studentName': 'A',
+                  'type': 'negative',
+                  'createdAt': '2026-10-01T10:00:00Z',
+                },
+                {
+                  'id': 2,
+                  'studentName': 'B',
+                  'type': 'positive',
+                  'reasonLabel': 'Helped',
+                  'createdAt': '2026-10-03T10:00:00Z',
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+        baseUrl: 'https://api.test/',
+        readToken: () async => 'token',
+      );
+      final marks = await repo.marks(compactClassName('9-B'));
+      expect(asked.path, '/behavior/marks');
+      expect(asked.queryParameters['className'], '9B');
+      expect(marks.map((m) => m.id), ['2', '1']);
+      expect(marks.last.studentId, 5);
+      expect(marks.first.reason, 'Helped');
+    });
+
+    test('grades fail only when all three answers fail', () async {
+      final repo = HttpClassInsightsRepository(
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('/imported')) {
+            return http.Response('{}', 403);
+          }
+          return http.Response(
+            jsonEncode({
+              'result': {'lessons': 1, 'average_score': 70},
+            }),
+            200,
+          );
+        }),
+        baseUrl: 'https://api.test',
+        readToken: () async => 'token',
+      );
+      expect((await repo.grades(9)).classAverage, 70);
+
+      final down = HttpClassInsightsRepository(
+        client: MockClient((_) async => http.Response('{}', 403)),
+        baseUrl: 'https://api.test',
+        readToken: () async => 'token',
+      );
+      await expectLater(down.grades(9), throwsA(isA<AuthFailure>()));
+    });
+  });
+
   group('MyClassPage', () {
-    testWidgets('shows the class, count and active year', (tester) async {
-      await tester.pumpWidget(_wrapPage());
+    testWidgets('shows the class and how many are enrolled now', (
+      tester,
+    ) async {
+      final requestedYears = <int?>[];
+      await tester.pumpWidget(_wrapPage(onLoadGroups: requestedYears.add));
       await tester.pumpAndSettle();
 
       expect(find.text('9-B'), findsOneWidget);
-      expect(find.text('2 students'), findsOneWidget);
-      expect(find.text('2026-2027 (active)'), findsWidgets);
+      // One present, one who left.
+      expect(find.text('1 student'), findsOneWidget);
+      // Always this year's class, with no year picker, as on the web.
+      expect(requestedYears, [4]);
+      expect(find.text('2026-2027 (active)'), findsNothing);
     });
 
     testWidgets('fetches the roster with contacts included', (tester) async {
@@ -583,47 +729,111 @@ void main() {
       expect(includeFlags.first, isTrue);
     });
 
-    testWidgets('Info shows codes, Status shows statuses, Contacts shows '
-        'numbers', (tester) async {
-      await tester.pumpWidget(_wrapPage());
+    testWidgets('a row shows the code, a dot or Left, and the contact count', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapPage(students: [_students[1], _students[0]]),
+      );
       await tester.pumpAndSettle();
 
-      // Info is the default field.
-      expect(find.text('CODE'), findsOneWidget);
       expect(find.text('DIS250383'), findsOneWidget);
       expect(find.text('DIS250387'), findsOneWidget);
-
-      await tester.tap(find.text('Status'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('STATUS'), findsOneWidget);
-      expect(find.text('Present'), findsOneWidget);
+      expect(find.byKey(const ValueKey('present-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('present-2')), findsNothing);
       expect(find.text('Left'), findsOneWidget);
-      expect(find.text('DIS250383'), findsNothing);
-
-      await tester.tap(find.text('Contacts'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('CONTACT'), findsOneWidget);
-      expect(find.text('+998901112233'), findsOneWidget);
-      // Two contacts on the first student, none on the second.
-      expect(find.text('Mom +1'), findsOneWidget);
-      expect(find.text('None'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
+      // Whoever left goes to the bottom.
+      expect(
+        tester.getTopLeft(find.text('Yusupova Samira')).dy,
+        lessThan(tester.getTopLeft(find.text('Nazarov Abdulloh')).dy),
+      );
+      // Without insights there's nothing but the roster.
+      expect(find.text('Grades'), findsNothing);
     });
 
-    testWidgets('changing the year refetches the group', (tester) async {
-      final requestedYears = <int?>[];
-      await tester.pumpWidget(_wrapPage(onLoadGroups: requestedYears.add));
+    testWidgets('the phone lists contacts to call and leads to Guardians', (
+      tester,
+    ) async {
+      final dialled = <String>[];
+      await tester.pumpWidget(
+        _wrapPage(
+          launchDial: (uri) async {
+            dialled.add(uri);
+            return true;
+          },
+        ),
+      );
       await tester.pumpAndSettle();
 
-      expect(requestedYears, [4]);
-
-      await tester.tap(find.text('2026-2027 (active)').last);
+      await tester.tap(find.byKey(const ValueKey('contacts-1')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('2025-2026').last);
+      expect(find.text('Mubina'), findsOneWidget);
+      expect(find.text('Valijon'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Call Mubina'));
+      await tester.pumpAndSettle();
+      expect(dialled, ['tel:+998901112233']);
+
+      await tester.tap(find.text('Edit contacts'));
+      await tester.pumpAndSettle();
+      expect(find.text('Student info'), findsOneWidget);
+      expect(find.text('No guardians recorded yet.'), findsOneWidget);
+    });
+
+    testWidgets('Grades shows the class average, subjects and students', (
+      tester,
+    ) async {
+      final insights = _FakeInsights()
+        ..gradesResult = const ClassGrades(
+          importedAverage: 78.4,
+          subjects: [SubjectAverage(subject: 'Mathematics', average: 91)],
+          importedByPerson: {100: 88},
+        );
+      await tester.pumpWidget(_wrapPage(insights: insights));
       await tester.pumpAndSettle();
 
-      expect(requestedYears, [4, 3]);
+      await tester.tap(find.text('Grades'));
+      await tester.pumpAndSettle();
+      expect(insights.askedGroups, [9]);
+      expect(find.text('78.4'), findsWidgets);
+      expect(find.text('Mathematics'), findsOneWidget);
+      expect(find.text('Yusupova S.'), findsOneWidget);
+      expect(find.text('88.0'), findsOneWidget);
+      // Only current students are graded.
+      expect(find.text('Nazarov A.'), findsNothing);
+      expect(find.text('1/1'), findsOneWidget);
+    });
+
+    testWidgets('Behavior counts marks per student and offers Mark', (
+      tester,
+    ) async {
+      var marked = 0;
+      final insights = _FakeInsights()
+        ..marksResult = const [
+          ClassMark(
+            id: 'a',
+            studentId: 1,
+            studentName: 'Yusupova Samira',
+            positive: false,
+            reason: 'Late',
+          ),
+          ClassMark(id: 'b', studentName: 'yusupova samira', positive: true),
+        ];
+      await tester.pumpWidget(
+        _wrapPage(insights: insights, onMark: () => marked++),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Behavior'));
+      await tester.pumpAndSettle();
+      expect(insights.askedClasses, ['9B']);
+      // One row for both marks, matched by id and by name.
+      expect(find.text('Yusupova Samira'), findsOneWidget);
+      expect(find.text('Late'), findsOneWidget);
+
+      await tester.tap(find.text('Mark'));
+      expect(marked, 1);
     });
 
     testWidgets('Info: tapping a student opens their personal details', (
@@ -670,42 +880,6 @@ void main() {
 
       expect(find.text('Student info'), findsNothing);
       expect(find.text('Yusupova Samira'), findsOneWidget);
-    });
-
-    testWidgets('Status: tapping a student does nothing', (tester) async {
-      await tester.pumpWidget(_wrapPage());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Status'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Yusupova Samira'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Student info'), findsNothing);
-      expect(find.text('Contacts of'), findsNothing);
-      // Still on the roster.
-      expect(find.text('STATUS'), findsOneWidget);
-    });
-
-    testWidgets('Contacts: tapping a student opens their contacts', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_wrapPage());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Contacts'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Yusupova Samira'));
-      await tester.pumpAndSettle();
-
-      // Same modal, opened on the Guardians tab.
-      expect(find.text('Student info'), findsOneWidget);
-      expect(find.text('Guardians'), findsWidgets);
-      expect(find.text('No guardians recorded yet.'), findsOneWidget);
-      // Not the profile form.
-      expect(find.text('Birth Date'), findsNothing);
     });
 
     testWidgets('Info: the modal has Profile, Guardians and Documents', (
@@ -986,17 +1160,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(removedFor, 100);
-    });
-
-    testWidgets('search matches on code as well as name', (tester) async {
-      await tester.pumpWidget(_wrapPage());
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField), 'DIS250387');
-      await tester.pumpAndSettle();
-
-      expect(find.text('Nazarov Abdulloh'), findsOneWidget);
-      expect(find.text('Yusupova Samira'), findsNothing);
     });
   });
 }

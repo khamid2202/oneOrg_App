@@ -1,0 +1,594 @@
+{
+  "@@locale": "en",
+  "language": "Language",
+  "mySchedule": "My Schedule",
+  "today": "Today",
+  "retry": "Retry",
+  "loadLessonsFailed": "Failed to fetch lessons. Please try again.",
+  "noLessonsOn": "You have no lessons on {date}.",
+  "@noLessonsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "nowFor": "Now · {duration}",
+  "@nowFor": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "durationMinutes": "{minutes} min",
+  "@durationMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHours": "{hours}h",
+  "@durationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "@durationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "substitution": "Substitution",
+  "cancelled": "Cancelled",
+  "meeting": "Meeting",
+  "untitled": "Untitled",
+  "periodShort": "P{number}",
+  "@periodShort": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "noLessonRecord": "This date has no lesson record to score: it's before the published timetable's start date, a holiday, or not generated yet.",
+  "attendance": "Attendance",
+  "scores": "Scores",
+  "present": "Present",
+  "late": "Late",
+  "absent": "Absent",
+  "excused": "Excused",
+  "presentShort": "P",
+  "lateShort": "L",
+  "absentShort": "A",
+  "excusedShort": "E",
+  "minutesShort": "{minutes}m",
+  "@minutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesHint": "min",
+  "materials": "Materials",
+  "homeworkDone": "HW done",
+  "homework": "HW right",
+  "activity": "Activity",
+  "notes": "Notes",
+  "next": "Next",
+  "saveAndNext": "Save & next",
+  "save": "Save",
+  "skip": "Skip",
+  "saved": "Saved",
+  "attendanceSaved": "Attendance saved",
+  "scoresSaved": "Scores saved",
+  "studentsCount": "{count} students",
+  "@studentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addMinutesForLate": "Add minutes for {count} late",
+  "@addMinutesForLate": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "needFixing": "{count} need fixing",
+  "@needFixing": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "toSave": "{count} to save",
+  "@toSave": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fixHighlightedRows": "Fix the highlighted rows first",
+  "lessonCancelledBanner": "This lesson was cancelled; its scores are read-only.",
+  "lessonCancelledReasonBanner": "This lesson was cancelled ({reason}); its scores are read-only.",
+  "@lessonCancelledReasonBanner": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "windowClosedBanner": "Scores can be changed for 3 days after the lesson, and no later than Saturday 08:00. Ask an admin to correct this lesson.",
+  "noStudents": "No students are enrolled in this class on this date.",
+  "unsavedTitle": "Unsaved changes",
+  "unsavedBody": "Leave without saving your changes?",
+  "stay": "Stay",
+  "leave": "Leave",
+  "commentHint": "Comment",
+  "whyBelow40": "Why below 40? (required)",
+  "noteOptional": "Note (optional with a reason)",
+  "foldAll": "Fold all",
+  "unfoldAll": "Unfold all",
+  "uploads": "Uploads",
+  "tryNow": "Try now",
+  "notAccepted": "Not accepted: {reason}",
+  "@notAccepted": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "waitingForConnection": "Waiting for a connection ({tries} tries)",
+  "@waitingForConnection": {
+    "placeholders": {
+      "tries": {
+        "type": "int"
+      }
+    }
+  },
+  "discard": "Discard",
+  "behavior": "Behavior",
+  "waitingToUpload": "{count} waiting to upload",
+  "@waitingToUpload": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notAcceptedCount": "{count} not accepted",
+  "@notAcceptedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signOutUnsent": "{count} saves are still on this phone and will be lost if you sign out.",
+  "@signOutUnsent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "home": "Home",
+  "schedule": "Schedule",
+  "classShort": "Class",
+  "myClass": "My Class",
+  "grades": "Grades",
+  "exams": "Exams",
+  "timetable": "Timetable",
+  "rewards": "Rewards",
+  "colleagues": "Colleagues",
+  "pointReport": "Point Report",
+  "profile": "Profile",
+  "hiName": "Hi, {name}",
+  "@hiName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lessonsExamsCount": "Lessons: {lessons} · Exams: {exams}",
+  "@lessonsExamsCount": {
+    "placeholders": {
+      "lessons": {
+        "type": "int"
+      },
+      "exams": {
+        "type": "int"
+      }
+    }
+  },
+  "loadFailed": "Couldn't load. Check your connection.",
+  "noClassesYet": "No classes assigned to you yet.",
+  "noGradesYet": "No grades yet.",
+  "all": "All",
+  "student": "Student",
+  "averageShort": "Avg",
+  "examsShort": "Exams",
+  "reportStudent": "Report Student",
+  "reportShort": "Report",
+  "markTab": "Mark",
+  "historyTab": "History",
+  "statisticsTab": "Stats",
+  "stepWho": "Who",
+  "stepWhatKind": "What kind",
+  "stepWhy": "Why",
+  "searchAnyStudent": "Search any student…",
+  "otherClass": "Other class…",
+  "mine": "mine",
+  "selectAll": "Select all",
+  "unselectAll": "Unselect all",
+  "tapStudentsFirst": "Tap the students first",
+  "nextWho": "Next · {who}",
+  "@nextWho": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "pickOneAbove": "Pick one above",
+  "pickReasonOrComment": "Pick a reason or write a comment",
+  "saveForWho": "Save for {who}",
+  "@saveForWho": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "savedForWho": "Saved for {who}",
+  "@savedForWho": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "seeInHistory": "See it in history",
+  "markMore": "Mark more",
+  "markMoreIn": "Mark more in {cls}",
+  "@markMoreIn": {
+    "placeholders": {
+      "cls": {
+        "type": "String"
+      }
+    }
+  },
+  "back": "Back",
+  "positive": "Positive",
+  "needsAttention": "Needs attention",
+  "positiveDetail": "Something worth praising",
+  "negativeDetail": "Something to work on",
+  "addCommentOptional": "Add a comment (optional)",
+  "noStudentNamed": "No student with that name.",
+  "noStudentsInClass": "No students in this class.",
+  "loadingStudents": "Loading students…",
+  "acrossSchool": "{count} across the school",
+  "@acrossSchool": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "studentOrClass": "Student or class",
+  "noFilterMatches": "Nothing matches these filters.",
+  "noBehaviorMarks": "No behavior marks yet.",
+  "from": "From",
+  "to": "To",
+  "total": "Total",
+  "byClass": "By class",
+  "byWeek": "By week",
+  "commonReasons": "Common reasons",
+  "noMarksForPeriod": "No marks for this period.",
+  "myPlan": "My Plan",
+  "myPoints": "My Points",
+  "myFundings": "My Fundings",
+  "teachingTools": "Teaching Tools",
+  "teachingShort": "Teaching",
+  "thisMonth": "This month",
+  "last30Days": "Last 30 days",
+  "thisYear": "This year",
+  "moreFilters": "More filters",
+  "allCategories": "All categories",
+  "historyCount": "History ({count})",
+  "@historyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inThisPeriod": "{amount} in this period",
+  "@inThisPeriod": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "noPointsYet": "Points you're awarded or that are deducted will show up here.",
+  "nothingInPeriod": "Nothing in this period.",
+  "noSavingsYet": "Your savings will show up here.",
+  "showAmounts": "Show amounts",
+  "hideAmounts": "Hide amounts",
+  "currencySom": "UZS",
+  "received": "Received",
+  "withdrawn": "Withdrawn",
+  "balance": "Balance",
+  "addMilestone": "Add milestone",
+  "editMilestone": "Edit milestone",
+  "milestones": "Milestones",
+  "noPlanYet": "No plan yet. Break the year into the parts you'll work through and mark each one off as you go.",
+  "noMilestonesWithStatus": "Nothing with that status.",
+  "planNotStarted": "Not started",
+  "planInProgress": "In progress",
+  "planDone": "Done",
+  "planPostponed": "Postponed",
+  "planCancelled": "Cancelled",
+  "overdue": "Overdue",
+  "priority": "Priority",
+  "priorityLow": "Low",
+  "priorityMedium": "Medium",
+  "priorityHigh": "High",
+  "priorityUrgent": "Urgent",
+  "status": "Status",
+  "category": "Category",
+  "categoryCurriculum": "Curriculum",
+  "categoryLesson": "Lesson",
+  "categoryExam": "Exam",
+  "categoryMeeting": "Meeting",
+  "categoryAdministrative": "Administrative",
+  "categoryPersonal": "Personal",
+  "categoryGeneral": "General",
+  "starts": "Starts",
+  "ends": "Ends",
+  "milestoneTitleHint": "Title, e.g. Term 1 algebra unit",
+  "addFiles": "Add files",
+  "fileTooBig": "{name} is larger than 10 MB",
+  "@fileTooBig": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "milestoneNeedsTitle": "Give the milestone a title",
+  "endBeforeStart": "The end date can't come before the start date",
+  "milestoneAdded": "Milestone added",
+  "milestoneUpdated": "Milestone updated",
+  "milestoneDeleted": "Milestone deleted",
+  "couldNotSaveMilestone": "Couldn't save the milestone",
+  "couldNotDeleteMilestone": "Couldn't delete the milestone",
+  "planStatusFailed": "Couldn't update the status",
+  "deleteMilestoneTitle": "Delete this milestone?",
+  "deleteMilestoneBody": "\"{agenda}\" and its attachments will be removed. This can't be undone.",
+  "@deleteMilestoneBody": {
+    "placeholders": {
+      "agenda": {
+        "type": "String"
+      }
+    }
+  },
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "soon": "Soon",
+  "teamShuffle": "Team Shuffle",
+  "namePicker": "Name Picker",
+  "timer": "Timer",
+  "participation": "Participation",
+  "homeworkCheck": "Homework Check",
+  "balancedTeams": "Balanced Teams",
+  "seatingPlan": "Seating Plan",
+  "done": "Done",
+  "absentQuestion": "Absent?",
+  "startOver": "Start over",
+  "fewerTeams": "Fewer teams",
+  "moreTeams": "More teams",
+  "roles": "Roles",
+  "shuffle": "Shuffle",
+  "again": "Again",
+  "teamRed": "Red",
+  "teamBlue": "Blue",
+  "teamGreen": "Green",
+  "teamYellow": "Yellow",
+  "teamPurple": "Purple",
+  "teamOrange": "Orange",
+  "teamPink": "Pink",
+  "teamTeal": "Teal",
+  "roleLeader": "Leader",
+  "roleTimekeeper": "Timekeeper",
+  "roleRecorder": "Recorder",
+  "roleReporter": "Reporter",
+  "roleChecker": "Checker",
+  "roleEncourager": "Encourager",
+  "roleMaterials": "Materials",
+  "roleQuestioner": "Questioner",
+  "roleHelper": "Helper",
+  "oneMinuteLess": "One minute less",
+  "oneMinuteMore": "One minute more",
+  "pause": "Pause",
+  "start": "Start",
+  "reset": "Reset",
+  "comingSoon": "Coming soon",
+  "comingSoonBody": "This part of the app isn't ready yet.",
+  "search": "Search",
+  "notifications": "Notifications",
+  "searchHint": "Pages, students, codes…",
+  "searchPagesHint": "Search the app…",
+  "searchSuggested": "Suggested",
+  "searchPages": "Pages",
+  "searchPeople": "People",
+  "searchFound": "{count} found",
+  "searchMinChars": "Type {count} letters to search people",
+  "searchNothing": "Nothing found for “{query}”",
+  "searchNothingBody": "Try another spelling, a student code or a page name.",
+  "searchNothingPagesBody": "Try another word for the page.",
+  "searchShowMore": "Show more",
+  "searchLeft": "Left",
+  "searchGrade": "Grade {grade}",
+  "searchFailed": "Couldn't search people.",
+  "@searchFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@searchMinChars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@searchNothing": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "@searchGrade": {
+    "placeholders": {
+      "grade": {
+        "type": "int"
+      }
+    }
+  },
+  "colleaguesActive": "{count, plural, =1{1 active colleague} other{{count} active colleagues}}",
+  "colleaguesNone": "No colleagues found.",
+  "colleaguesNoneMatching": "No colleagues match your search.",
+  "colleaguesNoPhone": "No phone number",
+  "colleaguesCall": "Call {name}",
+  "colleaguesMessage": "Message {name}",
+  "colleaguesCopied": "Number copied",
+  "colleaguesCantCall": "Couldn't open the phone app.",
+  "colleaguesLoadFailed": "Couldn't load colleagues.",
+  "clearSearch": "Clear search",
+  "@colleaguesActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@colleaguesCall": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@colleaguesMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "resetFilters": "Reset filters",
+  "pointsFor": "For {date}",
+  "@pointsFor": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pointsEdited": "edited",
+  "pointsRefreshFailed": "Couldn't refresh your points.",
+  "pointsWiderPeriod": "Try a wider period.",
+  "colleaguesSwipeCall": "Call",
+  "colleaguesSwipeMessage": "Message",
+  "classStudentsTab": "Students",
+  "classGradesTab": "Grades",
+  "classBehaviorTab": "Behavior",
+  "classStudentCount": "{count, plural, =1{1 student} other{{count} students}}",
+  "classLeft": "Left",
+  "classPresent": "Present",
+  "classContacts": "Contacts",
+  "classNoContacts": "No contacts yet.",
+  "classEditContacts": "Edit contacts",
+  "classNoStudents": "No students in this class.",
+  "classNoHomeroom": "No class assigned",
+  "classNoHomeroomBody": "You aren't the homeroom teacher of a class this year.",
+  "classGradesNone": "No grades yet",
+  "classGradesFailed": "Couldn't load grades.",
+  "classDaily": "Daily",
+  "classGraded": "Graded",
+  "classCatAttend": "Attend",
+  "classCatBooks": "Books",
+  "classCatHomework": "HW",
+  "classCatActive": "Active",
+  "classCatNotes": "Notes",
+  "classBehaviorFailed": "Couldn't load behavior.",
+  "classPositive": "Positive",
+  "classNeedsAttention": "Needs attention",
+  "classMark": "Mark",
+  "classNoMarks": "No marks yet",
+  "classAllMarks": "All {count}",
+  "@classStudentCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@classAllMarks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notMarkedCount": "{count} not marked",
+  "@notMarkedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allMarked": "All marked",
+  "notMarked": "not marked",
+  "notFinished": "{count} not finished",
+  "@notFinished": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scoreEveryCategory": "Score every category for {count} student(s) first",
+  "@scoreEveryCategory": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oldGradingLesson": "this lesson was marked before the new grading, so it uses the old categories"
+}

@@ -5,11 +5,12 @@ import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 
 import 'widget_test.dart' show FakeAuthRepository, InMemoryTokenStorage;
 
-/// Unique to the Rewards page — the dashboard's tile only says "Rewards".
-const _previousPage = 'Tap students to select, then give or deduct points.';
+/// Unique to the Colleagues page as this fake account sees it — the
+/// dashboard's tile only says "Colleagues".
+const _previousPage = 'Colleagues are not configured.';
 
 /// Unique to the dashboard.
-const _dashboard = 'Quick Access';
+const _dashboard = 'Hi, OneOrg';
 
 /// Where the page being left sits this frame, or null once it is off the tree.
 ///
@@ -43,7 +44,7 @@ void main() {
     await tester.pumpWidget(OneOrgStaffApp(controller: controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Rewards'));
+    await tester.tap(find.text('Colleagues'));
     await tester.pumpAndSettle();
     expect(find.text(_previousPage), findsOneWidget);
     expect(find.text(_dashboard), findsNothing);

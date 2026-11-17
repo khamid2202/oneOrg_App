@@ -60,7 +60,10 @@ class HttpNotificationsRepository implements NotificationsRepository {
     final items = rawItems is List
         ? rawItems
               .whereType<Map>()
-              .map((item) => AppNotification.fromJson(Map<String, dynamic>.from(item)))
+              .map(
+                (item) =>
+                    AppNotification.fromJson(Map<String, dynamic>.from(item)),
+              )
               .toList()
         : <AppNotification>[];
 

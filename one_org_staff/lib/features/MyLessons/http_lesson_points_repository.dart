@@ -62,7 +62,10 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
   }
 
   @override
-  Future<List<StudentEntry>> getAllStudents(String token, {int? groupId}) async {
+  Future<List<StudentEntry>> getAllStudents(
+    String token, {
+    int? groupId,
+  }) async {
     final students = <StudentEntry>[];
     final seen = <int>{};
 
@@ -107,9 +110,11 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
       }
 
       final pages = responseBody is Map<String, dynamic>
-          ? _asInt(responseBody['meta'] is Map<String, dynamic>
-                ? (responseBody['meta'] as Map<String, dynamic>)['pages']
-                : null)
+          ? _asInt(
+              responseBody['meta'] is Map<String, dynamic>
+                  ? (responseBody['meta'] as Map<String, dynamic>)['pages']
+                  : null,
+            )
           : null;
       final done = pages != null ? page >= pages : rows.length < 100;
       if (done) {
@@ -129,9 +134,7 @@ class HttpLessonPointsRepository implements LessonPointsRepository {
     final response = await _client.get(
       _buildUri(
         '/student-points/statistics/by-student',
-        queryParameters: {
-          if (groupId != null) 'group_id': groupId.toString(),
-        },
+        queryParameters: {if (groupId != null) 'group_id': groupId.toString()},
       ),
       headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );

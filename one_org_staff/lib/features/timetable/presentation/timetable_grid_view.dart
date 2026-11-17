@@ -138,9 +138,9 @@ class TimetableGridView extends StatelessWidget {
           child: Text(
             caption!,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.softText,
-                ),
+              fontWeight: FontWeight.bold,
+              color: colors.softText,
+            ),
           ),
         ),
         tableWidget,

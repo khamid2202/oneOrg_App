@@ -76,12 +76,11 @@ class ExamGradingViewState extends State<ExamGradingView> {
       widget.api.loadExamResults(widget.exam.id),
     ]);
 
-    final students = (results[0] as List<StudentEntry>)
-        .where(_isEnrolled)
-        .toList()
-      ..sort(
-        (a, b) => a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()),
-      );
+    final students =
+        (results[0] as List<StudentEntry>).where(_isEnrolled).toList()..sort(
+          (a, b) =>
+              a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()),
+        );
 
     _applyResults(students, results[1] as List<ExamResult>);
     return students;
@@ -296,7 +295,10 @@ class ExamGradingViewState extends State<ExamGradingView> {
               )
             else if (snapshot.hasError)
               ExamErrorState(
-                message: examErrorMessage(snapshot.error, 'Failed to load data'),
+                message: examErrorMessage(
+                  snapshot.error,
+                  'Failed to load data',
+                ),
                 onRetry: () => setState(() {
                   _loadFuture = _load();
                 }),

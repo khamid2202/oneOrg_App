@@ -232,7 +232,8 @@ void main() {
         baseUrl: 'https://api.test/',
         client: MockClient((request) async {
           requested = request.url;
-          return http.Response(jsonEncode({
+          return http.Response(
+            jsonEncode({
               'ok': true,
               'result': [
                 {
@@ -265,7 +266,8 @@ void main() {
       final repository = HttpExamsRepository(
         baseUrl: 'https://api.test',
         client: MockClient(
-          (request) async => http.Response(jsonEncode([
+          (request) async => http.Response(
+            jsonEncode([
               {'id': 44, 'name': 'Mathematics'},
               {'id': 45, 'name': 'Physics'},
             ]),
@@ -288,7 +290,8 @@ void main() {
         baseUrl: 'https://api.test',
         client: MockClient((request) async {
           body = request.body;
-          return http.Response(jsonEncode({
+          return http.Response(
+            jsonEncode({
               'ok': true,
               'result': {
                 'id': 12,

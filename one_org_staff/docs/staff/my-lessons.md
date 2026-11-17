@@ -15,11 +15,25 @@ Return the authenticated teacher's lessons for a specific calendar day by lookin
 - **GET** `/my-lessons`
 - **Query:**
   - `date` (optional, ISO date string; defaults to today when omitted)
+  - `timetable_version_id` (optional; defaults to the academic year's published timetable version)
 - **Behavior:**
   - resolves the requested day from `date`
-  - looks up structured timetable rows where `teacher_id` matches the authenticated user
+  - looks up structured timetable rows where the authenticated user is either the
+    **primary teacher** (`teacher_id`) or an **additional teacher** (via the `timetable_teachers` join table)
   - filters to the active academic year covering the requested date
+  - `start_time`/`end_time` come from the class's bell-schedule period
+    (`period_id`, `period_number`), falling back to the time slot's times;
+    `room_id` is included next to `room`
   - sorts lessons by start time
+  - also returns `meetings`: the teacher's active
+    [teacher meetings](timetable-meetings.md) on that date (its weekday, inside
+    the academic year, not on a holiday), at any branch. Meetings are not
+    lessons and have no instance, attendance or grading.
+
+A choice option's rows in several classes come back as one lesson: `id` is the row
+of the lowest group id, `group_ids` lists the classes, and `class_pair` /
+`class_pair_compact` join them (`10-A + 10-B`, `10A+10B`). `/my-lessons` and
+`/timetable/my-lessons` return the same `id`.
 
 ## Example request
 - **Method:** GET

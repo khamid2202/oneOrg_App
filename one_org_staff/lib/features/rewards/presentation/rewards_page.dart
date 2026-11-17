@@ -1,3 +1,4 @@
+import 'package:one_org_staff/shared/photo_viewer.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -327,7 +328,9 @@ class _RewardsPageState extends State<RewardsPage> {
       for (final personId in awarded) {
         totals[personId] = (totals[personId] ?? 0) + award.points;
       }
-      setState(() => _roster = _Roster(students: roster.students, totals: totals));
+      setState(
+        () => _roster = _Roster(students: roster.students, totals: totals),
+      );
     }
     _cache.clear();
     if (roster != null) {
@@ -656,9 +659,7 @@ class _ListToolbar extends StatelessWidget {
         TextButton.icon(
           onPressed: onToggleAll,
           icon: Icon(
-            allSelected
-                ? Icons.remove_done_rounded
-                : Icons.done_all_rounded,
+            allSelected ? Icons.remove_done_rounded : Icons.done_all_rounded,
             size: 18,
           ),
           label: Text(allSelected ? 'Clear all' : 'Select all ($shownCount)'),
@@ -769,21 +770,25 @@ class _SelectableAvatar extends StatelessWidget {
       height: 42,
       child: Stack(
         children: [
-          CircleAvatar(
-            radius: 21,
-            backgroundColor: colors.avatarPlaceholder,
-            backgroundImage: picture != null && picture.isNotEmpty
-                ? NetworkImage(picture)
-                : null,
-            child: picture != null && picture.isNotEmpty
-                ? null
-                : Text(
-                    initial,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: colors.softText,
+          ZoomableAvatar(
+            url: picture,
+            name: student.fullName,
+            child: CircleAvatar(
+              radius: 21,
+              backgroundColor: colors.avatarPlaceholder,
+              backgroundImage: picture != null && picture.isNotEmpty
+                  ? NetworkImage(picture)
+                  : null,
+              child: picture != null && picture.isNotEmpty
+                  ? null
+                  : Text(
+                      initial,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: colors.softText,
+                      ),
                     ),
-                  ),
+            ),
           ),
           if (selected)
             Positioned(
@@ -1036,9 +1041,8 @@ class _AwardSheetState extends State<_AwardSheet> {
   /// Nudges the amount by one, crossing zero rather than stopping at it — a
   /// deduction is reached by stepping down past 0, the same as typing `-1`.
   void _step(int delta) {
-    final current = double.tryParse(
-          _pointsController.text.trim().replaceAll(',', '.'),
-        ) ??
+    final current =
+        double.tryParse(_pointsController.text.trim().replaceAll(',', '.')) ??
         0;
     _setPoints(current + delta);
     HapticFeedback.selectionClick();
@@ -1153,7 +1157,10 @@ class _AwardSheetState extends State<_AwardSheet> {
                                 widget.onRemove(student);
                                 setState(() {});
                               },
-                              deleteIcon: const Icon(Icons.close_rounded, size: 16),
+                              deleteIcon: const Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                              ),
                             ),
                         ],
                       ),
@@ -1181,10 +1188,7 @@ class _AwardSheetState extends State<_AwardSheet> {
                 const SizedBox(height: 18),
                 _FieldLabel('Points'),
                 const SizedBox(height: 8),
-                _PointsStepper(
-                  controller: _pointsController,
-                  onStep: _step,
-                ),
+                _PointsStepper(controller: _pointsController, onStep: _step),
 
                 const SizedBox(height: 16),
                 _FieldLabel('Date'),
@@ -1405,9 +1409,9 @@ class _PointsStepper extends StatelessWidget {
               signed: true,
             ),
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             decoration: InputDecoration(
               hintText: '0',
               hintStyle: TextStyle(color: colors.mutedText),

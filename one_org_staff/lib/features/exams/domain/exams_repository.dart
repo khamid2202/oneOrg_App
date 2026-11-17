@@ -40,7 +40,9 @@ class ExamPeriod {
     return ExamPeriod(
       id: id,
       name: _asString(json['name']) ?? 'Period #$id',
-      academicYearId: _asInt(json['academic_year_id'] ?? json['academicYearId']),
+      academicYearId: _asInt(
+        json['academic_year_id'] ?? json['academicYearId'],
+      ),
       description: _asString(json['description']),
       date: _asString(json['date']),
       isActive: json['is_active'] != false,
@@ -196,7 +198,10 @@ abstract class ExamsRepository {
 
   Future<List<ExamResult>> getExamResults(String token, {required int examId});
 
-  Future<void> createExamResultsBulk(String token, List<ExamResultDraft> drafts);
+  Future<void> createExamResultsBulk(
+    String token,
+    List<ExamResultDraft> drafts,
+  );
 
   Future<void> updateExamResult(
     String token, {

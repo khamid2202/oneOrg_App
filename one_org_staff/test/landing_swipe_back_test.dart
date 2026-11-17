@@ -4,10 +4,12 @@ import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 
 import 'widget_test.dart' show FakeAuthRepository, InMemoryTokenStorage;
 
-/// The header falls back to this while it has no profile. Seeing it again on
-/// the way back to the dashboard is the blink this test guards against.
-const _placeholderName = 'Staff Member';
-const _realName = 'OneOrg Staff User';
+/// The greeting is empty until the profile is known. Losing it again on the
+/// way back to the dashboard is the blink this test guards against.
+const _greeting = 'Hi, OneOrg';
+
+/// A small tile: on screen whenever the dashboard is.
+const _dashboardTile = 'Colleagues';
 
 void main() {
   testWidgets('swiping back to the dashboard does not blink the header', (
@@ -20,18 +22,19 @@ void main() {
 
     await tester.pumpWidget(OneOrgStaffApp(controller: controller));
     await tester.pumpAndSettle();
-    expect(find.text(_realName), findsOneWidget);
+    expect(find.text(_greeting), findsOneWidget);
 
     // Into a page that has no navbar button, so leaving it is a swipe back to
     // the dashboard — the step that misbehaved.
-    await tester.tap(find.text('Point report'));
+    await tester.tap(find.text('Point Report'));
     await tester.pumpAndSettle();
-    expect(find.text(_realName), findsNothing);
+    expect(find.text(_greeting), findsNothing);
 
     final frames = <String>[];
     void recordFrame() {
-      final placeholder = find.text(_placeholderName).evaluate().isNotEmpty;
-      final real = find.text(_realName).evaluate().isNotEmpty;
+      final real = find.text(_greeting).evaluate().isNotEmpty;
+      final placeholder =
+          !real && find.text(_dashboardTile).evaluate().isNotEmpty;
       // '-' is the dashboard not being on screen yet, which is fine; only the
       // placeholder standing in for a name we already have is a defect.
       frames.add(placeholder ? 'PLACEHOLDER' : (real ? 'name' : '-'));

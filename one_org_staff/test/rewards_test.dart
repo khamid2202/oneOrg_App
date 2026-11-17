@@ -183,7 +183,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Adding 5 pts × 2 students'), findsOneWidget);
 
-      await tester.enterText(find.widgetWithText(TextField, 'Why the points were given or taken'), 'Quiz');
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Why the points were given or taken'),
+        'Quiz',
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Give 5 pts'));
@@ -283,48 +286,54 @@ void main() {
   });
 
   group('Rewards repository', () {
-    test('pages through every student and keeps the class on each row', () async {
-      final pages = <String>[];
-      final repository = HttpLessonPointsRepository(
-        client: MockClient((request) async {
-          expect(request.url.path, '/students');
-          final page = request.url.queryParameters['page']!;
-          pages.add(page);
-          expect(request.url.queryParameters['limit'], '100');
-          // No class chosen means the whole school — no group filter at all.
-          expect(
-            request.url.queryParameters.containsKey('group_id'),
-            isFalse,
-          );
+    test(
+      'pages through every student and keeps the class on each row',
+      () async {
+        final pages = <String>[];
+        final repository = HttpLessonPointsRepository(
+          client: MockClient((request) async {
+            expect(request.url.path, '/students');
+            final page = request.url.queryParameters['page']!;
+            pages.add(page);
+            expect(request.url.queryParameters['limit'], '100');
+            // No class chosen means the whole school — no group filter at all.
+            expect(
+              request.url.queryParameters.containsKey('group_id'),
+              isFalse,
+            );
 
-          return http.Response(
-            jsonEncode({
-              'ok': true,
-              'meta': {'pages': 2},
-              'result': [
-                {
-                  'id': page == '1' ? 1 : 2,
-                  'person_id': page == '1' ? 100 : 101,
-                  'group_id': 5,
-                  'leave_date': null,
-                  'full_name': page == '1' ? 'Ada Lovelace' : 'Grace Hopper',
-                  'group': {'id': 5, 'grade': 10, 'class': 'A'},
-                },
-              ],
-            }),
-            200,
-          );
-        }),
-        baseUrl: 'https://dev-api.oneorg.uz',
-      );
+            return http.Response(
+              jsonEncode({
+                'ok': true,
+                'meta': {'pages': 2},
+                'result': [
+                  {
+                    'id': page == '1' ? 1 : 2,
+                    'person_id': page == '1' ? 100 : 101,
+                    'group_id': 5,
+                    'leave_date': null,
+                    'full_name': page == '1' ? 'Ada Lovelace' : 'Grace Hopper',
+                    'group': {'id': 5, 'grade': 10, 'class': 'A'},
+                  },
+                ],
+              }),
+              200,
+            );
+          }),
+          baseUrl: 'https://dev-api.oneorg.uz',
+        );
 
-      final students = await repository.getAllStudents('test-token');
+        final students = await repository.getAllStudents('test-token');
 
-      expect(pages, ['1', '2']);
-      expect(students.map((s) => s.fullName), ['Ada Lovelace', 'Grace Hopper']);
-      expect(students.every((s) => s.groupId == 5), isTrue);
-      expect(students.every((s) => s.classPair == '10-A'), isTrue);
-    });
+        expect(pages, ['1', '2']);
+        expect(students.map((s) => s.fullName), [
+          'Ada Lovelace',
+          'Grace Hopper',
+        ]);
+        expect(students.every((s) => s.groupId == 5), isTrue);
+        expect(students.every((s) => s.classPair == '10-A'), isTrue);
+      },
+    );
 
     test('leavers are left off the roster', () async {
       final repository = HttpLessonPointsRepository(

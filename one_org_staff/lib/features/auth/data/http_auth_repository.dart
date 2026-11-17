@@ -2,15 +2,23 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../lessons/data/offline_cache.dart';
 import '../domain/auth_repository.dart';
 
 class HttpAuthRepository implements AuthRepository {
-  HttpAuthRepository({required http.Client client, required String baseUrl})
-    : _client = client,
-      _baseUrl = _normalizeBaseUrl(baseUrl);
+  HttpAuthRepository({
+    required http.Client client,
+    required String baseUrl,
+    OfflineCache? cache,
+  }) : _client = client,
+       _baseUrl = _normalizeBaseUrl(baseUrl),
+       _cache = cache;
+
+  static const _profileKey = '/users/me';
 
   final http.Client _client;
   final String _baseUrl;
+  final OfflineCache? _cache;
 
   @override
   Future<String> signIn({
@@ -88,6 +96,11 @@ class HttpAuthRepository implements AuthRepository {
       headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
     );
 
+    // A server having a bad moment says nothing about the session.
+    if (response.statusCode >= 500) {
+      throw SessionUncheckable(response.statusCode);
+    }
+
     final responseBody = _decodeBody(response.body);
     if (!_isSuccess(response.statusCode)) {
       throw AuthFailure(
@@ -110,10 +123,23 @@ class HttpAuthRepository implements AuthRepository {
 
   @override
   Future<AppUserProfile> getCurrentUser(String token) async {
-    final response = await _client.get(
-      _buildUri('/users/me'),
-      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
-    );
+    final http.Response response;
+    try {
+      response = await _client
+          .get(
+            _buildUri(_profileKey),
+            headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 12));
+    } on Exception {
+      final kept = await _keptProfile();
+      if (kept != null) return kept;
+      rethrow;
+    }
+    if (response.statusCode >= 500) {
+      final kept = await _keptProfile();
+      if (kept != null) return kept;
+    }
 
     final responseBody = _decodeBody(response.body);
     if (!_isSuccess(response.statusCode)) {
@@ -123,7 +149,20 @@ class HttpAuthRepository implements AuthRepository {
     }
 
     final userMap = _extractUserMap(responseBody);
-    return AppUserProfile.fromJson(userMap);
+    final profile = AppUserProfile.fromJson(userMap);
+    await _cache?.remember(_profileKey, response.body);
+    return profile;
+  }
+
+  /// The last profile seen, so name and permissions survive a lost connection.
+  Future<AppUserProfile?> _keptProfile() async {
+    final body = await _cache?.recall(_profileKey);
+    if (body == null) return null;
+    try {
+      return AppUserProfile.fromJson(_extractUserMap(_decodeBody(body)));
+    } catch (_) {
+      return null;
+    }
   }
 
   @override

@@ -75,7 +75,9 @@ class HttpExamsRepository implements ExamsRepository {
 
     final responseBody = _decodeBody(response.body);
     if (!_isSuccess(response.statusCode)) {
-      throw AuthFailure(_extractMessage(responseBody, 'Unable to create exam.'));
+      throw AuthFailure(
+        _extractMessage(responseBody, 'Unable to create exam.'),
+      );
     }
 
     final result = responseBody is Map<String, dynamic>
@@ -166,7 +168,10 @@ class HttpExamsRepository implements ExamsRepository {
 
     if (!_isSuccess(response.statusCode)) {
       throw AuthFailure(
-        _extractMessage(_decodeBody(response.body), 'Unable to update a grade.'),
+        _extractMessage(
+          _decodeBody(response.body),
+          'Unable to update a grade.',
+        ),
       );
     }
   }

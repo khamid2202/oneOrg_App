@@ -566,11 +566,17 @@ class AcademicYearEntry {
     required this.id,
     required this.name,
     required this.isActive,
+    this.startDate,
+    this.endDate,
   });
 
   final int id;
   final String name;
   final bool isActive;
+
+  /// "YYYY-MM-DD", when the server sent it.
+  final String? startDate;
+  final String? endDate;
 
   String get label => isActive ? '$name (active)' : name;
 
@@ -592,6 +598,8 @@ class AcademicYearEntry {
                 ? '$startYear-$endYear'
                 : 'Year $id'),
       isActive: json['is_active'] == true,
+      startDate: json['start_date']?.toString(),
+      endDate: json['end_date']?.toString(),
     );
   }
 

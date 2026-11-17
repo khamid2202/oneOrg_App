@@ -7,8 +7,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 
 import 'package:one_org_staff/features/Profile/avatar_cropper.dart';
+import 'package:one_org_staff/shared/photo_viewer.dart';
 
 /// A circular avatar that can pick, crop, upload and remove a picture.
+///
+/// Tapping the photo enlarges it; the camera button opens the change/remove
+/// options. With no photo yet, tapping anywhere opens the options.
 ///
 /// Owner-agnostic: the caller supplies the id and the upload/remove calls, so
 /// the same widget backs `/users/:id/picture` and `/persons/:personId/picture`.
@@ -271,11 +275,18 @@ class _EditableAvatarState extends State<EditableAvatar> {
 
     return Semantics(
       button: true,
-      label: imageUrl == null
-          ? 'Add profile picture'
-          : 'Change profile picture',
+      label: imageUrl == null ? 'Add profile picture' : 'View profile picture',
       child: InkWell(
-        onTap: _isBusy ? null : _showOptions,
+        key: const ValueKey('editable-avatar-photo'),
+        onTap: _isBusy
+            ? null
+            : imageUrl == null
+            ? _showOptions
+            : () => showPhotoViewer(
+                context,
+                url: imageUrl,
+                name: widget.fullName,
+              ),
         customBorder: const CircleBorder(),
         child: Stack(
           clipBehavior: Clip.none,
@@ -330,21 +341,37 @@ class _EditableAvatarState extends State<EditableAvatar> {
                   ),
                 ),
               ),
+            // Its own tap target: changes or removes the photo.
             Positioned(
-              right: -2,
-              bottom: -2,
-              child: Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: badgeBorderColor, width: 2.5),
-                ),
-                child: const Icon(
-                  Icons.camera_alt_rounded,
-                  size: 12,
-                  color: Colors.white,
+              right: -8,
+              bottom: -8,
+              child: Semantics(
+                button: true,
+                label: imageUrl == null
+                    ? 'Add profile picture'
+                    : 'Change profile picture',
+                child: GestureDetector(
+                  key: const ValueKey('editable-avatar-change'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _isBusy ? null : _showOptions,
+                  // 38px hit area around the 26px badge.
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: badgeBorderColor, width: 2.5),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt_rounded,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

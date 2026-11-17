@@ -193,7 +193,8 @@ class _ScoreExamViewState extends State<ScoreExamView> {
       exam: target.exam,
       groupId: target.groupId,
       className: target.className,
-      subjectName: data.subjectNames[target.exam.subjectId] ?? 'Unknown subject',
+      subjectName:
+          data.subjectNames[target.exam.subjectId] ?? 'Unknown subject',
       onBack: _closeGrading,
       onDirtyChanged: _onGradingDirtyChanged,
     );
@@ -214,10 +215,7 @@ class _ScoreExamViewState extends State<ScoreExamView> {
           onBack: _back,
         ),
         const SizedBox(height: 16),
-        if (period == null)
-          _buildPeriods(data)
-        else
-          _buildExams(data, period),
+        if (period == null) _buildPeriods(data) else _buildExams(data, period),
       ],
     );
   }
@@ -403,7 +401,11 @@ class _PeriodTile extends StatelessWidget {
 }
 
 class _ExamTile extends StatelessWidget {
-  const _ExamTile({required this.exam, required this.data, required this.onTap});
+  const _ExamTile({
+    required this.exam,
+    required this.data,
+    required this.onTap,
+  });
 
   final Exam exam;
   final ScoreExamData data;

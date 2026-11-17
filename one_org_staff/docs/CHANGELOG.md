@@ -12,6 +12,202 @@ Newest first. Every notable change to **this Flutter app** gets an entry here
 
 ---
 
+## 2026-11-17 — Profile photos open full-size
+
+- Tapping an avatar in My Class, Colleagues, Rewards or Profile opens the photo full-screen (`shared/photo_viewer.dart`). Pinch zooms, and tapping outside or ✕ closes it. The avatar's tap wins over its row, so the row doesn't open. Without a photo the row keeps the tap.
+- **Your own photo** (`EditableAvatar`) can be uploaded or removed. **Remove photo** only shows when there is one, the avatar is read from `picture_url`, and a failed upload or removal shows the API's own reason.
+
+## 2026-11-17 — Grading sheet: no prefill, header checkboxes
+
+- Nothing is prefilled any more. Checkboxes in the column headers mark everyone Present or Absent, or fill one category for everyone. Unticking puts back the server's value.
+- Every category defaults to full marks (activity included), so a full row is 100.
+- A comment is only required once every category is scored. Partly graded rows save as they are instead of blocking Save.
+- Leaving a sheet with edits asks first. An untouched sheet doesn't ask.
+- A closed lesson nobody graded shows no score, and coming back from a lesson reloads the day.
+
+## 2026-11-16 — Daily score v2
+
+The school's new scoring, in `lessons/domain/lesson_grading.dart` (`fieldsFor` / `startFor` / `quickValuesFor`). It needs the backend's v2, which is on dev only so far.
+
+- **Attendance:** on time gives 0. Late takes off −20 × minutes ÷ 45, so 45 minutes or more costs −20. Absent or excused gives no score.
+- **Five teacher categories:** materials 20, homework brought 10 (new, `homework_done_score`), homework accuracy 30 (`homework_score`), activity 20, notes 20, for 100 in all.
+- **Quick values:** 20/15/10/5/0, homework brought 10/5/0, accuracy 30/25/20/15/10/0.
+- **Old lessons:** rows with `grading_version: 1` keep the old scoring, every category out of 20.
+- **Late students:** a late student needs their minutes chosen before moving on to Scores. Only late students send minutes.
+- **Translations:** the new labels are in English, Uzbek and Russian.
+- **Open on the backend:** ungraded rows saved before the switch are still v1, so they can't take "homework brought" yet. Upgrading them is a follow-up for the backend.
+
+## 2026-11-12 — Rewards hidden everywhere
+
+- **Rewards** is switched off: no Home tile, no search hit, and `AppAccess.allows(AppItem.rewards)` is `false` for everyone, so nothing opens it. The page and its code stay; switching it back on is the one line in `app_items.dart` plus the search entry.
+- Released as **1.0.6 (build 8)**.
+
+## 2026-11-11 — My Class matches the web
+
+- **My Class** now has the web's layout. A slim card shows the class and how many students are enrolled now. Under it are three tabs: **Students / Grades / Behavior**.
+- **Students:** each row shows the photo, the name with the code under it, a green dot (or a **Left** badge) and a phone button with the number of contacts. Students who left come last, on a tinted row. Tapping a row opens the profile.
+- **The phone button** lists the contacts, each with a call button. **Edit contacts** opens the profile's Guardians tab.
+- **Grades:**
+  - The class average next to the Edupage average, the daily average, and how many students have grades.
+  - A bar of the 85+/70+/50+/<50 bands, where tapping a band filters the students.
+  - Every subject's average, the five daily categories, and each student's score.
+  - The figures come from `/lesson-grades/statistics/imported`, `/statistics` and `/statistics/by-student`. Any one of them can fail and the rest still show.
+- **Behavior:**
+  - Positive and needs-attention counts, and the students who have marks.
+  - The last three marks, with a link to show all of them.
+  - A **Mark** button opens the Behavior screen. It only shows for people who can open that screen.
+  - Marks come from `/behavior/marks?className=9B`.
+- **Removed:** the year picker, the Info / Status / Contacts tabs and the search box. The page always shows this year's class, as on the web.
+- Released as 1.0.5 (build 7).
+
+## 2026-11-11 — Store builds use the production API
+
+- Release builds (`flutter build appbundle` / `ipa`) now talk to `https://api.oneorg.uz`, which reports `"environment":"production"`. `flutter run` and tests stay on `https://dev-api.oneorg.uz`. `--dart-define=API_BASE_URL=…` still overrides both.
+- Production has its own data and accounts. A teacher signs in with their production login, not a dev one.
+- Version raised to 1.0.4 (build 6). Play Console had already used build 5.
+
+## 2026-11-11 — My Points polish; Colleagues swipe to call or text
+
+- **My Points** history is grouped by month, newest first, and each month heading shows that month's net.
+- A row says **"For 1 Oct"** when the points count for a different day than the one they were added on, and **"edited"** when someone changed them later. The web shows the same.
+- Pulling the history down reloads it. A failed reload keeps the list and says so.
+- The filter panel has **Reset filters**, which clears the period and the category together. My Fundings gets it too.
+- `/user-points` and `/fundings` are filtered by branch, so their offline copy is now kept for each branch. Before, a branch switch with no connection could show the other branch's points.
+- **Colleagues:** swiping a row right calls the person and swiping it left texts them. The row springs back either way, and a person with no number can't be swiped.
+- **Colleagues:** an open row is now one rounded tint with no borders, and the number sits under the name. The A–Z index counts each row's 1px divider, so letter jumps no longer drift.
+
+## 2026-11-11 — Colleagues polish
+
+- **Colleagues** speaks English, Uzbek and Russian. Every label, count, tooltip and message on the page was English-only before.
+- The last list is kept on the phone for each branch, so numbers can still be found with no connection. It's wiped on sign-out with the rest of the offline data.
+- Pulling the list down reloads it. The list stays on screen while it does, and a failed reload keeps it and says so.
+- Holding a phone number copies it.
+- Switching branch reloads the page, since each branch has its own staff.
+
+## 2026-11-11 — Global search; My Plan switched off
+
+- **Search** opens from the magnifier in the Home header, as the phone version of the web's ⌘K search. Screens are matched on the phone by their names in English, Uzbek and Russian, plus other words people use for them, so "davomat" finds My Schedule whatever language the app is in. Only screens this person can open are offered.
+- People come from `/persons?search=` (name or code) after two letters, 25 at a time with Show more. A "Left" badge comes from the latest enrollment in `/students?q=`. As on the web, only accounts holding a `persons.*` or `students.*` key search people, and a 403 hides that part.
+- Tapping a person opens the same student profile My Class uses, with the newest enrollment's class. Someone with no enrollment still opens, without a class.
+- **My Plan** now shows "Coming soon" when opened. The page and its tests stay in the code for later, and search doesn't offer it.
+
+## 2026-11-11 — My Plan, My Points, My Fundings and Teaching Tools
+
+- **My Plan** follows the web page: milestone counts, overall completion, a sideways milestone track, status filters and the list. Tapping a status changes it right away and puts it back if the server refuses. Tapping a row edits it, with dates, status, priority, category, notes, attachments and delete. A new milestone starts the day after the latest one and runs for a month. The plan is scoped to the active academic year.
+- **My Points** shows the all-time balance and a history that can be narrowed by period or category.
+- **My Fundings** shows one card per category and currency, never one total across them, and a statement with the balance after each row. The eye hides every amount and is remembered on the phone.
+- These three always send the signed-in person's own `user_id`. Without it, an account allowed to see everyone's records would get the whole school's.
+- **Teaching Tools** has Team Shuffle (avoids last time's pairs, rotates roles), Name Picker (everyone gets one turn per round) and Timer. Participation, Homework Check, Balanced Teams and Seating Plan are shown as coming soon. Team history stays on the phone.
+- Home has four new tiles. Teaching Tools needs the teacher role or the behavior permission; the other three are open to any staff account.
+
+## 2026-11-11 — My gradebooks and Report Student
+
+- **My gradebooks**: the Grades card on Home opens the class, subject and month table the web has, with pinned names, daily averages and exams as percents. A row on the card opens that class and subject.
+- **Report Student**: the full behavior page, with Mark (who, what kind, why), History and Statistics. Marks go through the upload queue, so they work with no connection, and more than 50 students are split into several requests.
+- Regular teachers with the behavior permission get Report in the middle of the phone bar. It is also the first small tile on Home.
+
+## 2026-11-11 — Home and phone bar follow the web
+
+Home is rebuilt after the web's `TeacherHome`, and what each person sees now
+comes from their permissions.
+
+- `AppUserProfile` reads `permissions` from `/users/me`, with `isAdmin`,
+  `isTeacher` and `hasAnyPermission` (`admin` is a wildcard). Null means the API
+  did not send them, which is different from holding none.
+- `AppAccess` (`landing/domain/app_items.dart`) holds the rules of the web's
+  `navigationConfig.jsx` for the pages this app has. Rewards needs a `points.*`
+  key, as on the web, so a regular teacher without one no longer sees it.
+- `TeacherHome` — a greeting, today's lessons with a red "now" line, My Class
+  and Grades cards, and small tiles for the rest. The Grades card reads
+  `/lesson-grades/gradebook/recent` and gets its link with the gradebook page.
+- `NextLessonDayLoader` — the first day within a week that has lessons; from
+  16:30 a finished day gives way to the next. Tapping the card opens that day.
+- `BottomMenu` is docked like the web's: Home, Schedule, Class, Profile for a
+  regular teacher, a colour per app, and a red dot on Home for unread
+  notifications. Colleagues moved to a Home tile. Report joins with its page.
+- The theme toggle and avatar left Home; both are on Profile.
+- The last `/users/me` answer stays on the phone, so name and permissions
+  survive a lost connection. A 401 is never answered from the phone.
+
+## 2026-11-11 — Lessons work without a connection
+
+Attendance, scores and behavior marks no longer wait for the network, matching
+the web's `shared/offline/outbox.js`.
+
+- `LessonsOutbox` — saves go to the phone first and upload oldest first, so
+  attendance goes before the scores that need it. A newer save of the same kind
+  for the same lesson merges while it waits. No answer, 5xx, 401, 408 or 429
+  retries after 3s, 10s, 30s, then every 60s; any other refusal is kept with the
+  server's reason until discarded. It is also retried on returning to the app.
+- `OfflineCache` — the last good day, sheet, behavior list and bell schedule stay
+  on the phone (newest 60) so a lesson already opened still opens offline.
+- `withWaitingSaves` lays saves still on the phone over the sheet, so reopening
+  a lesson shows them. Once a lesson's saves have uploaded it reloads from the
+  server, unless the teacher has started editing again.
+- `UploadsPill` / `showUploadsSheet` — a pill above the bottom menu and a status
+  on the sheet while anything waits or was refused.
+- Starting with no connection or a 5xx no longer signs the teacher out. Only a
+  rejected token does. Sign-out clears the queue and the cache, and warns first
+  if anything hasn't uploaded.
+
+---
+
+## 2026-11-11 — Lessons: the web's teaching day
+
+The Lessons tab now works like the web's My Schedule: open a lesson, mark
+attendance, then score those who came. Lesson points are gone from this tab.
+
+- `features/lessons/` — new, named like the web. `HttpLessonsRepository` lays
+  `/timetable/my-lessons` records over `/my-lessons`, and reads across branches
+  so a teacher can open a lesson at any campus they work at.
+- `LessonsPage` — one line per bell period, with the day picker, Now highlight,
+  substitutions, cancelled lessons, teacher meetings and choice lessons side by
+  side. Without a bell schedule it falls back to ten 45-minute periods.
+- `GradingSheetPage` — Attendance then Scores. Same rules as the web's
+  `gradingUtils.js`: four categories of 0–20, a comment required below 40,
+  make-up scores displayed, editing closed 3 days after the lesson and never
+  later than Saturday 08:00. Going to Scores saves attendance first.
+- Behavior marks live in a row's comment box, save at once and aren't locked by
+  the grading window.
+- Removed `MyLessons/my_lessons.dart`, `MyLessons/lesson_points.dart` and
+  `AuthController.loadPointsForGroupAndDate`. The points repository stays because
+  other features use it.
+- English, Uzbek and Russian (`lib/l10n`, `LanguageController`, picker under
+  Profile > System). Only the Lessons screens are translated so far.
+- Saves go straight to the network. The offline outbox is the next phase.
+- Added `lesson-instances.md`, `lesson-grades.md`, `bell-schedules.md` and
+  refreshed `my-lessons.md` in `docs/staff/` from the backend's copies.
+
+---
+
+## 2026-11-11 — Branches: one campus at a time
+
+Without `X-Branch-Id`, a teacher assigned to several branches read all of them
+mixed together, and class names like "7-A" repeat across branches.
+
+- `features/branches/` — new. `BranchHttpClient` wraps the client all the
+  repositories share, so it stamps the header in one place. `/users/me`,
+  `/branches/my`, `/auth/*` and `/notifications*` are personal and stay
+  unstamped.
+- `BranchGate` (inside `AuthGate`) holds the dashboard back until
+  `GET /branches/my` has resolved the branch: the saved one if still offered,
+  else the oldest active. If that call fails, a saved branch is used; with none
+  saved the teacher gets Retry and Sign out. A 404 means the API predates
+  branches, and the app runs without a header.
+- `BranchSwitcher` — one line under the name on the dashboard, opening a bottom
+  sheet. Hidden for teachers with one branch. It lives only on the dashboard,
+  where nothing is branch-scoped, and every other tab loads when it mounts, so
+  a switch leaves no stale screen.
+- **The Lessons tab deliberately sends no header** (`acrossBranches`):
+  `/timetable/my-lessons` covers every branch the teacher works at, so a lesson
+  at the other campus has to load its roster and save points without being
+  limited to the selected branch. Same approach as the web app.
+- A 403 "access to this branch" (deactivated, or the teacher was removed) drops
+  the selection and resolves it again, at most once per 10 seconds.
+- `docs/staff/branches.md` — copied from the backend docs. The other
+  `docs/staff/` files have not been re-synced.
+- `test/branches_test.dart` — new.
+
 ## 2026-08-20 — Push: Firebase config files removed from git
 
 GitHub secret scanning flagged the Android and iOS Firebase API keys after

@@ -212,7 +212,7 @@ void main() {
       );
 
       // A picker failure must not be reported as a generic message.
-      await tester.tap(find.byType(InkWell).first);
+      await tester.tap(find.byKey(const ValueKey('editable-avatar-change')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Choose from library'));
       await tester.pumpAndSettle();
@@ -250,7 +250,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(InkWell).first);
+      await tester.tap(find.byKey(const ValueKey('editable-avatar-change')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Remove photo'));
       await tester.pumpAndSettle();
@@ -275,7 +275,7 @@ void main() {
         wrap(onRemove: ({required ownerId}) async => null),
       );
 
-      await tester.tap(find.byType(InkWell).first);
+      await tester.tap(find.byKey(const ValueKey('editable-avatar-change')));
       await tester.pumpAndSettle();
 
       expect(find.text('Choose from library'), findsOneWidget);
@@ -300,7 +300,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(InkWell).first);
+      await tester.tap(find.byKey(const ValueKey('editable-avatar-change')));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Remove photo'));

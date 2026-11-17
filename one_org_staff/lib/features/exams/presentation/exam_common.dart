@@ -199,7 +199,12 @@ class ExamErrorState extends StatelessWidget {
 
 /// Small accent pill — the web's `rounded-full bg-accent-soft` badges.
 class ExamPill extends StatelessWidget {
-  const ExamPill({super.key, required this.label, this.icon, this.muted = false});
+  const ExamPill({
+    super.key,
+    required this.label,
+    this.icon,
+    this.muted = false,
+  });
 
   final String label;
   final IconData? icon;

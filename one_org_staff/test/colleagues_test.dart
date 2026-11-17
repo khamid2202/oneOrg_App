@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -8,6 +10,9 @@ import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/colleagues/data/http_colleagues_repository.dart';
 import 'package:one_org_staff/features/colleagues/domain/colleagues_repository.dart';
 import 'package:one_org_staff/features/colleagues/presentation/colleagues_page.dart';
+import 'package:one_org_staff/features/lessons/data/offline_cache.dart';
+import 'package:one_org_staff/l10n/generated/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const _ali = Colleague(
   id: 1,
@@ -48,15 +53,25 @@ Widget _wrap(
 }) {
   // The page scrolls itself, so it takes a bounded height rather than being
   // wrapped in a scroll view — the same shape the landing shell gives it.
-  return MaterialApp(
-    home: Scaffold(
-      body: ColleaguesPage(
-        loadColleagues: () async => colleagues,
-        launchDial: launchDial,
-      ),
+  return _app(
+    ColleaguesPage(
+      loadColleagues: () async => colleagues,
+      launchDial: launchDial,
     ),
   );
 }
+
+Widget _app(Widget page) => MaterialApp(
+  locale: const Locale('en'),
+  localizationsDelegates: const [
+    AppLocalizations.delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ],
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(body: page),
+);
 
 /// Colleagues spread across several letters, for the A–Z rail.
 List<Colleague> _acrossTheAlphabet() => [
@@ -128,6 +143,57 @@ void main() {
   });
 
   group('HttpColleaguesRepository', () {
+    test(
+      'with no connection, answers from the last list for that branch',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final cache = OfflineCache();
+        var online = true;
+        var branch = 1;
+        final repository = HttpColleaguesRepository(
+          client: MockClient((request) async {
+            if (!online) throw http.ClientException('offline');
+            return http.Response(
+              jsonEncode({
+                'users': [
+                  {
+                    'id': branch,
+                    'full_name': 'Branch $branch',
+                    'status': 'active',
+                  },
+                ],
+              }),
+              200,
+            );
+          }),
+          baseUrl: 'https://dev-api.oneorg.uz',
+          cache: cache,
+          branchId: () => branch,
+        );
+
+        await repository.getColleagues('t');
+        branch = 2;
+        await repository.getColleagues('t');
+
+        online = false;
+        branch = 1;
+        expect(
+          (await repository.getColleagues('t')).single.fullName,
+          'Branch 1',
+        );
+        branch = 2;
+        expect(
+          (await repository.getColleagues('t')).single.fullName,
+          'Branch 2',
+        );
+        branch = 3;
+        expect(
+          repository.getColleagues('t'),
+          throwsA(isA<http.ClientException>()),
+        );
+      },
+    );
+
     test('reads the documented { ok, users: [...] } shape', () async {
       final repository = HttpColleaguesRepository(
         client: MockClient((request) async {
@@ -392,10 +458,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'nobody');
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('No colleagues found matching your search.'),
-        findsOneWidget,
-      );
+      expect(find.text('No colleagues match your search.'), findsOneWidget);
     });
 
     testWidgets('the message button opens an sms: link', (tester) async {
@@ -474,17 +537,15 @@ void main() {
       var attempts = 0;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ColleaguesPage(
-              loadColleagues: () async {
-                attempts++;
-                if (attempts == 1) {
-                  throw const AuthFailure('Unauthorized');
-                }
-                return [_ali];
-              },
-            ),
+        _app(
+          ColleaguesPage(
+            loadColleagues: () async {
+              attempts++;
+              if (attempts == 1) {
+                throw const AuthFailure('Unauthorized');
+              }
+              return [_ali];
+            },
           ),
         ),
       );
@@ -492,10 +553,110 @@ void main() {
 
       expect(find.text('Unauthorized'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Try again'));
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Retry'));
       await tester.pumpAndSettle();
 
       expect(find.text('Ali Vali'), findsOneWidget);
+    });
+
+    testWidgets('pulling down reloads and keeps the list on screen', (
+      tester,
+    ) async {
+      var round = 0;
+      await tester.pumpWidget(
+        _app(
+          ColleaguesPage(
+            loadColleagues: () async => ++round == 1 ? [_ali] : [_ali, _bobur],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('1 active colleague'), findsOneWidget);
+
+      await tester.fling(find.text('Ali Vali'), const Offset(0, 400), 1000);
+      await tester.pump();
+      // No spinner in place of the list while it reloads.
+      expect(find.text('Ali Vali'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(round, 2);
+      expect(find.text('2 active colleagues'), findsOneWidget);
+    });
+
+    testWidgets('a failed reload keeps the list and says so', (tester) async {
+      var round = 0;
+      await tester.pumpWidget(
+        _app(
+          ColleaguesPage(
+            loadColleagues: () async {
+              if (++round > 1) throw Exception('offline');
+              return [_ali];
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.fling(find.text('Ali Vali'), const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+      expect(find.text('Ali Vali'), findsOneWidget);
+      expect(find.text("Couldn't load colleagues."), findsOneWidget);
+    });
+
+    testWidgets('holding the number copies it', (tester) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await tester.pumpWidget(_wrap([_ali]));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ali Vali'));
+      await tester.pumpAndSettle();
+      await tester.longPress(
+        find.byKey(ValueKey('colleague-phone-${_ali.id}')),
+      );
+      await tester.pumpAndSettle();
+      expect(copied, _ali.phoneNumber);
+      expect(find.text('Number copied'), findsOneWidget);
+    });
+
+    testWidgets('swiping right calls, swiping left texts, the row stays', (
+      tester,
+    ) async {
+      final launched = <String>[];
+      await tester.pumpWidget(
+        _wrap(
+          [_ali, _bobur],
+          launchDial: (uri) async {
+            launched.add(uri);
+            return true;
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.text('Ali Vali'), const Offset(300, 0));
+      await tester.pumpAndSettle();
+      await tester.drag(find.text('Ali Vali'), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      expect(launched, ['tel:+998901112233', 'sms:+998901112233']);
+      expect(find.text('Ali Vali'), findsOneWidget);
+
+      // No number, nothing to swipe to.
+      expect(
+        find.byKey(ValueKey('colleague-swipe-${_bobur.id}')),
+        findsNothing,
+      );
     });
   });
 }

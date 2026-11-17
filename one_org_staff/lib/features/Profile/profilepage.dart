@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:one_org_staff/app/language_controller.dart';
 import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/app/theme_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 
+import 'package:one_org_staff/l10n/generated/app_localizations.dart';
 import 'package:one_org_staff/shared/editable_avatar.dart';
 import 'package:one_org_staff/shared/underline_tabs.dart';
 
@@ -15,6 +17,7 @@ class ProfilePage extends StatefulWidget {
   const ProfilePage({
     super.key,
     required this.themeController,
+    this.languageController,
     required this.loadProfile,
     required this.updatePassword,
     required this.uploadProfilePicture,
@@ -23,6 +26,7 @@ class ProfilePage extends StatefulWidget {
   });
 
   final ThemeController themeController;
+  final LanguageController? languageController;
   final Future<AppUserProfile> Function() loadProfile;
   final Future<String> Function({
     required String currentPassword,
@@ -344,6 +348,15 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         const SizedBox(height: 22),
 
+        if (widget.languageController != null) ...[
+          _SettingsSection(
+            title: AppLocalizations.of(context).language.toUpperCase(),
+            mutedColor: colors.mutedText,
+            child: _LanguagePicker(controller: widget.languageController!),
+          ),
+          const SizedBox(height: 24),
+        ],
+
         _SettingsSection(
           title: 'APPEARANCE',
           description: 'Choose the system color used across the whole app.',
@@ -422,13 +435,13 @@ class _ProfilePageState extends State<ProfilePage> {
 class _SettingsSection extends StatelessWidget {
   const _SettingsSection({
     required this.title,
-    required this.description,
+    this.description,
     required this.mutedColor,
     required this.child,
   });
 
   final String title;
-  final String description;
+  final String? description;
   final Color mutedColor;
   final Widget child;
 
@@ -446,15 +459,38 @@ class _SettingsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          description,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: mutedColor),
-        ),
+        if (description != null)
+          Text(
+            description!,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: mutedColor),
+          ),
         const SizedBox(height: 14),
         child,
       ],
+    );
+  }
+}
+
+class _LanguagePicker extends StatelessWidget {
+  const _LanguagePicker({required this.controller});
+
+  final LanguageController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<String>(
+        showSelectedIcon: false,
+        segments: [
+          for (final option in LanguageController.options.entries)
+            ButtonSegment(value: option.key, label: Text(option.value)),
+        ],
+        selected: {controller.code},
+        onSelectionChanged: (picked) => controller.setLanguage(picked.first),
+      ),
     );
   }
 }

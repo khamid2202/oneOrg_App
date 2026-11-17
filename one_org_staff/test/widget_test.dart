@@ -5,6 +5,8 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,13 +21,39 @@ import 'package:one_org_staff/shared/underline_tabs.dart';
 import 'package:one_org_staff/features/MyClass/my_class.dart';
 import 'package:one_org_staff/features/colleagues/domain/colleagues_repository.dart';
 import 'package:one_org_staff/features/exams/presentation/exams_page.dart';
+import 'package:one_org_staff/features/lessons/application/lessons_outbox.dart';
+import 'package:one_org_staff/features/lessons/domain/lessons_repository.dart';
 import 'package:one_org_staff/features/point_report/domain/point_report_repository.dart';
 import 'package:one_org_staff/features/point_report/presentation/point_report_page.dart';
 import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/app/theme_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/fake_lessons_repository.dart';
+
 void main() {
+  test('no connection at start keeps the session', () async {
+    final storage = InMemoryTokenStorage(initialToken: 'saved-token');
+    final controller = AuthController(
+      authRepository: _UnreachableAuthRepository(),
+      tokenStorage: storage,
+    );
+    await controller.restoreSession();
+    expect(controller.status, AuthStatus.authenticated);
+    expect(await storage.readToken(), 'saved-token');
+  });
+
+  test('a token the server rejects still signs out', () async {
+    final storage = InMemoryTokenStorage(initialToken: 'expired');
+    final controller = AuthController(
+      authRepository: FakeAuthRepository(validTokens: const {'other'}),
+      tokenStorage: storage,
+    );
+    await controller.restoreSession();
+    expect(controller.status, AuthStatus.unauthenticated);
+    expect(await storage.readToken(), isNull);
+  });
+
   testWidgets('shows the login screen when no saved token exists', (
     WidgetTester tester,
   ) async {
@@ -38,7 +66,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.text('Quick Access'), findsNothing);
+    expect(find.text('Hi, OneOrg'), findsNothing);
   });
 
   testWidgets('restores a valid saved token into the landing page', (
@@ -52,17 +80,15 @@ void main() {
     await tester.pumpWidget(OneOrgStaffApp(controller: controller));
     await tester.pumpAndSettle();
 
-    expect(find.text('Quick Access'), findsOneWidget);
+    expect(find.text('Hi, OneOrg'), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
-    // Twice: once in the bottom navbar, once as a dashboard row.
-    expect(find.text('Lessons'), findsNWidgets(2));
-    expect(find.text('Colleagues'), findsNWidgets(2));
-    // Dashboard row only — Timetable was taken off the navbar.
+    // The phone bar, like the web's for a regular teacher.
+    expect(find.text('Schedule'), findsOneWidget);
+    expect(find.text('Class'), findsOneWidget);
+    // Small tiles only.
+    expect(find.text('Colleagues'), findsOneWidget);
     expect(find.text('Timetable'), findsOneWidget);
-    expect(find.text('My Class'), findsOneWidget);
-    expect(find.text('Point report'), findsOneWidget);
-    // Only in the navbar — the dashboard's Profile and Sign Out cards were
-    // removed; the header avatar is the way into the profile now.
+    expect(find.text('Point Report'), findsOneWidget);
     expect(find.text('Profile'), findsOneWidget);
     expect(find.text('Sign Out'), findsNothing);
   });
@@ -202,12 +228,7 @@ void main() {
     await tester.pumpWidget(OneOrgStaffApp(controller: controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(
-      find.descendant(
-        of: find.byType(BottomMenu),
-        matching: find.text('Colleagues'),
-      ),
-    );
+    await tester.tap(find.text('Colleagues'));
     await tester.pumpAndSettle();
 
     expect(find.text('Ali Vali'), findsOneWidget);
@@ -241,7 +262,7 @@ void main() {
       find.descendant(of: find.byType(BottomMenu), matching: find.text('Home')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('My Class'));
+    await tester.tap(find.text('Class'));
     await tester.pumpAndSettle();
 
     expect(find.byType(MyClassPage), findsOneWidget);
@@ -263,14 +284,14 @@ void main() {
     expect(
       find.descendant(
         of: find.byType(BottomMenu),
-        matching: find.text('Point report'),
+        matching: find.text('Point Report'),
       ),
       findsNothing,
     );
 
-    await tester.ensureVisible(find.text('Point report'));
+    await tester.ensureVisible(find.text('Point Report'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Point report'));
+    await tester.tap(find.text('Point Report'));
     await tester.pumpAndSettle();
 
     expect(find.byType(PointReportPage), findsOneWidget);
@@ -317,6 +338,22 @@ void main() {
       authRepository: FakeAuthRepository(validTokens: const {'saved-token'}),
       tokenStorage: InMemoryTokenStorage(initialToken: 'saved-token'),
       timetableRepository: FakeTimetableRepository(),
+      outbox: LessonsOutbox(upload: FakeLessonsRepository().upload),
+      lessons: FakeLessonsRepository(
+        day: const LessonDay(
+          lessons: [
+            TeacherLesson(
+              id: 1,
+              instanceId: 7,
+              subject: 'Mathematics',
+              classLabel: '6B',
+              startTime: '08:00:00',
+              endTime: '08:45:00',
+              room: '201',
+            ),
+          ],
+        ),
+      ),
     );
 
     await tester.pumpWidget(OneOrgStaffApp(controller: controller));
@@ -325,15 +362,15 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(BottomMenu),
-        matching: find.text('Lessons'),
+        matching: find.text('Schedule'),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Mathematics'), findsOneWidget);
-    expect(find.text('08:30-09:15'), findsOneWidget);
-    expect(find.text('6-B'), findsOneWidget);
-    expect(find.text('John Doe'), findsOneWidget);
+    expect(find.text('08:00'), findsOneWidget);
+    expect(find.text('6B'), findsOneWidget);
+    expect(find.text('201'), findsOneWidget);
   });
 
   testWidgets('the timetable opens on the by-teacher grid', (
@@ -351,7 +388,10 @@ void main() {
     // Timetable has no navbar button — it opens from its dashboard row, which
     // sits below the fold at this window size.
     await tester.ensureVisible(find.text('Timetable'));
-    await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, -120));
+    await tester.drag(
+      find.byType(SingleChildScrollView).first,
+      const Offset(0, -120),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timetable'));
     await tester.pumpAndSettle();
@@ -380,7 +420,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Quick Access'), findsOneWidget);
+    expect(find.text('Hi, OneOrg'), findsOneWidget);
   });
 }
 
@@ -396,6 +436,8 @@ class FakeAuthRepository implements AuthRepository {
       phone: '+998 90 123 45 67',
       department: 'Mathematics',
       joinedDate: '12 Sep 2024',
+      roles: ['teacher'],
+      permissions: ['points.read'],
     ),
   });
 
@@ -503,6 +545,15 @@ class InMemoryTokenStorage implements TokenStorage {
   @override
   Future<void> writeToken(String token) async {
     initialToken = token;
+  }
+}
+
+class _UnreachableAuthRepository extends FakeAuthRepository {
+  _UnreachableAuthRepository() : super(validTokens: const {});
+
+  @override
+  Future<void> validate(String token) async {
+    throw const SocketException('offline');
   }
 }
 

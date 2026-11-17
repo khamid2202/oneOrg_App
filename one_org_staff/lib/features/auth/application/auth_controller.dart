@@ -3,6 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:one_org_staff/config/api_config.dart';
 import '../../timetable/time_table_repository.dart';
 import '../../MyLessons/lesson_points_repository.dart';
+import '../../branches/domain/branches_repository.dart';
+import '../../lessons/application/lessons_outbox.dart';
+import '../../me/domain/my_records.dart';
+import '../../MyClass/class_insights.dart';
+import '../../search/domain/app_search.dart';
+import '../../lessons/domain/lessons_repository.dart';
 import '../../colleagues/domain/colleagues_repository.dart';
 import '../../exams/domain/exams_repository.dart';
 import '../../notifications/domain/notifications_repository.dart';
@@ -22,6 +28,12 @@ class AuthController extends ChangeNotifier {
     PointReportRepository? pointReportRepository,
     ExamsRepository? examsRepository,
     NotificationsRepository? notificationsRepository,
+    BranchesRepository? branchesRepository,
+    this.lessons,
+    this.outbox,
+    this.me,
+    this.search,
+    this.classInsights,
   }) : _authRepository = authRepository,
        _tokenStorage = tokenStorage,
        _timetableRepository = timetableRepository,
@@ -29,7 +41,8 @@ class AuthController extends ChangeNotifier {
        _colleaguesRepository = colleaguesRepository,
        _pointReportRepository = pointReportRepository,
        _examsRepository = examsRepository,
-       _notificationsRepository = notificationsRepository;
+       _notificationsRepository = notificationsRepository,
+       _branchesRepository = branchesRepository;
 
   final AuthRepository _authRepository;
   final TokenStorage _tokenStorage;
@@ -39,6 +52,22 @@ class AuthController extends ChangeNotifier {
   final PointReportRepository? _pointReportRepository;
   final ExamsRepository? _examsRepository;
   final NotificationsRepository? _notificationsRepository;
+  final BranchesRepository? _branchesRepository;
+
+  /// The teaching day. Null in a test harness that doesn't exercise it.
+  final LessonsRepository? lessons;
+
+  /// Attendance, scores and behavior marks on their way to the server.
+  final LessonsOutbox? outbox;
+
+  /// The signed-in person's own plan, points and savings.
+  final MyRepository? me;
+
+  /// People search for the app-wide search screen.
+  final SearchRepository? search;
+
+  /// A class's grades and behavior, for My Class.
+  final ClassInsightsRepository? classInsights;
 
   /// Runs just before the session token is discarded on sign-out, while an
   /// authenticated call is still possible. [PushService] hangs the
@@ -64,6 +93,20 @@ class AuthController extends ChangeNotifier {
     }
 
     return _authRepository.getCurrentUser(token);
+  }
+
+  Future<List<Branch>?> loadMyBranches() async {
+    final branchesRepository = _branchesRepository;
+    if (branchesRepository == null) {
+      throw const AuthFailure('Branches are not configured.');
+    }
+
+    final token = await _tokenStorage.readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthFailure('No active session found.');
+    }
+
+    return branchesRepository.getMyBranches(token);
   }
 
   Future<String?> uploadProfilePicture({
@@ -112,8 +155,10 @@ class AuthController extends ChangeNotifier {
       await _tokenStorage.clearToken();
       _status = AuthStatus.unauthenticated;
     } catch (_) {
-      await _tokenStorage.clearToken();
-      _status = AuthStatus.unauthenticated;
+      // No connection or a server error says nothing about the session, and
+      // the teaching day has to open offline. An expired token is caught by
+      // the first call that reaches the server.
+      _status = AuthStatus.authenticated;
     }
 
     notifyListeners();
@@ -301,7 +346,10 @@ class AuthController extends ChangeNotifier {
   Future<void> createExamResultsBulk(List<ExamResultDraft> drafts) =>
       _withExams((repo, token) => repo.createExamResultsBulk(token, drafts));
 
-  Future<void> updateExamResult({required int resultId, required double score}) {
+  Future<void> updateExamResult({
+    required int resultId,
+    required double score,
+  }) {
     return _withExams(
       (repo, token) =>
           repo.updateExamResult(token, resultId: resultId, score: score),
@@ -549,29 +597,6 @@ class AuthController extends ChangeNotifier {
     await pointsRepository.createPointsBulk(token, points);
   }
 
-  Future<Map<int, double>> loadPointsForGroupAndDate({
-    required int groupId,
-    required DateTime date,
-    int? subjectId,
-  }) async {
-    final pointsRepository = _pointsRepository;
-    if (pointsRepository == null) {
-      throw const AuthFailure('Points are not configured.');
-    }
-
-    final token = await _tokenStorage.readToken();
-    if (token == null || token.isEmpty) {
-      throw const AuthFailure('No active session found.');
-    }
-
-    return pointsRepository.getPointsForGroupAndDate(
-      token,
-      groupId: groupId,
-      date: date,
-      subjectId: subjectId,
-    );
-  }
-
   /// Defaults to the configured year; My Class passes the year the teacher
   /// picked so the roster follows the dropdown.
   Future<List<GroupEntry>> loadGroups({int? academicYearId}) async {
@@ -789,6 +814,8 @@ class AuthController extends ChangeNotifier {
       }
     }
 
+    outbox?.clear();
+    await lessons?.clearOffline();
     await _tokenStorage.clearToken();
     _status = AuthStatus.unauthenticated;
     notifyListeners();

@@ -1,3 +1,10 @@
+/// The session couldn't be checked: the server answered with an error.
+class SessionUncheckable implements Exception {
+  const SessionUncheckable(this.statusCode);
+
+  final int statusCode;
+}
+
 class AuthFailure implements Exception {
   const AuthFailure(this.message);
 
@@ -19,6 +26,7 @@ class AppUserProfile {
     this.username,
     this.status,
     this.roles = const [],
+    this.permissions,
     this.profileImageUrl,
   });
 
@@ -32,7 +40,21 @@ class AppUserProfile {
   final String? username;
   final String? status;
   final List<String> roles;
+
+  /// Effective `resource.action` keys resolved from the user's roles. Null when
+  /// the API didn't send them, which is different from holding none.
+  final List<String>? permissions;
   final String? profileImageUrl;
+
+  bool get isAdmin => roles.contains('admin');
+  bool get isTeacher => roles.contains('teacher');
+
+  /// `admin` is a wildcard here, as it is on the server.
+  bool hasAnyPermission(Iterable<String> keys) {
+    if (isAdmin) return true;
+    final held = permissions;
+    return held != null && keys.any(held.contains);
+  }
 
   /// A copy with a different avatar, so a fresh upload shows without a reload.
   AppUserProfile copyWithProfileImageUrl(String? url) {
@@ -47,6 +69,7 @@ class AppUserProfile {
       username: username,
       status: status,
       roles: roles,
+      permissions: permissions,
       profileImageUrl: url,
     );
   }
@@ -111,6 +134,9 @@ class AppUserProfile {
       username: _firstString(json, const ['username', 'user_name', 'userName']),
       status: _firstString(json, const ['status']),
       roles: roles,
+      permissions: json['permissions'] is List
+          ? (json['permissions'] as List).whereType<String>().toList()
+          : null,
       subtitle: subtitleParts.isEmpty
           ? 'Staff member'
           : subtitleParts.join(' • '),

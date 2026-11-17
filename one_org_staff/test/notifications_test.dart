@@ -195,20 +195,23 @@ void main() {
       });
     });
 
-    test('unregisters the device token with a DELETE carrying a body', () async {
-      late http.Request seen;
-      final repository = _repository(
-        MockClient((request) async {
-          seen = request;
-          return http.Response('', 204);
-        }),
-      );
+    test(
+      'unregisters the device token with a DELETE carrying a body',
+      () async {
+        late http.Request seen;
+        final repository = _repository(
+          MockClient((request) async {
+            seen = request;
+            return http.Response('', 204);
+          }),
+        );
 
-      await repository.unregisterDeviceToken('tok', deviceToken: 'fcm-abc');
+        await repository.unregisterDeviceToken('tok', deviceToken: 'fcm-abc');
 
-      expect(seen.method, 'DELETE');
-      expect(jsonDecode(seen.body), {'token': 'fcm-abc'});
-    });
+        expect(seen.method, 'DELETE');
+        expect(jsonDecode(seen.body), {'token': 'fcm-abc'});
+      },
+    );
 
     test('surfaces the server message on a failure', () async {
       final repository = _repository(
@@ -221,7 +224,11 @@ void main() {
       expect(
         () => repository.getUnreadCount('tok'),
         throwsA(
-          isA<AuthFailure>().having((e) => e.message, 'message', 'Session expired'),
+          isA<AuthFailure>().having(
+            (e) => e.message,
+            'message',
+            'Session expired',
+          ),
         ),
       );
     });
@@ -249,10 +256,9 @@ void main() {
 
     test('marking an already-read row does nothing', () async {
       final marked = <int>[];
-      final controller = _controllerWith(
-        [_notification(id: 1, isRead: true)],
-        markedRead: marked,
-      );
+      final controller = _controllerWith([
+        _notification(id: 1, isRead: true),
+      ], markedRead: marked);
       addTearDown(controller.dispose);
 
       await controller.refresh();
@@ -275,18 +281,21 @@ void main() {
       expect(controller.items.every((item) => item.isRead), isTrue);
     });
 
-    test('a failed load shows the server message, not a stack string', () async {
-      final controller = _controllerWith(
-        const [],
-        failWith: const AuthFailure('Session expired'),
-      );
-      addTearDown(controller.dispose);
+    test(
+      'a failed load shows the server message, not a stack string',
+      () async {
+        final controller = _controllerWith(
+          const [],
+          failWith: const AuthFailure('Session expired'),
+        );
+        addTearDown(controller.dispose);
 
-      await controller.refresh();
+        await controller.refresh();
 
-      expect(controller.error, 'Session expired');
-      expect(controller.items, isEmpty);
-    });
+        expect(controller.error, 'Session expired');
+        expect(controller.items, isEmpty);
+      },
+    );
   });
 
   group('NotificationBell', () {
@@ -332,9 +341,11 @@ void main() {
   group('NotificationsPage', () {
     testWidgets('lists the inbox and marks a row read on tap', (tester) async {
       final marked = <int>[];
-      final controller = _controllerWith([
-        _notification(id: 1, title: 'Staff meeting'),
-      ], unreadCount: 1, markedRead: marked);
+      final controller = _controllerWith(
+        [_notification(id: 1, title: 'Staff meeting')],
+        unreadCount: 1,
+        markedRead: marked,
+      );
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(_wrapPage(controller));

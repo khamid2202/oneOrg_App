@@ -483,14 +483,14 @@ class _CreateExamViewState extends State<CreateExamView> {
                   prefixIcon: Icon(Icons.filter_alt_rounded),
                 ),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('All periods')),
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('All periods'),
+                  ),
                   for (final period in data.periods)
                     DropdownMenuItem(
                       value: period.id,
-                      child: Text(
-                        period.name,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      child: Text(period.name, overflow: TextOverflow.ellipsis),
                     ),
                 ],
                 onChanged: (value) {

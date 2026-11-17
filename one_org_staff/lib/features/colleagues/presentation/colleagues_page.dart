@@ -1,15 +1,19 @@
+import 'package:one_org_staff/shared/photo_viewer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/colleagues/domain/colleagues_repository.dart';
+import 'package:one_org_staff/l10n/generated/app_localizations.dart';
 
 /// Staff directory — a port of the web app's Colleagues page.
 ///
 /// Names only, grouped A–Z. Tapping a row expands it in place to reveal the
 /// phone number and a call button; there is no detail screen, so finding a
 /// number is one tap and never leaves the list. One row is open at a time.
+/// Pulling down reloads it; holding the number copies it.
 class ColleaguesPage extends StatefulWidget {
   const ColleaguesPage({
     super.key,
@@ -46,14 +50,15 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
     initialScrollOffset: _searchHeight,
   );
 
-  late Future<List<Colleague>> _colleaguesFuture;
+  List<Colleague>? _all;
+  Object? _error;
   String _search = '';
   int? _expandedId;
 
   @override
   void initState() {
     super.initState();
-    _colleaguesFuture = widget.loadColleagues();
+    _load();
     // Repaints the placeholder when focus changes.
     _searchFocus.addListener(_onFocusChanged);
   }
@@ -64,7 +69,7 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
   void didUpdateWidget(covariant ColleaguesPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.loadColleagues != widget.loadColleagues) {
-      _colleaguesFuture = widget.loadColleagues();
+      _load();
     }
   }
 
@@ -77,10 +82,42 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
     super.dispose();
   }
 
-  void _reload() {
-    setState(() {
-      _colleaguesFuture = widget.loadColleagues();
-    });
+  /// Keeps the list on screen while a reload runs; only a first load or a
+  /// retry after an error shows the spinner.
+  Future<void> _load() async {
+    final loader = widget.loadColleagues;
+    try {
+      final all = await loader();
+      if (!mounted || loader != widget.loadColleagues) return;
+      setState(() {
+        _all = all;
+        _error = null;
+      });
+    } catch (error) {
+      if (!mounted || loader != widget.loadColleagues) return;
+      // A failed refresh leaves the list it already had.
+      if (_all != null) {
+        _showSnack(AppLocalizations.of(context).colleaguesLoadFailed);
+        return;
+      }
+      setState(() => _error = error);
+    }
+  }
+
+  void _retry() {
+    setState(() => _error = null);
+    _load();
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _copy(String phone) async {
+    await Clipboard.setData(ClipboardData(text: phone));
+    if (mounted) _showSnack(AppLocalizations.of(context).colleaguesCopied);
   }
 
   /// Active staff only, matching the search, sorted by name — the same
@@ -96,14 +133,12 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
     return filtered;
   }
 
-  Future<void> _call(Colleague colleague) =>
-      _launch(colleague.dialUri, 'call ${colleague.displayName}');
+  Future<void> _call(Colleague colleague) => _launch(colleague.dialUri);
 
-  Future<void> _message(Colleague colleague) =>
-      _launch(colleague.smsUri, 'message ${colleague.displayName}');
+  Future<void> _message(Colleague colleague) => _launch(colleague.smsUri);
 
-  /// Hands [uri] to the OS. [action] completes the sentence "Unable to …".
-  Future<void> _launch(String? uri, String action) async {
+  /// Hands [uri] to the OS.
+  Future<void> _launch(String? uri) async {
     if (uri == null) {
       return;
     }
@@ -115,9 +150,7 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
 
     final launched = await launcher(uri);
     if (!launched && mounted) {
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text('Unable to $action.')));
+      _showSnack(AppLocalizations.of(context).colleaguesCantCall);
     }
   }
 
@@ -125,27 +158,27 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = appColorsOf(context);
+    final l = AppLocalizations.of(context);
 
-    return FutureBuilder<List<Colleague>>(
-      future: _colleaguesFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    final error = _error;
+    if (error != null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: _ColleaguesError(
+          message: error is AuthFailure
+              ? error.message
+              : l.colleaguesLoadFailed,
+          onRetry: _retry,
+        ),
+      );
+    }
+    final all = _all;
+    if (all == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-        if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: _ColleaguesError(
-              message: snapshot.error is AuthFailure
-                  ? (snapshot.error as AuthFailure).message
-                  : 'Unable to load colleagues right now.',
-              onRetry: _reload,
-            ),
-          );
-        }
-
-        final all = snapshot.data ?? const <Colleague>[];
+    return Builder(
+      builder: (context) {
         final visible = _visible(all);
         final entries = _entriesFor(visible);
 
@@ -169,16 +202,14 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Colleagues',
+                    l.colleagues,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    visible.length == 1
-                        ? '1 active colleague'
-                        : '${visible.length} active colleagues',
+                    l.colleaguesActive(visible.length),
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: colors.mutedText,
                     ),
@@ -191,70 +222,79 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
             Expanded(
               child: Stack(
                 children: [
-                  CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: SizedBox(
-                            height: _searchHeight,
-                            child: _SearchField(
-                              controller: _searchController,
-                              focusNode: _searchFocus,
-                              showPlaceholder:
-                                  _search.isEmpty && !_searchFocus.hasFocus,
-                              onChanged: (value) =>
-                                  setState(() => _search = value),
-                              onClear: () {
-                                _searchController.clear();
-                                setState(() => _search = '');
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      if (entries.isEmpty)
+                  RefreshIndicator(
+                    onRefresh: _load,
+                    // Below the hidden search row, where the pull starts.
+                    edgeOffset: _searchHeight,
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: _ColleaguesEmpty(
-                              hasSearch: _search.trim().isNotEmpty,
+                            child: SizedBox(
+                              height: _searchHeight,
+                              child: _SearchField(
+                                controller: _searchController,
+                                focusNode: _searchFocus,
+                                showPlaceholder:
+                                    _search.isEmpty && !_searchFocus.hasFocus,
+                                onChanged: (value) =>
+                                    setState(() => _search = value),
+                                onClear: () {
+                                  _searchController.clear();
+                                  setState(() => _search = '');
+                                },
+                              ),
                             ),
                           ),
-                        )
-                      else
-                        SliverList.builder(
-                          itemCount: entries.length,
-                          itemBuilder: (context, index) {
-                            final entry = entries[index];
-                            return Padding(
-                              padding: listPadding,
-                              child: entry.colleague == null
-                                  ? _GroupLetter(letter: entry.letter!)
-                                  : _ColleagueRow(
-                                      colleague: entry.colleague!,
-                                      expanded:
-                                          _expandedId == entry.colleague!.id,
-                                      onToggle: () => setState(() {
-                                        _expandedId =
-                                            _expandedId == entry.colleague!.id
-                                            ? null
-                                            : entry.colleague!.id;
-                                      }),
-                                      onCall: () => _call(entry.colleague!),
-                                      onMessage: () =>
-                                          _message(entry.colleague!),
-                                    ),
-                            );
-                          },
                         ),
 
-                      SliverToBoxAdapter(
-                        child: SizedBox(height: widget.bottomInset + 24),
-                      ),
-                    ],
+                        if (entries.isEmpty)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: _ColleaguesEmpty(
+                                hasSearch: _search.trim().isNotEmpty,
+                              ),
+                            ),
+                          )
+                        else
+                          SliverList.builder(
+                            itemCount: entries.length,
+                            itemBuilder: (context, index) {
+                              final entry = entries[index];
+                              return Padding(
+                                padding: listPadding,
+                                child: entry.colleague == null
+                                    ? _GroupLetter(letter: entry.letter!)
+                                    : _ColleagueRow(
+                                        colleague: entry.colleague!,
+                                        expanded:
+                                            _expandedId == entry.colleague!.id,
+                                        onToggle: () => setState(() {
+                                          _expandedId =
+                                              _expandedId == entry.colleague!.id
+                                              ? null
+                                              : entry.colleague!.id;
+                                        }),
+                                        onCall: () => _call(entry.colleague!),
+                                        onMessage: () =>
+                                            _message(entry.colleague!),
+                                        onCopy: _copy,
+                                      ),
+                              );
+                            },
+                          ),
+
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: widget.bottomInset + 24),
+                        ),
+                      ],
+                    ),
                   ),
 
                   // The A–Z rail sits over the list's right edge; dragging it
@@ -300,6 +340,7 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
       offset += entry.letter != null
           ? _GroupLetter.height
           : _ColleagueRow.rowHeight +
+                _ColleagueRow.dividerHeight +
                 _ColleagueRow.rowGap +
                 (entry.colleague!.id == _expandedId
                     ? _ColleagueRow.panelHeight
@@ -383,7 +424,7 @@ class _SearchField extends StatelessWidget {
                 : IconButton(
                     onPressed: onClear,
                     icon: const Icon(Icons.close_rounded),
-                    tooltip: 'Clear search',
+                    tooltip: AppLocalizations.of(context).clearSearch,
                   ),
           ),
         ),
@@ -398,7 +439,7 @@ class _SearchField extends StatelessWidget {
                 Icon(Icons.search_rounded, size: 20, color: colors.mutedText),
                 const SizedBox(width: 6),
                 Text(
-                  'Search',
+                  AppLocalizations.of(context).search,
                   style: Theme.of(
                     context,
                   ).textTheme.bodyLarge?.copyWith(color: colors.mutedText),
@@ -447,6 +488,7 @@ class _ColleagueRow extends StatelessWidget {
     required this.onToggle,
     required this.onCall,
     required this.onMessage,
+    required this.onCopy,
   });
 
   final Colleague colleague;
@@ -454,12 +496,14 @@ class _ColleagueRow extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onCall;
   final VoidCallback onMessage;
+  final ValueChanged<String> onCopy;
 
   /// Collapsed row height and the height the panel adds — the A–Z index needs
   /// these to work out where a letter starts, so they are fixed rather than
   /// left to intrinsic sizing.
   static const rowHeight = 52.0;
   static const rowGap = 2.0;
+  static const dividerHeight = 1.0;
   static const panelHeight = 48.0;
 
   @override
@@ -467,12 +511,12 @@ class _ColleagueRow extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = appColorsOf(context);
     final phone = colleague.phoneNumber;
+    final l = AppLocalizations.of(context);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: rowGap),
+    final tile = Container(
       decoration: BoxDecoration(
-        color: expanded ? colors.card : Colors.transparent,
-        border: Border(bottom: BorderSide(color: colors.line)),
+        color: expanded ? colors.softBg : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -503,56 +547,162 @@ class _ColleagueRow extends StatelessWidget {
               ),
             ),
           ),
-
           if (expanded)
-            Container(
+            SizedBox(
               height: panelHeight,
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: colors.softBg,
-                border: Border(top: BorderSide(color: colors.line)),
-              ),
-              child: phone == null
-                  ? Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'No phone number',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.mutedText,
-                        ),
-                      ),
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            phone,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+              // Lined up under the name, past the avatar.
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(52, 0, 8, 6),
+                child: phone == null
+                    ? Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          l.colleaguesNoPhone,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.mutedText,
                           ),
                         ),
-                        // Icons alone: the two glyphs say call and message
-                        // without spending a third of the row on labels.
-                        _ActionButton(
-                          icon: Icons.sms_rounded,
-                          tooltip: 'Message ${colleague.displayName}',
-                          onPressed: onMessage,
-                        ),
-                        const SizedBox(width: 6),
-                        _ActionButton(
-                          icon: Icons.call_rounded,
-                          tooltip: 'Call ${colleague.displayName}',
-                          onPressed: onCall,
-                          filled: true,
-                        ),
-                      ],
-                    ),
+                      )
+                    : Row(
+                        children: [
+                          // Holding the number copies it, for pasting into
+                          // Telegram or a message.
+                          Expanded(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onLongPress: () => onCopy(phone),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  phone,
+                                  key: ValueKey(
+                                    'colleague-phone-${colleague.id}',
+                                  ),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.softText,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Icons alone: the two glyphs say call and message
+                          // without spending a third of the row on labels.
+                          _ActionButton(
+                            icon: Icons.sms_rounded,
+                            tooltip: l.colleaguesMessage(colleague.displayName),
+                            onPressed: onMessage,
+                          ),
+                          const SizedBox(width: 6),
+                          _ActionButton(
+                            icon: Icons.call_rounded,
+                            tooltip: l.colleaguesCall(colleague.displayName),
+                            onPressed: onCall,
+                            filled: true,
+                          ),
+                        ],
+                      ),
+              ),
             ),
         ],
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: rowGap),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Right calls, left texts, like the phone's own contacts. The row
+          // springs back either way; nothing is removed.
+          if (phone == null)
+            tile
+          else
+            Dismissible(
+              key: ValueKey('colleague-swipe-${colleague.id}'),
+              dismissThresholds: const {
+                DismissDirection.startToEnd: 0.3,
+                DismissDirection.endToStart: 0.3,
+              },
+              confirmDismiss: (direction) async {
+                HapticFeedback.mediumImpact();
+                if (direction == DismissDirection.startToEnd) {
+                  onCall();
+                } else {
+                  onMessage();
+                }
+                return false;
+              },
+              background: _SwipeHint(
+                icon: Icons.call_rounded,
+                label: l.colleaguesSwipeCall,
+                color: const Color(0xFF10B981),
+                alignment: Alignment.centerLeft,
+              ),
+              secondaryBackground: _SwipeHint(
+                icon: Icons.sms_rounded,
+                label: l.colleaguesSwipeMessage,
+                color: const Color(0xFF3B82F6),
+                alignment: Alignment.centerRight,
+              ),
+              child: tile,
+            ),
+          // The divider sits outside the tile so the open row has no edges,
+          // and stays 1px either way so the A–Z index can count on it.
+          Container(
+            height: dividerHeight,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            color: expanded ? Colors.transparent : colors.line,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What a swipe will do, shown under the row as it slides.
+class _SwipeHint extends StatelessWidget {
+  const _SwipeHint({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.alignment,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    final leading = alignment == Alignment.centerLeft;
+    final children = [
+      Icon(icon, color: Colors.white, size: 20),
+      const SizedBox(width: 8),
+      Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ];
+    return Container(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      alignment: alignment,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: leading ? children : children.reversed.toList(),
       ),
     );
   }
@@ -613,22 +763,26 @@ class _ColleagueAvatar extends StatelessWidget {
     final pictureUrl = colleague.pictureUrl;
     final hasPicture = pictureUrl != null && pictureUrl.isNotEmpty;
 
-    return CircleAvatar(
-      radius: 17,
-      backgroundColor: hasPicture ? colors.softBg : colors.avatarPlaceholder,
-      backgroundImage: hasPicture ? NetworkImage(pictureUrl) : null,
-      // A broken or offline photo must not take the row down with it.
-      onBackgroundImageError: hasPicture ? (_, _) {} : null,
-      child: hasPicture
-          ? null
-          : Text(
-              colleague.initials,
-              style: TextStyle(
-                color: colors.accent.solid,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
+    return ZoomableAvatar(
+      url: pictureUrl,
+      name: colleague.fullName,
+      child: CircleAvatar(
+        radius: 17,
+        backgroundColor: hasPicture ? colors.softBg : colors.avatarPlaceholder,
+        backgroundImage: hasPicture ? NetworkImage(pictureUrl) : null,
+        // A broken or offline photo must not take the row down with it.
+        onBackgroundImageError: hasPicture ? (_, _) {} : null,
+        child: hasPicture
+            ? null
+            : Text(
+                colleague.initials,
+                style: TextStyle(
+                  color: colors.accent.solid,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
               ),
-            ),
+      ),
     );
   }
 }
@@ -651,8 +805,8 @@ class _ColleaguesEmpty extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               hasSearch
-                  ? 'No colleagues found matching your search.'
-                  : 'No colleagues found.',
+                  ? AppLocalizations.of(context).colleaguesNoneMatching
+                  : AppLocalizations.of(context).colleaguesNone,
               style: Theme.of(
                 context,
               ).textTheme.bodyLarge?.copyWith(color: colors.mutedText),
@@ -696,7 +850,7 @@ class _ColleaguesError extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Try again'),
+            label: Text(AppLocalizations.of(context).retry),
           ),
         ],
       ),

@@ -126,7 +126,10 @@ class _ExamsPageState extends State<ExamsPage> {
     return SwipeBackDetector(
       enabled: _section != ExamsSection.hub,
       onSwipeBack: _goToHub,
-      underneathChild: Padding(padding: _pagePadding, child: _buildHub(context)),
+      underneathChild: Padding(
+        padding: _pagePadding,
+        child: _buildHub(context),
+      ),
       child: _section == ExamsSection.hub
           ? const SizedBox.shrink()
           : Padding(padding: _pagePadding, child: _buildSection()),

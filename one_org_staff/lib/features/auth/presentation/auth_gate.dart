@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../app/language_controller.dart';
 import '../../../app/theme_controller.dart';
+import '../../branches/application/branch_controller.dart';
+import '../../branches/presentation/branch_gate.dart';
 import '../../landing/presentation/landing_page.dart';
 import '../../notifications/application/notifications_controller.dart';
 import '../../notifications/application/push_service.dart';
@@ -13,17 +16,23 @@ class AuthGate extends StatelessWidget {
     super.key,
     required this.controller,
     required this.themeController,
+    this.languageController,
     this.notificationsController,
     this.pushService,
+    this.branchController,
   });
 
   final AuthController controller;
   final ThemeController themeController;
+  final LanguageController? languageController;
 
   /// Null when the shell was handed a pre-built [AuthController] — a test
   /// harness — in which case the dashboard simply has no bell.
   final NotificationsController? notificationsController;
   final PushService? pushService;
+
+  /// Null in a test harness, which then runs without selecting a branch.
+  final BranchController? branchController;
 
   @override
   Widget build(BuildContext context) {
@@ -34,12 +43,22 @@ class AuthGate extends StatelessWidget {
           case AuthStatus.checking:
             return const _StartupLoader();
           case AuthStatus.authenticated:
-            return LandingPage(
+            final landing = LandingPage(
               controller: controller,
               themeController: themeController,
+              languageController: languageController,
               notificationsController: notificationsController,
               pushService: pushService,
+              branchController: branchController,
             );
+            final branches = branchController;
+            return branches == null
+                ? landing
+                : BranchGate(
+                    controller: branches,
+                    onSignOut: controller.signOut,
+                    child: landing,
+                  );
           case AuthStatus.unauthenticated:
             return LoginPage(controller: controller);
         }
