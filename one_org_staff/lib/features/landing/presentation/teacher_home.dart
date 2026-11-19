@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../shared/lesson_tags.dart';
 import '../../lessons/domain/lessons_repository.dart';
 import '../application/next_lesson_day.dart';
 import '../domain/app_items.dart';
@@ -26,6 +27,15 @@ IconData appIcon(AppItem item) => switch (item) {
   AppItem.rewards => Icons.card_giftcard_rounded,
   AppItem.colleagues => Icons.contact_phone_rounded,
   AppItem.pointReport => Icons.bar_chart_rounded,
+  AppItem.calendar => Icons.event_note_rounded,
+  AppItem.myLessonAnalysis => Icons.workspace_premium_rounded,
+  AppItem.lessonAnalysis => Icons.fact_check_rounded,
+  AppItem.myDepartment => Icons.account_tree_rounded,
+  AppItem.substitutions => Icons.swap_horiz_rounded,
+  AppItem.attendanceCheck => Icons.how_to_reg_rounded,
+  AppItem.cashier => Icons.point_of_sale_rounded,
+  AppItem.staffPoints => Icons.auto_awesome_rounded,
+  AppItem.fundings => Icons.savings_rounded,
 };
 
 String appLabel(AppLocalizations l, AppItem item, {bool short = false}) =>
@@ -43,6 +53,16 @@ String appLabel(AppLocalizations l, AppItem item, {bool short = false}) =>
       AppItem.rewards => l.rewards,
       AppItem.colleagues => l.colleagues,
       AppItem.pointReport => l.pointReport,
+      AppItem.calendar => l.calendar,
+      AppItem.myLessonAnalysis =>
+        short ? l.myAnalysisShort : l.myLessonAnalysis,
+      AppItem.lessonAnalysis => l.lessonAnalysis,
+      AppItem.myDepartment => l.myDepartment,
+      AppItem.substitutions => l.substitutions,
+      AppItem.attendanceCheck => l.attendanceCheck,
+      AppItem.cashier => l.cashier,
+      AppItem.staffPoints => l.staffPoints,
+      AppItem.fundings => l.fundings,
     };
 
 /// One colour per app wherever its icon shows, so teachers learn "the green
@@ -69,6 +89,15 @@ AppHue appHue(BuildContext context, AppItem item) {
     AppItem.colleagues => (0xFF4F46E5, 0xFF818CF8, 0xFFEEF2FF),
     AppItem.rewards ||
     AppItem.pointReport => (0xFFD97706, 0xFFFBBF24, 0xFFFFFBEB),
+    AppItem.calendar => (0xFF0891B2, 0xFF22D3EE, 0xFFECFEFF),
+    AppItem.myLessonAnalysis ||
+    AppItem.lessonAnalysis => (0xFF9333EA, 0xFFC084FC, 0xFFFAF5FF),
+    AppItem.myDepartment => (0xFF4F46E5, 0xFF818CF8, 0xFFEEF2FF),
+    AppItem.substitutions => (0xFF0D9488, 0xFF2DD4BF, 0xFFF0FDFA),
+    AppItem.attendanceCheck => (0xFF16A34A, 0xFF4ADE80, 0xFFF0FDF4),
+    AppItem.cashier => (0xFF059669, 0xFF34D399, 0xFFECFDF5),
+    AppItem.staffPoints => (0xFFD97706, 0xFFFBBF24, 0xFFFFFBEB),
+    AppItem.fundings => (0xFF059669, 0xFF34D399, 0xFFECFDF5),
   };
   if (Theme.of(context).brightness == Brightness.dark) {
     return AppHue(Color(dark).withValues(alpha: 0.16), Color(dark));
@@ -106,6 +135,7 @@ class TeacherHome extends StatelessWidget {
     this.today,
     this.homeroom,
     this.recentGrades,
+    this.updates,
   });
 
   final Widget header;
@@ -122,6 +152,9 @@ class TeacherHome extends StatelessWidget {
 
   /// Null while loading.
   final List<RecentGrade>? recentGrades;
+
+  /// The rolling Updates card, shown under today's lessons.
+  final Widget? updates;
 
   @override
   Widget build(BuildContext context) {
@@ -146,6 +179,7 @@ class TeacherHome extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
+          if (updates != null) ...[updates!, const SizedBox(height: 12)],
           if (showClass || showGrades) ...[
             SizedBox(
               height: 136,
@@ -464,12 +498,15 @@ class _TodayCardState extends State<_TodayCard> {
           ],
           Expanded(
             child: Text(
-              item.subject,
+              item.isLunchDuty
+                  ? AppLocalizations.of(context).lunchDuty
+                  : item.subject,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 13, color: text),
             ),
           ),
+          LessonTags(tags: item.tags, onDark: current),
           if (item.room != null && item.room!.isNotEmpty) ...[
             const SizedBox(width: 8),
             Text(

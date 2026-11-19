@@ -8,6 +8,7 @@ class BottomMenuItem {
     required this.icon,
     this.color,
     this.showDot = false,
+    this.labelColor,
   });
 
   final String label;
@@ -18,6 +19,9 @@ class BottomMenuItem {
 
   /// A red dot on the icon: something is waiting behind this tab.
   final bool showDot;
+
+  /// A bold label in this colour, e.g. the red time left in a lesson.
+  final Color? labelColor;
 }
 
 /// The phone bar, docked like the web's. [selectedIndex] is -1 on a page that
@@ -136,8 +140,17 @@ class _BottomMenuButton extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   height: 1.2,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color: isSelected ? accent.ring : colors.mutedText,
+                  fontWeight: item.labelColor != null
+                      ? FontWeight.w700
+                      : isSelected
+                      ? FontWeight.w600
+                      : FontWeight.w400,
+                  color:
+                      item.labelColor ??
+                      (isSelected ? accent.ring : colors.mutedText),
+                  fontFeatures: item.labelColor != null
+                      ? const [FontFeature.tabularFigures()]
+                      : null,
                 ),
               ),
             ),

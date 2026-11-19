@@ -10,6 +10,8 @@ class TodayItem {
     required this.classLabel,
     required this.subject,
     this.room,
+    this.tags = const [],
+    this.isLunchDuty = false,
   });
 
   /// "HH:mm"; these compare correctly as strings.
@@ -18,6 +20,8 @@ class TodayItem {
   final String classLabel;
   final String subject;
   final String? room;
+  final List<String> tags;
+  final bool isLunchDuty;
 }
 
 class NextLessonDay {
@@ -46,6 +50,8 @@ List<TodayItem> _itemsOf(LessonDay day) {
           classLabel: lesson.classLabel,
           subject: lesson.subject,
           room: lesson.room,
+          tags: lesson.tags,
+          isLunchDuty: lesson.isLunchDuty,
         ),
     for (final meeting in day.meetings)
       TodayItem(
@@ -57,6 +63,36 @@ List<TodayItem> _itemsOf(LessonDay day) {
       ),
   ]..sort((a, b) => a.start.compareTo(b.start));
   return items;
+}
+
+/// While one of today's lessons is on: the time left as "m:ss", else null.
+/// Meetings (no class) don't count; cancelled lessons never reach [found].
+/// Like the web's `useLessonCountdown`, shown on the Schedule tab.
+String? lessonCountdown(NextLessonDay? found, DateTime now) {
+  if (found == null) return null;
+  final day = found.day;
+  if (day.year != now.year || day.month != now.month || day.day != now.day) {
+    return null;
+  }
+  int? secondsOf(String hhmm) {
+    final parts = hhmm.split(':');
+    final h = int.tryParse(parts.first);
+    final m = parts.length > 1 ? int.tryParse(parts[1]) : null;
+    return h == null || m == null ? null : h * 3600 + m * 60;
+  }
+
+  final secs = now.hour * 3600 + now.minute * 60 + now.second;
+  for (final item in found.items) {
+    if (item.classLabel.isEmpty && !item.isLunchDuty) continue;
+    final start = secondsOf(item.start);
+    final end = secondsOf(item.end);
+    if (start == null || end == null) continue;
+    if (start <= secs && secs < end) {
+      final left = end - secs;
+      return '${left ~/ 60}:${(left % 60).toString().padLeft(2, '0')}';
+    }
+  }
+  return null;
 }
 
 /// Finds the first day from today, within a week, that has lessons. From 16:30

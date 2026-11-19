@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/theme.dart';
+import '../../../shared/lesson_tags.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../MyLessons/lesson_points_repository.dart';
 import '../application/lessons_outbox.dart';
@@ -41,6 +42,10 @@ class _LessonsPageState extends State<LessonsPage> {
   List<BellPeriod> _periods = const [];
   Timer? _clock;
   late final StreamSubscription<int> _uploaded;
+
+  /// The now line, to scroll to when today opens mid-day.
+  final _nowKey = GlobalKey();
+  DateTime? _scrolledFor;
 
   static DateTime _dayOf(DateTime time) =>
       DateTime(time.year, time.month, time.day);
@@ -125,6 +130,8 @@ class _LessonsPageState extends State<LessonsPage> {
   }
 
   Future<void> _open(TeacherLesson lesson) async {
+    // Lunch duty is on the schedule but has nothing to mark.
+    if (lesson.isLunchDuty) return;
     final instanceId = lesson.instanceId;
     if (instanceId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -232,8 +239,20 @@ class _LessonsPageState extends State<LessonsPage> {
                 );
               }
               final day = snapshot.data!;
-              final rows = buildDayRows(_periods, day);
+              final layout = layoutDay(_periods, day);
               final isEmptyDay = day.lessons.isEmpty && day.meetings.isEmpty;
+              final now = DateTime.now();
+              final nowMinutes = _isToday ? now.hour * 60 + now.minute : null;
+              // Opening today mid-day lands on the current time, not period 1.
+              if (nowMinutes != null && _scrolledFor != _date) {
+                _scrolledFor = _date;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  final target = _nowKey.currentContext;
+                  if (target != null && target.mounted) {
+                    Scrollable.ensureVisible(target, alignment: 0.4);
+                  }
+                });
+              }
               return RefreshIndicator(
                 onRefresh: _refresh,
                 child: ListView(
@@ -255,15 +274,13 @@ class _LessonsPageState extends State<LessonsPage> {
                           ),
                         ),
                       ),
-                    for (final row in rows)
-                      _Row(
-                        row: row,
-                        nowMinutes: _isToday
-                            ? DateTime.now().hour * 60 + DateTime.now().minute
-                            : null,
-                        onOpen: _open,
-                        outbox: widget.outbox,
-                      ),
+                    _DayTimeline(
+                      layout: layout,
+                      nowMinutes: nowMinutes,
+                      nowKey: _nowKey,
+                      onOpen: _open,
+                      outbox: widget.outbox,
+                    ),
                   ],
                 ),
               );
@@ -279,131 +296,235 @@ String _clock24(int minutes) =>
     '${(minutes ~/ 60).toString().padLeft(2, '0')}:'
     '${(minutes % 60).toString().padLeft(2, '0')}';
 
-class _Row extends StatelessWidget {
-  const _Row({
-    required this.row,
+/// Vertical scale of the day, as on the web: a 45-minute period is ~52 px.
+const _pxPerMinute = 1.15;
+const _gutter = 56.0;
+const _nowRed = Color(0xFFEF4444);
+const _violet = Color(0xFF7C3AED);
+const _meetingAmber = Color(0xFFD97706);
+
+/// The day on one time scale, like the web's `DaySchedule`: every bell period
+/// drawn whether or not you teach it, your lessons laid over theirs, and a
+/// red line at the current time.
+class _DayTimeline extends StatelessWidget {
+  const _DayTimeline({
+    required this.layout,
     required this.nowMinutes,
+    required this.nowKey,
     required this.onOpen,
     required this.outbox,
   });
 
-  final DayRow row;
+  final DayLayout layout;
   final int? nowMinutes;
+  final Key nowKey;
   final ValueChanged<TeacherLesson> onOpen;
   final LessonsOutbox outbox;
+
+  double _y(int minutes) =>
+      (minutes.clamp(layout.start, layout.end) - layout.start) * _pxPerMinute;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final colors = appColorsOf(context);
     final now = nowMinutes;
-    final past = now != null && row.end <= now;
-    final timeColor = past
-        ? colors.mutedText.withValues(alpha: 0.55)
-        : colors.mutedText;
-    final period = row.period;
+    final showNow = now != null && now >= layout.start && now <= layout.end;
+    const tabular = [FontFeature.tabularFigures()];
 
-    if (row.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 3),
-        child: SizedBox(
-          height: 24,
-          child: Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final laneWidth = constraints.maxWidth - _gutter;
+        return SizedBox(
+          height: _y(layout.end) + 2,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              SizedBox(
-                width: 50,
-                child: Text(
-                  _clock24(row.start),
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: timeColor,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: colors.line.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    period == null ? '' : l.periodShort(period.number),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: timeColor,
+              for (final period in layout.periods)
+                () {
+                  final past = now != null && period.end <= now;
+                  final taught = layout.taught(period);
+                  final timeColor = past
+                      ? colors.mutedText.withValues(alpha: 0.55)
+                      : colors.mutedText;
+                  final top = _y(period.start);
+                  return Positioned(
+                    top: top,
+                    height: _y(period.end) - top,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          width: _gutter,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            // Shrinks rather than overflow with large fonts.
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: taught
+                                  ? Alignment.topRight
+                                  : Alignment.centerRight,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisAlignment: taught
+                                    ? MainAxisAlignment.start
+                                    : MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    _clock24(period.start),
+                                    style: TextStyle(
+                                      fontSize: taught ? 12 : 11,
+                                      fontWeight: taught
+                                          ? FontWeight.w700
+                                          : FontWeight.w400,
+                                      color: timeColor,
+                                      fontFeatures: tabular,
+                                    ),
+                                  ),
+                                  if (taught) ...[
+                                    Text(
+                                      _clock24(period.end),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: timeColor,
+                                        fontFeatures: tabular,
+                                      ),
+                                    ),
+                                    Text(
+                                      l.periodShort(period.number),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: colors.mutedText.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: colors.line.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: taught
+                                ? null
+                                : Text(
+                                    l.periodShort(period.number),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: timeColor,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }(),
+              for (final placed in layout.items)
+                () {
+                  final item = placed.item;
+                  final width = laneWidth / placed.columns;
+                  final gap = placed.column > 0 ? 2.0 : 0.0;
+                  final height = (item.end - item.start) * _pxPerMinute - 2;
+                  final card = item.meeting != null
+                      ? _MeetingCard(meeting: item.meeting!)
+                      : _LessonCard(
+                          item: item,
+                          nowMinutes: now,
+                          waiting: outbox
+                              .waitingFor(item.lesson!.instanceId ?? -1)
+                              .map((entry) => entry.kind)
+                              .toSet(),
+                          onTap: () => onOpen(item.lesson!),
+                        );
+                  return Positioned(
+                    top: _y(item.start) + 1,
+                    height: height,
+                    left: _gutter + width * placed.column + gap,
+                    width: width - gap,
+                    // A short slot shows the top of its card, like the web.
+                    child: height >= _cardMinHeight
+                        ? card
+                        : ClipRect(
+                            child: OverflowBox(
+                              alignment: Alignment.topCenter,
+                              minHeight: _cardMinHeight,
+                              maxHeight: _cardMinHeight,
+                              child: card,
+                            ),
+                          ),
+                  );
+                }(),
+              if (showNow)
+                Positioned(
+                  key: nowKey,
+                  top: _y(now) - 9,
+                  height: 18,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: _gutter - 4,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _nowRed,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                _clock24(now),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  fontFeatures: tabular,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: _nowRed,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        Expanded(child: Container(height: 2, color: _nowRed)),
+                      ],
                     ),
                   ),
                 ),
-              ),
             ],
           ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              width: 50,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 4),
-                  Text(
-                    _clock24(row.start),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: timeColor,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  Text(
-                    _clock24(row.end),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: timeColor,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            for (var index = 0; index < row.items.length; index += 1) ...[
-              if (index > 0) const SizedBox(width: 3),
-              Expanded(
-                child: row.items[index].meeting != null
-                    ? _MeetingCard(meeting: row.items[index].meeting!)
-                    : _LessonCard(
-                        item: row.items[index],
-                        nowMinutes: now,
-                        waiting: outbox
-                            .waitingFor(
-                              row.items[index].lesson!.instanceId ?? -1,
-                            )
-                            .map((entry) => entry.kind)
-                            .toSet(),
-                        onTap: () => onOpen(row.items[index].lesson!),
-                      ),
-              ),
-            ],
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
+
+/// The height a lesson card needs for its two lines.
+const _cardMinHeight = 46.0;
 
 String _duration(AppLocalizations l, int minutes) {
   if (minutes < 60) return l.durationMinutes(minutes);
@@ -434,6 +555,30 @@ class _LessonCard extends StatelessWidget {
     final colors = appColorsOf(context);
     final lesson = item.lesson!;
     final cancelled = lesson.isCancelled;
+    if (lesson.isLunchDuty) {
+      // On the schedule but nothing to mark, so no arrow, in the web's violet.
+      final past = nowMinutes != null && item.end <= nowMinutes!;
+      return Opacity(
+        opacity: past ? 0.62 : 1,
+        child: Container(
+          alignment: Alignment.topLeft,
+          padding: const EdgeInsets.fromLTRB(10, 6, 8, 6),
+          decoration: BoxDecoration(
+            color: _violet.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _violet.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            l.lunchDuty,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: _violet,
+            ),
+          ),
+        ),
+      );
+    }
     final now = nowMinutes;
     final isNow =
         now != null && !cancelled && item.start <= now && now < item.end;
@@ -463,6 +608,7 @@ class _LessonCard extends StatelessWidget {
       if (lesson.subgroup != null &&
           lesson.subgroup!.toLowerCase() != lesson.subject.toLowerCase())
         Text(lesson.subgroup!, style: TextStyle(fontSize: 12, color: muted)),
+      if (lesson.tags.isNotEmpty) LessonTags(tags: lesson.tags),
       if (lesson.isSubstitution) _Tag(text: l.substitution, color: _amber),
       if (cancelled) _Tag(text: l.cancelled, color: muted),
     ];
@@ -496,67 +642,78 @@ class _LessonCard extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 5, 6, 5),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
+                  // A slot shorter than its text (large fonts) is clipped,
+                  // not overflowed.
+                  child: ClipRect(
+                    child: OverflowBox(
+                      alignment: Alignment.centerLeft,
+                      maxHeight: double.infinity,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 5, 6, 5),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              lesson.classLabel,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                decoration: cancelled
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 7),
-                            Expanded(
-                              child: Text(
-                                lesson.subject.isEmpty
-                                    ? l.untitled
-                                    : lesson.subject,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            if (isNow)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.accent.solid,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  l.nowFor(_duration(l, item.end - now)),
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                            Row(
+                              children: [
+                                Text(
+                                  lesson.classLabel,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    decoration: cancelled
+                                        ? TextDecoration.lineThrough
+                                        : null,
                                   ),
                                 ),
+                                const SizedBox(width: 7),
+                                Expanded(
+                                  child: Text(
+                                    lesson.isLunchDuty
+                                        ? l.lunchDuty
+                                        : lesson.subject.isEmpty
+                                        ? l.untitled
+                                        : lesson.subject,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                if (isNow)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.accent.solid,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      l.nowFor(_duration(l, item.end - now)),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            if (chips.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Wrap(
+                                spacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: chips,
                               ),
+                            ],
                           ],
                         ),
-                        if (chips.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Wrap(
-                            spacing: 8,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: chips,
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -613,9 +770,9 @@ class _MeetingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: colors.card,
+        color: _meetingAmber.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.line),
+        border: Border.all(color: _meetingAmber.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

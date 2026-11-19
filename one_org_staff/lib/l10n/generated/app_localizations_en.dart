@@ -1074,4 +1074,635 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get suggestionsFailed => 'Could not send. Try again.';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get calendar => 'Calendar';
+
+  @override
+  String get calToday => 'Today';
+
+  @override
+  String get calNewEvent => 'New event';
+
+  @override
+  String get calEditEvent => 'Edit event';
+
+  @override
+  String get calEvents => 'Events';
+
+  @override
+  String get calHolidays => 'Holidays';
+
+  @override
+  String get calTerms => 'Terms';
+
+  @override
+  String get calExams => 'Exams';
+
+  @override
+  String get calAllEvents => 'All events';
+
+  @override
+  String get calNothingOnDay => 'Nothing on this day';
+
+  @override
+  String get calEvent => 'Event';
+
+  @override
+  String get calHoliday => 'Holiday';
+
+  @override
+  String get calTermStarts => 'Term starts';
+
+  @override
+  String get calTermEnds => 'Term ends';
+
+  @override
+  String get calExamPeriod => 'Exam period';
+
+  @override
+  String get calAllDay => 'All day';
+
+  @override
+  String get calCancelled => 'Cancelled';
+
+  @override
+  String get calDraft => 'Draft';
+
+  @override
+  String get calCancelEvent => 'Cancel event';
+
+  @override
+  String get calCancelEventQ => 'Cancel this event?';
+
+  @override
+  String get calDeleteEventQ => 'Delete this event?';
+
+  @override
+  String get calEventCancelled => 'Event cancelled';
+
+  @override
+  String get calEventDeleted => 'Event deleted';
+
+  @override
+  String get calChangeFailed => 'Couldn\'t save the change';
+
+  @override
+  String get calTitle => 'Title';
+
+  @override
+  String get calTitleRequired => 'Enter a title';
+
+  @override
+  String get calCategory => 'Category';
+
+  @override
+  String get calLocation => 'Location';
+
+  @override
+  String get calDescription => 'Description';
+
+  @override
+  String get calAudience => 'Who sees it';
+
+  @override
+  String get calAddAudience => 'Add';
+
+  @override
+  String get calAllStaff => 'All staff';
+
+  @override
+  String get calAllStudents => 'All students';
+
+  @override
+  String get calGrade => 'Grade';
+
+  @override
+  String get calClass => 'Class';
+
+  @override
+  String get calRole => 'Role';
+
+  @override
+  String get calDepartment => 'Dept';
+
+  @override
+  String get calSaveAsDraft => 'Save as draft';
+
+  @override
+  String get calNotify => 'Send a notification';
+
+  @override
+  String get calCatGeneral => 'General';
+
+  @override
+  String get calCatCeremony => 'Ceremony';
+
+  @override
+  String get calCatParentMeeting => 'Parent meeting';
+
+  @override
+  String get calCatTrip => 'Trip';
+
+  @override
+  String get calCatSports => 'Sports';
+
+  @override
+  String get calCatCompetition => 'Competition';
+
+  @override
+  String get calCatDeadline => 'Deadline';
+
+  @override
+  String get calCatStaff => 'Staff';
+
+  @override
+  String get calCatOther => 'Other';
+
+  @override
+  String get myLessonAnalysis => 'Lesson analysis results';
+
+  @override
+  String get myAnalysisShort => 'My Analysis';
+
+  @override
+  String get lessonAnalysis => 'Lesson Analysis';
+
+  @override
+  String get laNoneYet =>
+      'No analyses yet. When one of your lessons is analysed, the results and feedback show up here.';
+
+  @override
+  String get laTotalPoints => 'Total points';
+
+  @override
+  String get laThisMonth => 'This month';
+
+  @override
+  String get laLastMonth => 'Last month';
+
+  @override
+  String get laAllTime => 'All time';
+
+  @override
+  String get laAnalyses => 'Analyses';
+
+  @override
+  String get laLatest => 'Latest';
+
+  @override
+  String laNotesCount(int count) {
+    return '$count notes';
+  }
+
+  @override
+  String get laNoNotes => 'No notes';
+
+  @override
+  String get laMyDepartment => 'My department';
+
+  @override
+  String laAnalysedOf(int analysed, int total) {
+    return '$analysed of $total teachers analysed';
+  }
+
+  @override
+  String laAnalysesCount(int count) {
+    return '$count analyses';
+  }
+
+  @override
+  String get laNotAnalysed => 'Not analysed yet';
+
+  @override
+  String get laSortLast => 'Last analysed';
+
+  @override
+  String get laSortMost => 'Most points';
+
+  @override
+  String get laSortLeast => 'Fewest points';
+
+  @override
+  String get laSortName => 'Name';
+
+  @override
+  String get laNewAnalysis => 'New analysis';
+
+  @override
+  String get laEditAnalysis => 'Edit analysis';
+
+  @override
+  String get laDeleteQ => 'Delete this analysis?';
+
+  @override
+  String get laDeleteBody => 'Its points are taken back from the teacher.';
+
+  @override
+  String get laDeleted => 'Analysis deleted';
+
+  @override
+  String get laTeacher => 'Teacher';
+
+  @override
+  String get laLesson => 'Lesson';
+
+  @override
+  String get laNoLessons =>
+      'No lessons in the last 60 days that can be analysed.';
+
+  @override
+  String get laAnalysed => 'analysed';
+
+  @override
+  String get laPoints => 'Points';
+
+  @override
+  String get laNotes => 'Notes';
+
+  @override
+  String get laChooseTeacher => 'Choose the teacher';
+
+  @override
+  String get laChooseLesson => 'Choose the lesson';
+
+  @override
+  String get laPointsWhole => 'Points must be a whole number';
+
+  @override
+  String get laSaved => 'Saved';
+
+  @override
+  String get laSaveFailed => 'Couldn\'t save the analysis';
+
+  @override
+  String get myDepartment => 'My Department';
+
+  @override
+  String get deptNone => 'You don\'t lead a department.';
+
+  @override
+  String get deptHead => 'Head';
+
+  @override
+  String get deptDeputy => 'Deputy';
+
+  @override
+  String deptCounts(int subjects, int members) {
+    return '$subjects subjects · $members members';
+  }
+
+  @override
+  String get deptLessons => 'Lessons';
+
+  @override
+  String get deptAttendanceTaken => 'Attendance taken';
+
+  @override
+  String get deptGradesEntered => 'Grades entered';
+
+  @override
+  String get deptGrades => 'Grades';
+
+  @override
+  String get deptAvgGrade => 'Avg grade';
+
+  @override
+  String get deptAttendance => 'Attendance';
+
+  @override
+  String get deptExamAvg => 'Exam avg';
+
+  @override
+  String get deptKpi => 'KPI';
+
+  @override
+  String get deptTeachers => 'Teachers';
+
+  @override
+  String get deptSubjects => 'Subjects';
+
+  @override
+  String get deptClasses => 'Classes';
+
+  @override
+  String get deptAllClasses => 'All classes';
+
+  @override
+  String get cashier => 'Cashier';
+
+  @override
+  String get cashReview => 'Behaviour marks with no reason';
+
+  @override
+  String get cashSync => 'Sync grades';
+
+  @override
+  String get cashSyncFailed => 'Sync failed';
+
+  @override
+  String cashSyncedThrough(String date) {
+    return 'Synced through $date';
+  }
+
+  @override
+  String get cashClasses => 'Classes';
+
+  @override
+  String get cashRanking => 'School ranking';
+
+  @override
+  String get cashSearch => 'Student name';
+
+  @override
+  String get cashAmount => 'Amount';
+
+  @override
+  String get cashNote => 'Note';
+
+  @override
+  String get cashSpend => 'Spend';
+
+  @override
+  String get cashAdd => 'Add';
+
+  @override
+  String get cashResetQ => 'Set this balance to \$0?';
+
+  @override
+  String get cashResetZero => 'Reset to \$0';
+
+  @override
+  String get cashHistory => 'History';
+
+  @override
+  String get cashNoHistory => 'No history yet';
+
+  @override
+  String get attendanceCheck => 'Attendance';
+
+  @override
+  String get attNotMarked => 'Not marked';
+
+  @override
+  String get attOnNow => 'On now';
+
+  @override
+  String get attMarked => 'Marked';
+
+  @override
+  String get attLater => 'Later';
+
+  @override
+  String get attNoStudents => 'No students';
+
+  @override
+  String get attOnlyMissing => 'Only classes with unmarked lessons';
+
+  @override
+  String get attNoLessons => 'No lessons on this day';
+
+  @override
+  String get attAbsent => 'Absent';
+
+  @override
+  String get attLate => 'Late';
+
+  @override
+  String get substitutions => 'Substitution';
+
+  @override
+  String get subNewAbsence => 'New absence';
+
+  @override
+  String get subNone => 'No substitutions in these two weeks';
+
+  @override
+  String get subNoLessonsYet =>
+      'No lessons arranged yet — tap the absence to cover its lessons.';
+
+  @override
+  String subLessonsCount(int count) {
+    return '$count lessons';
+  }
+
+  @override
+  String get subRemove => 'Remove';
+
+  @override
+  String get subRemoveQ => 'Remove substitution?';
+
+  @override
+  String subRemoveBody(String lesson, String time) {
+    return '$lesson at $time goes back to its original teacher. Nobody is notified.';
+  }
+
+  @override
+  String get subRemoved => 'Substitution removed';
+
+  @override
+  String get subCover => 'Cover';
+
+  @override
+  String get subMerge => 'Merge';
+
+  @override
+  String get subCancel => 'Cancel';
+
+  @override
+  String get subNext => 'Next';
+
+  @override
+  String get subReasonSick => 'Sick';
+
+  @override
+  String get subReasonPersonal => 'Personal';
+
+  @override
+  String get subReasonTrip => 'Business trip';
+
+  @override
+  String get subReasonTraining => 'Training';
+
+  @override
+  String subCoverFor(String name) {
+    return 'Cover for $name';
+  }
+
+  @override
+  String get subNoAffected => 'This absence has no lessons.';
+
+  @override
+  String get subArranged => 'Already arranged';
+
+  @override
+  String get subPickEach => 'Pick a substitute or a lesson for each one';
+
+  @override
+  String get subSaved => 'Covers saved';
+
+  @override
+  String get subBusy => 'busy';
+
+  @override
+  String get subAbsent => 'absent';
+
+  @override
+  String get subUnavailable => 'unavailable';
+
+  @override
+  String get subSubject => 'subject';
+
+  @override
+  String get subKnowsClass => 'knows class';
+
+  @override
+  String subCoversMonth(int count) {
+    return '$count covers/mo';
+  }
+
+  @override
+  String get subSubstitute => 'Substitute';
+
+  @override
+  String get subMergeWith => 'Merge with';
+
+  @override
+  String get subAssignAnyway => 'Assign anyway';
+
+  @override
+  String get staffPoints => 'Staff Points';
+
+  @override
+  String get spAward => 'Award points';
+
+  @override
+  String get spAwardShort => 'Award';
+
+  @override
+  String get spDeduct => 'Deduct';
+
+  @override
+  String get spThisWeek => 'This week';
+
+  @override
+  String get spThisYear => 'This year';
+
+  @override
+  String get spChooseRecipients => 'Choose who';
+
+  @override
+  String get spAllTeachers => 'All teachers';
+
+  @override
+  String get spNoCategory => 'No category';
+
+  @override
+  String get spNoteRequired => 'Write a note';
+
+  @override
+  String spSaved(int count) {
+    return 'Saved for $count';
+  }
+
+  @override
+  String spSomeFailed(int count) {
+    return '$count couldn\'t be saved';
+  }
+
+  @override
+  String get fundings => 'Fundings';
+
+  @override
+  String get fundNew => 'New funding';
+
+  @override
+  String get fundNone => 'No savings yet';
+
+  @override
+  String get fundDeposits => 'Deposits';
+
+  @override
+  String get fundWithdrawals => 'Withdrawals';
+
+  @override
+  String get fundBalance => 'Balance';
+
+  @override
+  String get fundDeposit => 'Deposit';
+
+  @override
+  String get fundWithdrawal => 'Withdrawal';
+
+  @override
+  String get fundPerson => 'Person';
+
+  @override
+  String get fundAmountPositive => 'Enter an amount above zero';
+
+  @override
+  String get lunchDuty => 'Lunch duty';
+
+  @override
+  String get tagLab => 'Lab lesson';
+
+  @override
+  String get tagAfter => 'After-school lesson';
+
+  @override
+  String get updTitle => 'Updates';
+
+  @override
+  String get updNothingNew => 'Nothing new this week';
+
+  @override
+  String get updJustNow => 'just now';
+
+  @override
+  String updMinutesAgo(int count) {
+    return '$count min ago';
+  }
+
+  @override
+  String updHoursAgo(int count) {
+    return '$count h ago';
+  }
+
+  @override
+  String get updYesterday => 'yesterday';
+
+  @override
+  String updDaysAgo(int count) {
+    return '$count days ago';
+  }
+
+  @override
+  String updPoints(String points) {
+    return '$points points';
+  }
+
+  @override
+  String updTakenFrom(String name) {
+    return 'Taken from $name';
+  }
+
+  @override
+  String updAddedTo(String name) {
+    return 'Added to $name';
+  }
+
+  @override
+  String get updUpcomingEvent => 'Coming up';
+
+  @override
+  String get updTomorrow => 'tomorrow';
+
+  @override
+  String get dombitTooltip => 'Dombit \$ PDF for last week';
+
+  @override
+  String get dombitFailed => 'Could not make the PDF';
 }

@@ -2025,6 +2025,1194 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not send. Try again.'**
   String get suggestionsFailed;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendar;
+
+  /// No description provided for @calToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calToday;
+
+  /// No description provided for @calNewEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'New event'**
+  String get calNewEvent;
+
+  /// No description provided for @calEditEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit event'**
+  String get calEditEvent;
+
+  /// No description provided for @calEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get calEvents;
+
+  /// No description provided for @calHolidays.
+  ///
+  /// In en, this message translates to:
+  /// **'Holidays'**
+  String get calHolidays;
+
+  /// No description provided for @calTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms'**
+  String get calTerms;
+
+  /// No description provided for @calExams.
+  ///
+  /// In en, this message translates to:
+  /// **'Exams'**
+  String get calExams;
+
+  /// No description provided for @calAllEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'All events'**
+  String get calAllEvents;
+
+  /// No description provided for @calNothingOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on this day'**
+  String get calNothingOnDay;
+
+  /// No description provided for @calEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get calEvent;
+
+  /// No description provided for @calHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'Holiday'**
+  String get calHoliday;
+
+  /// No description provided for @calTermStarts.
+  ///
+  /// In en, this message translates to:
+  /// **'Term starts'**
+  String get calTermStarts;
+
+  /// No description provided for @calTermEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'Term ends'**
+  String get calTermEnds;
+
+  /// No description provided for @calExamPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Exam period'**
+  String get calExamPeriod;
+
+  /// No description provided for @calAllDay.
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get calAllDay;
+
+  /// No description provided for @calCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get calCancelled;
+
+  /// No description provided for @calDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get calDraft;
+
+  /// No description provided for @calCancelEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel event'**
+  String get calCancelEvent;
+
+  /// No description provided for @calCancelEventQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this event?'**
+  String get calCancelEventQ;
+
+  /// No description provided for @calDeleteEventQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this event?'**
+  String get calDeleteEventQ;
+
+  /// No description provided for @calEventCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Event cancelled'**
+  String get calEventCancelled;
+
+  /// No description provided for @calEventDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Event deleted'**
+  String get calEventDeleted;
+
+  /// No description provided for @calChangeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the change'**
+  String get calChangeFailed;
+
+  /// No description provided for @calTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get calTitle;
+
+  /// No description provided for @calTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a title'**
+  String get calTitleRequired;
+
+  /// No description provided for @calCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get calCategory;
+
+  /// No description provided for @calLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get calLocation;
+
+  /// No description provided for @calDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get calDescription;
+
+  /// No description provided for @calAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'Who sees it'**
+  String get calAudience;
+
+  /// No description provided for @calAddAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get calAddAudience;
+
+  /// No description provided for @calAllStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'All staff'**
+  String get calAllStaff;
+
+  /// No description provided for @calAllStudents.
+  ///
+  /// In en, this message translates to:
+  /// **'All students'**
+  String get calAllStudents;
+
+  /// No description provided for @calGrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Grade'**
+  String get calGrade;
+
+  /// No description provided for @calClass.
+  ///
+  /// In en, this message translates to:
+  /// **'Class'**
+  String get calClass;
+
+  /// No description provided for @calRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get calRole;
+
+  /// No description provided for @calDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'Dept'**
+  String get calDepartment;
+
+  /// No description provided for @calSaveAsDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as draft'**
+  String get calSaveAsDraft;
+
+  /// No description provided for @calNotify.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a notification'**
+  String get calNotify;
+
+  /// No description provided for @calCatGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get calCatGeneral;
+
+  /// No description provided for @calCatCeremony.
+  ///
+  /// In en, this message translates to:
+  /// **'Ceremony'**
+  String get calCatCeremony;
+
+  /// No description provided for @calCatParentMeeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent meeting'**
+  String get calCatParentMeeting;
+
+  /// No description provided for @calCatTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip'**
+  String get calCatTrip;
+
+  /// No description provided for @calCatSports.
+  ///
+  /// In en, this message translates to:
+  /// **'Sports'**
+  String get calCatSports;
+
+  /// No description provided for @calCatCompetition.
+  ///
+  /// In en, this message translates to:
+  /// **'Competition'**
+  String get calCatCompetition;
+
+  /// No description provided for @calCatDeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline'**
+  String get calCatDeadline;
+
+  /// No description provided for @calCatStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get calCatStaff;
+
+  /// No description provided for @calCatOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get calCatOther;
+
+  /// No description provided for @myLessonAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson analysis results'**
+  String get myLessonAnalysis;
+
+  /// No description provided for @myAnalysisShort.
+  ///
+  /// In en, this message translates to:
+  /// **'My Analysis'**
+  String get myAnalysisShort;
+
+  /// No description provided for @lessonAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson Analysis'**
+  String get lessonAnalysis;
+
+  /// No description provided for @laNoneYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No analyses yet. When one of your lessons is analysed, the results and feedback show up here.'**
+  String get laNoneYet;
+
+  /// No description provided for @laTotalPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Total points'**
+  String get laTotalPoints;
+
+  /// No description provided for @laThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get laThisMonth;
+
+  /// No description provided for @laLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Last month'**
+  String get laLastMonth;
+
+  /// No description provided for @laAllTime.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get laAllTime;
+
+  /// No description provided for @laAnalyses.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyses'**
+  String get laAnalyses;
+
+  /// No description provided for @laLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest'**
+  String get laLatest;
+
+  /// No description provided for @laNotesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} notes'**
+  String laNotesCount(int count);
+
+  /// No description provided for @laNoNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes'**
+  String get laNoNotes;
+
+  /// No description provided for @laMyDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'My department'**
+  String get laMyDepartment;
+
+  /// No description provided for @laAnalysedOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{analysed} of {total} teachers analysed'**
+  String laAnalysedOf(int analysed, int total);
+
+  /// No description provided for @laAnalysesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} analyses'**
+  String laAnalysesCount(int count);
+
+  /// No description provided for @laNotAnalysed.
+  ///
+  /// In en, this message translates to:
+  /// **'Not analysed yet'**
+  String get laNotAnalysed;
+
+  /// No description provided for @laSortLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Last analysed'**
+  String get laSortLast;
+
+  /// No description provided for @laSortMost.
+  ///
+  /// In en, this message translates to:
+  /// **'Most points'**
+  String get laSortMost;
+
+  /// No description provided for @laSortLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewest points'**
+  String get laSortLeast;
+
+  /// No description provided for @laSortName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get laSortName;
+
+  /// No description provided for @laNewAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'New analysis'**
+  String get laNewAnalysis;
+
+  /// No description provided for @laEditAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit analysis'**
+  String get laEditAnalysis;
+
+  /// No description provided for @laDeleteQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this analysis?'**
+  String get laDeleteQ;
+
+  /// No description provided for @laDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its points are taken back from the teacher.'**
+  String get laDeleteBody;
+
+  /// No description provided for @laDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis deleted'**
+  String get laDeleted;
+
+  /// No description provided for @laTeacher.
+  ///
+  /// In en, this message translates to:
+  /// **'Teacher'**
+  String get laTeacher;
+
+  /// No description provided for @laLesson.
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson'**
+  String get laLesson;
+
+  /// No description provided for @laNoLessons.
+  ///
+  /// In en, this message translates to:
+  /// **'No lessons in the last 60 days that can be analysed.'**
+  String get laNoLessons;
+
+  /// No description provided for @laAnalysed.
+  ///
+  /// In en, this message translates to:
+  /// **'analysed'**
+  String get laAnalysed;
+
+  /// No description provided for @laPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get laPoints;
+
+  /// No description provided for @laNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get laNotes;
+
+  /// No description provided for @laChooseTeacher.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the teacher'**
+  String get laChooseTeacher;
+
+  /// No description provided for @laChooseLesson.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the lesson'**
+  String get laChooseLesson;
+
+  /// No description provided for @laPointsWhole.
+  ///
+  /// In en, this message translates to:
+  /// **'Points must be a whole number'**
+  String get laPointsWhole;
+
+  /// No description provided for @laSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get laSaved;
+
+  /// No description provided for @laSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the analysis'**
+  String get laSaveFailed;
+
+  /// No description provided for @myDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'My Department'**
+  String get myDepartment;
+
+  /// No description provided for @deptNone.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t lead a department.'**
+  String get deptNone;
+
+  /// No description provided for @deptHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Head'**
+  String get deptHead;
+
+  /// No description provided for @deptDeputy.
+  ///
+  /// In en, this message translates to:
+  /// **'Deputy'**
+  String get deptDeputy;
+
+  /// No description provided for @deptCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{subjects} subjects · {members} members'**
+  String deptCounts(int subjects, int members);
+
+  /// No description provided for @deptLessons.
+  ///
+  /// In en, this message translates to:
+  /// **'Lessons'**
+  String get deptLessons;
+
+  /// No description provided for @deptAttendanceTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance taken'**
+  String get deptAttendanceTaken;
+
+  /// No description provided for @deptGradesEntered.
+  ///
+  /// In en, this message translates to:
+  /// **'Grades entered'**
+  String get deptGradesEntered;
+
+  /// No description provided for @deptGrades.
+  ///
+  /// In en, this message translates to:
+  /// **'Grades'**
+  String get deptGrades;
+
+  /// No description provided for @deptAvgGrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg grade'**
+  String get deptAvgGrade;
+
+  /// No description provided for @deptAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance'**
+  String get deptAttendance;
+
+  /// No description provided for @deptExamAvg.
+  ///
+  /// In en, this message translates to:
+  /// **'Exam avg'**
+  String get deptExamAvg;
+
+  /// No description provided for @deptKpi.
+  ///
+  /// In en, this message translates to:
+  /// **'KPI'**
+  String get deptKpi;
+
+  /// No description provided for @deptTeachers.
+  ///
+  /// In en, this message translates to:
+  /// **'Teachers'**
+  String get deptTeachers;
+
+  /// No description provided for @deptSubjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Subjects'**
+  String get deptSubjects;
+
+  /// No description provided for @deptClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'Classes'**
+  String get deptClasses;
+
+  /// No description provided for @deptAllClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'All classes'**
+  String get deptAllClasses;
+
+  /// No description provided for @cashier.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashier'**
+  String get cashier;
+
+  /// No description provided for @cashReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Behaviour marks with no reason'**
+  String get cashReview;
+
+  /// No description provided for @cashSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync grades'**
+  String get cashSync;
+
+  /// No description provided for @cashSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed'**
+  String get cashSyncFailed;
+
+  /// No description provided for @cashSyncedThrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced through {date}'**
+  String cashSyncedThrough(String date);
+
+  /// No description provided for @cashClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'Classes'**
+  String get cashClasses;
+
+  /// No description provided for @cashRanking.
+  ///
+  /// In en, this message translates to:
+  /// **'School ranking'**
+  String get cashRanking;
+
+  /// No description provided for @cashSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Student name'**
+  String get cashSearch;
+
+  /// No description provided for @cashAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get cashAmount;
+
+  /// No description provided for @cashNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get cashNote;
+
+  /// No description provided for @cashSpend.
+  ///
+  /// In en, this message translates to:
+  /// **'Spend'**
+  String get cashSpend;
+
+  /// No description provided for @cashAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get cashAdd;
+
+  /// No description provided for @cashResetQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Set this balance to \$0?'**
+  String get cashResetQ;
+
+  /// No description provided for @cashResetZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to \$0'**
+  String get cashResetZero;
+
+  /// No description provided for @cashHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get cashHistory;
+
+  /// No description provided for @cashNoHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet'**
+  String get cashNoHistory;
+
+  /// No description provided for @attendanceCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance'**
+  String get attendanceCheck;
+
+  /// No description provided for @attNotMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not marked'**
+  String get attNotMarked;
+
+  /// No description provided for @attOnNow.
+  ///
+  /// In en, this message translates to:
+  /// **'On now'**
+  String get attOnNow;
+
+  /// No description provided for @attMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked'**
+  String get attMarked;
+
+  /// No description provided for @attLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get attLater;
+
+  /// No description provided for @attNoStudents.
+  ///
+  /// In en, this message translates to:
+  /// **'No students'**
+  String get attNoStudents;
+
+  /// No description provided for @attOnlyMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Only classes with unmarked lessons'**
+  String get attOnlyMissing;
+
+  /// No description provided for @attNoLessons.
+  ///
+  /// In en, this message translates to:
+  /// **'No lessons on this day'**
+  String get attNoLessons;
+
+  /// No description provided for @attAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Absent'**
+  String get attAbsent;
+
+  /// No description provided for @attLate.
+  ///
+  /// In en, this message translates to:
+  /// **'Late'**
+  String get attLate;
+
+  /// No description provided for @substitutions.
+  ///
+  /// In en, this message translates to:
+  /// **'Substitution'**
+  String get substitutions;
+
+  /// No description provided for @subNewAbsence.
+  ///
+  /// In en, this message translates to:
+  /// **'New absence'**
+  String get subNewAbsence;
+
+  /// No description provided for @subNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No substitutions in these two weeks'**
+  String get subNone;
+
+  /// No description provided for @subNoLessonsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No lessons arranged yet — tap the absence to cover its lessons.'**
+  String get subNoLessonsYet;
+
+  /// No description provided for @subLessonsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} lessons'**
+  String subLessonsCount(int count);
+
+  /// No description provided for @subRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get subRemove;
+
+  /// No description provided for @subRemoveQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove substitution?'**
+  String get subRemoveQ;
+
+  /// No description provided for @subRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{lesson} at {time} goes back to its original teacher. Nobody is notified.'**
+  String subRemoveBody(String lesson, String time);
+
+  /// No description provided for @subRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Substitution removed'**
+  String get subRemoved;
+
+  /// No description provided for @subCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover'**
+  String get subCover;
+
+  /// No description provided for @subMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get subMerge;
+
+  /// No description provided for @subCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get subCancel;
+
+  /// No description provided for @subNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get subNext;
+
+  /// No description provided for @subReasonSick.
+  ///
+  /// In en, this message translates to:
+  /// **'Sick'**
+  String get subReasonSick;
+
+  /// No description provided for @subReasonPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get subReasonPersonal;
+
+  /// No description provided for @subReasonTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Business trip'**
+  String get subReasonTrip;
+
+  /// No description provided for @subReasonTraining.
+  ///
+  /// In en, this message translates to:
+  /// **'Training'**
+  String get subReasonTraining;
+
+  /// No description provided for @subCoverFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover for {name}'**
+  String subCoverFor(String name);
+
+  /// No description provided for @subNoAffected.
+  ///
+  /// In en, this message translates to:
+  /// **'This absence has no lessons.'**
+  String get subNoAffected;
+
+  /// No description provided for @subArranged.
+  ///
+  /// In en, this message translates to:
+  /// **'Already arranged'**
+  String get subArranged;
+
+  /// No description provided for @subPickEach.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a substitute or a lesson for each one'**
+  String get subPickEach;
+
+  /// No description provided for @subSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Covers saved'**
+  String get subSaved;
+
+  /// No description provided for @subBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'busy'**
+  String get subBusy;
+
+  /// No description provided for @subAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'absent'**
+  String get subAbsent;
+
+  /// No description provided for @subUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'unavailable'**
+  String get subUnavailable;
+
+  /// No description provided for @subSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'subject'**
+  String get subSubject;
+
+  /// No description provided for @subKnowsClass.
+  ///
+  /// In en, this message translates to:
+  /// **'knows class'**
+  String get subKnowsClass;
+
+  /// No description provided for @subCoversMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} covers/mo'**
+  String subCoversMonth(int count);
+
+  /// No description provided for @subSubstitute.
+  ///
+  /// In en, this message translates to:
+  /// **'Substitute'**
+  String get subSubstitute;
+
+  /// No description provided for @subMergeWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge with'**
+  String get subMergeWith;
+
+  /// No description provided for @subAssignAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign anyway'**
+  String get subAssignAnyway;
+
+  /// No description provided for @staffPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff Points'**
+  String get staffPoints;
+
+  /// No description provided for @spAward.
+  ///
+  /// In en, this message translates to:
+  /// **'Award points'**
+  String get spAward;
+
+  /// No description provided for @spAwardShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Award'**
+  String get spAwardShort;
+
+  /// No description provided for @spDeduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Deduct'**
+  String get spDeduct;
+
+  /// No description provided for @spThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get spThisWeek;
+
+  /// No description provided for @spThisYear.
+  ///
+  /// In en, this message translates to:
+  /// **'This year'**
+  String get spThisYear;
+
+  /// No description provided for @spChooseRecipients.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose who'**
+  String get spChooseRecipients;
+
+  /// No description provided for @spAllTeachers.
+  ///
+  /// In en, this message translates to:
+  /// **'All teachers'**
+  String get spAllTeachers;
+
+  /// No description provided for @spNoCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'No category'**
+  String get spNoCategory;
+
+  /// No description provided for @spNoteRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a note'**
+  String get spNoteRequired;
+
+  /// No description provided for @spSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved for {count}'**
+  String spSaved(int count);
+
+  /// No description provided for @spSomeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} couldn\'t be saved'**
+  String spSomeFailed(int count);
+
+  /// No description provided for @fundings.
+  ///
+  /// In en, this message translates to:
+  /// **'Fundings'**
+  String get fundings;
+
+  /// No description provided for @fundNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New funding'**
+  String get fundNew;
+
+  /// No description provided for @fundNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No savings yet'**
+  String get fundNone;
+
+  /// No description provided for @fundDeposits.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposits'**
+  String get fundDeposits;
+
+  /// No description provided for @fundWithdrawals.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawals'**
+  String get fundWithdrawals;
+
+  /// No description provided for @fundBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get fundBalance;
+
+  /// No description provided for @fundDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit'**
+  String get fundDeposit;
+
+  /// No description provided for @fundWithdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal'**
+  String get fundWithdrawal;
+
+  /// No description provided for @fundPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Person'**
+  String get fundPerson;
+
+  /// No description provided for @fundAmountPositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount above zero'**
+  String get fundAmountPositive;
+
+  /// No description provided for @lunchDuty.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch duty'**
+  String get lunchDuty;
+
+  /// No description provided for @tagLab.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab lesson'**
+  String get tagLab;
+
+  /// No description provided for @tagAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'After-school lesson'**
+  String get tagAfter;
+
+  /// No description provided for @updTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get updTitle;
+
+  /// No description provided for @updNothingNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing new this week'**
+  String get updNothingNew;
+
+  /// No description provided for @updJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get updJustNow;
+
+  /// No description provided for @updMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min ago'**
+  String updMinutesAgo(int count);
+
+  /// No description provided for @updHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} h ago'**
+  String updHoursAgo(int count);
+
+  /// No description provided for @updYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'yesterday'**
+  String get updYesterday;
+
+  /// No description provided for @updDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days ago'**
+  String updDaysAgo(int count);
+
+  /// No description provided for @updPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} points'**
+  String updPoints(String points);
+
+  /// No description provided for @updTakenFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken from {name}'**
+  String updTakenFrom(String name);
+
+  /// No description provided for @updAddedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to {name}'**
+  String updAddedTo(String name);
+
+  /// No description provided for @updUpcomingEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming up'**
+  String get updUpcomingEvent;
+
+  /// No description provided for @updTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'tomorrow'**
+  String get updTomorrow;
+
+  /// No description provided for @dombitTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Dombit \$ PDF for last week'**
+  String get dombitTooltip;
+
+  /// No description provided for @dombitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not make the PDF'**
+  String get dombitFailed;
 }
 
 class _AppLocalizationsDelegate

@@ -27,6 +27,7 @@ import '../features/lessons/data/http_lessons_repository.dart';
 import '../features/lessons/data/offline_cache.dart';
 import '../features/point_report/data/http_point_report_repository.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../shared/api_client.dart';
 import 'language_controller.dart';
 import 'theme.dart';
 import 'theme_controller.dart';
@@ -135,6 +136,11 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
           branchId: () => _branchController?.activeBranchId,
         ),
         search: HttpSearchRepository(
+          client: _client!,
+          baseUrl: ApiConfig.baseUrl,
+          readToken: tokenStorage.readToken,
+        ),
+        api: ApiClient(
           client: _client!,
           baseUrl: ApiConfig.baseUrl,
           readToken: tokenStorage.readToken,

@@ -15,7 +15,29 @@ enum AppItem {
   rewards,
   colleagues,
   pointReport,
+  calendar,
+  myLessonAnalysis,
+  lessonAnalysis,
+  myDepartment,
+  substitutions,
+  attendanceCheck,
+  cashier,
+  staffPoints,
+  fundings,
 }
+
+/// Pages opened over the shell (with a back arrow) instead of as a tab.
+const pushedItems = {
+  AppItem.calendar,
+  AppItem.myLessonAnalysis,
+  AppItem.lessonAnalysis,
+  AppItem.myDepartment,
+  AppItem.substitutions,
+  AppItem.attendanceCheck,
+  AppItem.cashier,
+  AppItem.staffPoints,
+  AppItem.fundings,
+};
 
 List<String> _keys(String resource) => [
   '$resource.read',
@@ -56,6 +78,17 @@ class AppAccess {
     AppItem.rewards => false,
     AppItem.colleagues => true,
     AppItem.pointReport => _teacher || _any(const ['lesson_grades.read']),
+    // `GET /calendar` needs no permission.
+    AppItem.calendar => true,
+    // The API scopes the list to the teacher's own lessons.
+    AppItem.myLessonAnalysis => _teacher,
+    AppItem.lessonAnalysis => _any(_keys('lesson_observations')),
+    AppItem.myDepartment => _any(const ['departments.read']),
+    AppItem.substitutions => _any(const ['substitutions.create']),
+    AppItem.attendanceCheck => _any(const ['attendance.update']),
+    AppItem.cashier => _any(_keys('cashier')),
+    AppItem.staffPoints => _any(_keys('user_points')),
+    AppItem.fundings => _any(_keys('fundings')),
   };
 
   /// Small Home tiles, in the order teachers reach for them.
@@ -68,7 +101,16 @@ class AppAccess {
     AppItem.exams,
     AppItem.timetable,
     AppItem.colleagues,
+    AppItem.calendar,
     AppItem.pointReport,
+    AppItem.myLessonAnalysis,
+    AppItem.lessonAnalysis,
+    AppItem.myDepartment,
+    AppItem.substitutions,
+    AppItem.attendanceCheck,
+    AppItem.cashier,
+    AppItem.staffPoints,
+    AppItem.fundings,
   ].where(allows).toList();
 
   bool get _regularTeacher => _teacher && !_admin;

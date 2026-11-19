@@ -45,6 +45,7 @@ class MyClassPage extends StatefulWidget {
     this.insights,
     this.onMark,
     this.launchDial,
+    this.shareDombit,
   });
 
   final Future<AppUserProfile> Function() loadProfile;
@@ -76,6 +77,9 @@ class MyClassPage extends StatefulWidget {
 
   /// Hands a `tel:` link to the phone. Tests replace it.
   final Future<bool> Function(String uri)? launchDial;
+
+  /// Shares last week's Dombit \$ PDF of the class. Null hides the button.
+  final Future<void> Function(int groupId)? shareDombit;
 
   @override
   State<MyClassPage> createState() => _MyClassPageState();
@@ -428,6 +432,9 @@ class _MyClassPageState extends State<MyClassPage> {
               studentCount: loaded && !snapshot.hasError
                   ? present.length
                   : null,
+              onDombit: group == null || widget.shareDombit == null
+                  ? null
+                  : () => widget.shareDombit!(group.id),
             ),
             const SizedBox(height: 8),
             if (group == null)
@@ -716,10 +723,15 @@ class _StudentRow extends StatelessWidget {
 
 /// The class and how many students are in it now, in one slim card.
 class _ClassHeader extends StatelessWidget {
-  const _ClassHeader({required this.classPair, required this.studentCount});
+  const _ClassHeader({
+    required this.classPair,
+    required this.studentCount,
+    this.onDombit,
+  });
 
   final String? classPair;
   final int? studentCount;
+  final Future<void> Function()? onDombit;
 
   @override
   Widget build(BuildContext context) {
@@ -747,7 +759,69 @@ class _ClassHeader extends StatelessWidget {
             count == null ? '…' : l.classStudentCount(count),
             style: TextStyle(fontSize: 12, color: colors.mutedText),
           ),
+          if (onDombit != null) ...[
+            const Spacer(),
+            _DombitButton(onPressed: onDombit!),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// "Dombit \$" with a spinner while the PDF is made, like the web's button.
+class _DombitButton extends StatefulWidget {
+  const _DombitButton({required this.onPressed});
+
+  final Future<void> Function() onPressed;
+
+  @override
+  State<_DombitButton> createState() => _DombitButtonState();
+}
+
+class _DombitButtonState extends State<_DombitButton> {
+  bool _busy = false;
+
+  Future<void> _run() async {
+    final l = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    try {
+      await widget.onPressed();
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            error is AuthFailure && error.message.trim().isNotEmpty
+                ? error.message
+                : l.dombitFailed,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Tooltip(
+      message: l.dombitTooltip,
+      child: OutlinedButton.icon(
+        key: const ValueKey('dombit-pdf'),
+        onPressed: _busy ? null : _run,
+        style: OutlinedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+        ),
+        icon: _busy
+            ? const SizedBox.square(
+                dimension: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.picture_as_pdf_rounded, size: 16),
+        label: const Text('Dombit \$'),
       ),
     );
   }

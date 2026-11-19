@@ -12,6 +12,33 @@ Newest first. Every notable change to **this Flutter app** gets an entry here
 
 ---
 
+## 2026-11-19 — Home and schedule polish from the web
+
+- **Updates card** on Home (`landing/presentation/updates_card.dart`), under today's lessons: points you got, money in or out of your funds (last 14 days), notifications and events in the next week. It rolls every 5 s, pauses after a touch, swipes, and a tap opens the matching page.
+- **Lesson countdown**: while one of today's lessons (or lunch duty) is on, the Schedule tab in the bottom bar shows the time left in red ("12:05"), as on the web. Meetings don't count (`lessonCountdown` in `next_lesson_day.dart`; `BottomMenuItem.labelColor`).
+- **Schedule page on a time scale**, like the web's `DaySchedule`: every bell period drawn at 1.15 px a minute whether or not you teach it, your lessons laid over them (overlapping ones side by side), a red now line with the time that the page scrolls to when today opens, lunch duty in violet and meetings in amber. `layoutDay` replaces `buildDayRows`; slots too short for their text clip instead of overflowing.
+- **Lesson tags and lunch duty**: `tags` and `is_lunch_duty` from `/my-lessons`. Lab and after-school lessons get a small tag on Home and in Lessons; a lunch-duty slot reads "Lunch duty" and doesn't open a lesson.
+- **Photos in the Scores step**: each row starts with the student's photo (tap to enlarge; initials when there is none). The grades sheet carries no photo, so `getSheet` reads it from the classes' `/students` lists, best effort. The name now has its own line at 13 pt and the status / late / make-up / thumbs sit under it at 11 pt, so a status no longer cuts the name off.
+- **Colour per score column** in grading: Materials, Homework done, Homework, Activity and Notes each have their own hue in the legend, the collapsed numbers and the quick-value buttons.
+- **Weekly Dombit $ PDF** in My Class: a button in the class header builds last week's report from `/cashier/class-report/:groupId` (students by DIS number only, balance and week's grades / behaviour / spending, then every negative mark) and opens the share sheet (`MyClass/dombit_pdf.dart`). It needs the `pdf` package; DejaVu Sans (Cyrillic) and the D logo are bundled under `assets/pdf/`. `image` is held at 4.10.x because 4.11 needs a newer `archive` than `pdf` allows. Cashier routes exist on production only, so the button fails on dev-api.
+- All new labels in English, Uzbek and Russian.
+
+## 2026-11-19 — Web pages brought over: Calendar, Lesson Analysis, My Department, admin tools
+
+Nine pages from the web that the app didn't have. Each opens over the shell with a back arrow, from a Home tile or search, and only for people the web shows it to (`AppAccess`).
+
+- **Calendar** (everyone): month grid with dots, the day's items under it, Events / Holidays / Terms / Exams filters and, with `calendar_events.read`, "All events". With the `calendar_events.*` keys: new event (dates, all-day or timed, category, place, audience, draft, notify), edit, cancel and delete. Holidays and terms are shown but still managed on the web.
+- **Lesson analysis results** (teachers): your own analyses by month, with totals and every note.
+- **Lesson Analysis** (`lesson_observations.*`): every teacher with how often they were analysed and the points, by period; heads can narrow it to their department. A teacher opens their timeline with edit and delete; **New analysis** picks the teacher, one of their last 60 days of lessons (ones you already analysed are greyed), points and a note per criterion. Criteria are still managed on the web.
+- **My Department** (`departments.read`): the summary tiles and per-teacher / subject / class figures from `/departments/:id/statistics`, with a class filter and sorting; `read_all` holders pick any department.
+- **Substitution** (`substitutions.create`): two weeks by day with absences and arrangements; **New absence** → cover each lesson (substitute from `/substitutions/suggest`, merge or cancel, "Assign anyway" on a clash); edit and remove.
+- **Attendance** (`attendance.update`): the Today board — every class's periods coloured not marked / on now / marked / later, a "missing only" switch, any day, refreshed every 3 minutes. "By class" and "No Attendance" stay on the web.
+- **Cashier** (`cashier.*`): balances by class or school ranking, search, and per student spend / add / reset to $0 with the history; grades sync and the behaviour-marks review.
+- **Staff Points** (`user_points.*`): totals per person for the week / month / year, award or deduct for one or many (all teachers in one tap), and each person's history.
+- **Fundings** (`fundings.*`): balances per person in UZS or USD, school totals, new deposit or withdrawal, and each person's savings.
+- Also: the dark/light toggle sits next to the bell, as on the web.
+- New code: `shared/api_client.dart` (plain JSON client), `shared/staff_context.dart` (API, profile, year, staff roster), `shared/sub_page.dart`. All new labels are in English, Uzbek and Russian.
+
 ## 2026-11-17 — Profile matches the web's phone Settings
 
 - **Profile** follows the web's `MobileView.jsx`:

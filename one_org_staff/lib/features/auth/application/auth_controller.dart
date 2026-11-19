@@ -13,6 +13,7 @@ import '../../colleagues/domain/colleagues_repository.dart';
 import '../../exams/domain/exams_repository.dart';
 import '../../notifications/domain/notifications_repository.dart';
 import '../../point_report/domain/point_report_repository.dart';
+import '../../../shared/api_client.dart';
 import '../data/token_storage.dart';
 import '../domain/auth_repository.dart';
 
@@ -34,6 +35,7 @@ class AuthController extends ChangeNotifier {
     this.me,
     this.search,
     this.classInsights,
+    this.api,
   }) : _authRepository = authRepository,
        _tokenStorage = tokenStorage,
        _timetableRepository = timetableRepository,
@@ -68,6 +70,10 @@ class AuthController extends ChangeNotifier {
 
   /// A class's grades and behavior, for My Class.
   final ClassInsightsRepository? classInsights;
+
+  /// Plain JSON access for the pages ported from the web without a repository
+  /// of their own. Null in a test harness; those pages are then hidden.
+  final ApiClient? api;
 
   /// Runs just before the session token is discarded on sign-out, while an
   /// authenticated call is still possible. [PushService] hangs the

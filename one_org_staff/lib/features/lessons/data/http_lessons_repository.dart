@@ -218,11 +218,15 @@ class HttpLessonsRepository implements LessonsRepository {
       final lesson = LessonDetail.fromJson(
         Map<String, dynamic>.from(results[0]['result'] as Map),
       );
-      final left = await _leftStudentIds(lesson.groupIds);
-      return GradingSheet(
-        lesson: lesson,
-        students: _students(results[1], left),
-      );
+      final (left, pictures) = await (
+        _leftStudentIds(lesson.groupIds),
+        _studentPictures(lesson.groupIds),
+      ).wait;
+      final students = _students(results[1], left);
+      for (final student in students) {
+        student.pictureUrl = pictures[student.studentId];
+      }
+      return GradingSheet(lesson: lesson, students: students);
     });
   }
 
@@ -257,6 +261,35 @@ class HttpLessonsRepository implements LessonsRepository {
         .whereType<num>()
         .map((id) => id.toInt())
         .toSet();
+  }
+
+  /// Photos of the classes' students by student id, for the score rows.
+  /// Best effort: without them the rows show initials.
+  Future<Map<int, String>> _studentPictures(List<int> groupIds) async {
+    final lists = await Future.wait(
+      groupIds.toSet().map((groupId) async {
+        try {
+          final body = await _get('/students', 'Unable to load students.', {
+            'group_id': '$groupId',
+            'limit': '100',
+          });
+          return _maps(body is Map ? body['result'] : null);
+        } on Exception {
+          return const <Map<String, dynamic>>[];
+        }
+      }),
+    );
+    final pictures = <int, String>{};
+    for (final row in lists.expand((rows) => rows)) {
+      final id = row['id'];
+      final person = row['person'];
+      final url =
+          row['picture_url'] ?? (person is Map ? person['picture_url'] : null);
+      if (id is num && url is String && url.trim().isNotEmpty) {
+        pictures[id.toInt()] = url.trim();
+      }
+    }
+    return pictures;
   }
 
   @override

@@ -21,77 +21,105 @@ class DayItem {
   final TeacherMeeting? meeting;
 }
 
-/// One line of the day: a period and what happens in it. Items that overlap
-/// (choice lessons, a substitution on top of your own class) share the line.
-class DayRow {
-  DayRow({required this.start, required this.end, this.period});
+/// An item on the day's time scale, with its column when items overlap.
+class PlacedItem {
+  PlacedItem(this.item);
 
-  final BellPeriod? period;
-  final int start;
-  int end;
-  final List<DayItem> items = [];
-
-  bool get isEmpty => items.isEmpty;
+  final DayItem item;
+  int column = 0;
+  int columns = 1;
 }
 
-/// Lays the day over its periods. A period with nothing in it stays as a thin
-/// line, so the shape of the school day is still visible.
-List<DayRow> buildDayRows(List<BellPeriod> periods, LessonDay day) {
+/// The day as the web's `DaySchedule` draws it: every bell period on one time
+/// scale, whether or not you teach it, with your lessons and meetings laid
+/// over them. Items that overlap in time (choice lessons, a substitution on
+/// top of your own class) share the width side by side.
+class DayLayout {
+  const DayLayout({
+    required this.periods,
+    required this.items,
+    required this.start,
+    required this.end,
+  });
+
+  final List<BellPeriod> periods;
+  final List<PlacedItem> items;
+
+  /// The first bell to the last, stretched to fit anything outside them.
+  final int start;
+  final int end;
+
+  /// Whether one of the items falls in [period].
+  bool taught(BellPeriod period) => items.any(
+    (placed) =>
+        placed.item.start < period.end && placed.item.end > period.start,
+  );
+}
+
+DayLayout layoutDay(List<BellPeriod> periods, LessonDay day) {
   final schedule = periods.isEmpty ? fallbackPeriods : periods;
-  final items = <DayItem>[
-    for (final lesson in day.lessons)
-      if (minutesOfDay(lesson.startTime) != null &&
-          minutesOfDay(lesson.endTime) != null)
-        DayItem(
-          start: minutesOfDay(lesson.startTime)!,
-          end: minutesOfDay(lesson.endTime)!,
-          lesson: lesson,
-        ),
-    for (final meeting in day.meetings)
-      if (minutesOfDay(meeting.startTime) != null &&
-          minutesOfDay(meeting.endTime) != null)
-        DayItem(
-          start: minutesOfDay(meeting.startTime)!,
-          end: minutesOfDay(meeting.endTime)!,
-          meeting: meeting,
-        ),
-  ]..sort((a, b) => a.start.compareTo(b.start));
+  final placed =
+      <PlacedItem>[
+        for (final lesson in day.lessons)
+          if (minutesOfDay(lesson.startTime) != null &&
+              minutesOfDay(lesson.endTime) != null)
+            PlacedItem(
+              DayItem(
+                start: minutesOfDay(lesson.startTime)!,
+                end: minutesOfDay(lesson.endTime)!,
+                lesson: lesson,
+              ),
+            ),
+        for (final meeting in day.meetings)
+          if (minutesOfDay(meeting.startTime) != null &&
+              minutesOfDay(meeting.endTime) != null)
+            PlacedItem(
+              DayItem(
+                start: minutesOfDay(meeting.startTime)!,
+                end: minutesOfDay(meeting.endTime)!,
+                meeting: meeting,
+              ),
+            ),
+      ]..sort((a, b) {
+        final byStart = a.item.start.compareTo(b.item.start);
+        return byStart != 0 ? byStart : a.item.end.compareTo(b.item.end);
+      });
 
-  final rows = [
-    for (final period in schedule)
-      DayRow(period: period, start: period.start, end: period.end),
-  ];
-  final offSchedule = <DayRow>[];
-
-  for (final item in items) {
-    final row = rows
-        .where((row) => item.start < row.end && item.end > row.start)
-        .firstOrNull;
-    if (row != null) {
-      row.items.add(item);
-      if (item.end > row.end) row.end = item.end;
-      continue;
+  // Clusters of items that overlap; each gets the first free column.
+  var cluster = <PlacedItem>[];
+  var clusterEnd = -1;
+  void finish() {
+    final columnEnds = <int>[];
+    for (final placedItem in cluster) {
+      var column = columnEnds.indexWhere((end) => end <= placedItem.item.start);
+      if (column == -1) {
+        column = columnEnds.length;
+        columnEnds.add(placedItem.item.end);
+      } else {
+        columnEnds[column] = placedItem.item.end;
+      }
+      placedItem.column = column;
     }
-    final existing = offSchedule
-        .where((row) => item.start < row.end && item.end > row.start)
-        .firstOrNull;
-    if (existing != null) {
-      existing.items.add(item);
-      if (item.end > existing.end) existing.end = item.end;
-    } else {
-      offSchedule.add(
-        DayRow(start: item.start, end: item.end)..items.add(item),
-      );
+    for (final placedItem in cluster) {
+      placedItem.columns = columnEnds.length;
     }
   }
 
-  // An empty period that a longer lesson already runs through has no line.
-  final shown = <DayRow>[];
-  for (final row in rows) {
-    final covered =
-        row.isEmpty &&
-        shown.any((other) => !other.isEmpty && other.end >= row.end);
-    if (!covered) shown.add(row);
+  for (final placedItem in placed) {
+    if (placedItem.item.start >= clusterEnd && cluster.isNotEmpty) {
+      finish();
+      cluster = [];
+    }
+    cluster.add(placedItem);
+    if (placedItem.item.end > clusterEnd) clusterEnd = placedItem.item.end;
   }
-  return [...shown, ...offSchedule]..sort((a, b) => a.start.compareTo(b.start));
+  if (cluster.isNotEmpty) finish();
+
+  var start = schedule.first.start;
+  var end = schedule.last.end;
+  for (final placedItem in placed) {
+    if (placedItem.item.start < start) start = placedItem.item.start;
+    if (placedItem.item.end > end) end = placedItem.item.end;
+  }
+  return DayLayout(periods: schedule, items: placed, start: start, end: end);
 }

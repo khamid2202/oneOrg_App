@@ -613,5 +613,331 @@
   "suggestionsSend": "Send",
   "suggestionsSentButton": "Sent",
   "suggestionsSent": "Sent — thank you!",
-  "suggestionsFailed": "Could not send. Try again."
+  "suggestionsFailed": "Could not send. Try again.",
+  "edit": "Edit",
+  "calendar": "Calendar",
+  "calToday": "Today",
+  "calNewEvent": "New event",
+  "calEditEvent": "Edit event",
+  "calEvents": "Events",
+  "calHolidays": "Holidays",
+  "calTerms": "Terms",
+  "calExams": "Exams",
+  "calAllEvents": "All events",
+  "calNothingOnDay": "Nothing on this day",
+  "calEvent": "Event",
+  "calHoliday": "Holiday",
+  "calTermStarts": "Term starts",
+  "calTermEnds": "Term ends",
+  "calExamPeriod": "Exam period",
+  "calAllDay": "All day",
+  "calCancelled": "Cancelled",
+  "calDraft": "Draft",
+  "calCancelEvent": "Cancel event",
+  "calCancelEventQ": "Cancel this event?",
+  "calDeleteEventQ": "Delete this event?",
+  "calEventCancelled": "Event cancelled",
+  "calEventDeleted": "Event deleted",
+  "calChangeFailed": "Couldn't save the change",
+  "calTitle": "Title",
+  "calTitleRequired": "Enter a title",
+  "calCategory": "Category",
+  "calLocation": "Location",
+  "calDescription": "Description",
+  "calAudience": "Who sees it",
+  "calAddAudience": "Add",
+  "calAllStaff": "All staff",
+  "calAllStudents": "All students",
+  "calGrade": "Grade",
+  "calClass": "Class",
+  "calRole": "Role",
+  "calDepartment": "Dept",
+  "calSaveAsDraft": "Save as draft",
+  "calNotify": "Send a notification",
+  "calCatGeneral": "General",
+  "calCatCeremony": "Ceremony",
+  "calCatParentMeeting": "Parent meeting",
+  "calCatTrip": "Trip",
+  "calCatSports": "Sports",
+  "calCatCompetition": "Competition",
+  "calCatDeadline": "Deadline",
+  "calCatStaff": "Staff",
+  "calCatOther": "Other",
+  "myLessonAnalysis": "Lesson analysis results",
+  "myAnalysisShort": "My Analysis",
+  "lessonAnalysis": "Lesson Analysis",
+  "laNoneYet": "No analyses yet. When one of your lessons is analysed, the results and feedback show up here.",
+  "laTotalPoints": "Total points",
+  "laThisMonth": "This month",
+  "laLastMonth": "Last month",
+  "laAllTime": "All time",
+  "laAnalyses": "Analyses",
+  "laLatest": "Latest",
+  "laNotesCount": "{count} notes",
+  "@laNotesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "laNoNotes": "No notes",
+  "laMyDepartment": "My department",
+  "laAnalysedOf": "{analysed} of {total} teachers analysed",
+  "@laAnalysedOf": {
+    "placeholders": {
+      "analysed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "laAnalysesCount": "{count} analyses",
+  "@laAnalysesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "laNotAnalysed": "Not analysed yet",
+  "laSortLast": "Last analysed",
+  "laSortMost": "Most points",
+  "laSortLeast": "Fewest points",
+  "laSortName": "Name",
+  "laNewAnalysis": "New analysis",
+  "laEditAnalysis": "Edit analysis",
+  "laDeleteQ": "Delete this analysis?",
+  "laDeleteBody": "Its points are taken back from the teacher.",
+  "laDeleted": "Analysis deleted",
+  "laTeacher": "Teacher",
+  "laLesson": "Lesson",
+  "laNoLessons": "No lessons in the last 60 days that can be analysed.",
+  "laAnalysed": "analysed",
+  "laPoints": "Points",
+  "laNotes": "Notes",
+  "laChooseTeacher": "Choose the teacher",
+  "laChooseLesson": "Choose the lesson",
+  "laPointsWhole": "Points must be a whole number",
+  "laSaved": "Saved",
+  "laSaveFailed": "Couldn't save the analysis",
+  "myDepartment": "My Department",
+  "deptNone": "You don't lead a department.",
+  "deptHead": "Head",
+  "deptDeputy": "Deputy",
+  "deptCounts": "{subjects} subjects · {members} members",
+  "@deptCounts": {
+    "placeholders": {
+      "subjects": {
+        "type": "int"
+      },
+      "members": {
+        "type": "int"
+      }
+    }
+  },
+  "deptLessons": "Lessons",
+  "deptAttendanceTaken": "Attendance taken",
+  "deptGradesEntered": "Grades entered",
+  "deptGrades": "Grades",
+  "deptAvgGrade": "Avg grade",
+  "deptAttendance": "Attendance",
+  "deptExamAvg": "Exam avg",
+  "deptKpi": "KPI",
+  "deptTeachers": "Teachers",
+  "deptSubjects": "Subjects",
+  "deptClasses": "Classes",
+  "deptAllClasses": "All classes",
+  "cashier": "Cashier",
+  "cashReview": "Behaviour marks with no reason",
+  "cashSync": "Sync grades",
+  "cashSyncFailed": "Sync failed",
+  "cashSyncedThrough": "Synced through {date}",
+  "@cashSyncedThrough": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "cashClasses": "Classes",
+  "cashRanking": "School ranking",
+  "cashSearch": "Student name",
+  "cashAmount": "Amount",
+  "cashNote": "Note",
+  "cashSpend": "Spend",
+  "cashAdd": "Add",
+  "cashResetQ": "Set this balance to $0?",
+  "cashResetZero": "Reset to $0",
+  "cashHistory": "History",
+  "cashNoHistory": "No history yet",
+  "attendanceCheck": "Attendance",
+  "attNotMarked": "Not marked",
+  "attOnNow": "On now",
+  "attMarked": "Marked",
+  "attLater": "Later",
+  "attNoStudents": "No students",
+  "attOnlyMissing": "Only classes with unmarked lessons",
+  "attNoLessons": "No lessons on this day",
+  "attAbsent": "Absent",
+  "attLate": "Late",
+  "substitutions": "Substitution",
+  "subNewAbsence": "New absence",
+  "subNone": "No substitutions in these two weeks",
+  "subNoLessonsYet": "No lessons arranged yet — tap the absence to cover its lessons.",
+  "subLessonsCount": "{count} lessons",
+  "@subLessonsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subRemove": "Remove",
+  "subRemoveQ": "Remove substitution?",
+  "subRemoveBody": "{lesson} at {time} goes back to its original teacher. Nobody is notified.",
+  "@subRemoveBody": {
+    "placeholders": {
+      "lesson": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "subRemoved": "Substitution removed",
+  "subCover": "Cover",
+  "subMerge": "Merge",
+  "subCancel": "Cancel",
+  "subNext": "Next",
+  "subReasonSick": "Sick",
+  "subReasonPersonal": "Personal",
+  "subReasonTrip": "Business trip",
+  "subReasonTraining": "Training",
+  "subCoverFor": "Cover for {name}",
+  "@subCoverFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "subNoAffected": "This absence has no lessons.",
+  "subArranged": "Already arranged",
+  "subPickEach": "Pick a substitute or a lesson for each one",
+  "subSaved": "Covers saved",
+  "subBusy": "busy",
+  "subAbsent": "absent",
+  "subUnavailable": "unavailable",
+  "subSubject": "subject",
+  "subKnowsClass": "knows class",
+  "subCoversMonth": "{count} covers/mo",
+  "@subCoversMonth": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subSubstitute": "Substitute",
+  "subMergeWith": "Merge with",
+  "subAssignAnyway": "Assign anyway",
+  "staffPoints": "Staff Points",
+  "spAward": "Award points",
+  "spAwardShort": "Award",
+  "spDeduct": "Deduct",
+  "spThisWeek": "This week",
+  "spThisYear": "This year",
+  "spChooseRecipients": "Choose who",
+  "spAllTeachers": "All teachers",
+  "spNoCategory": "No category",
+  "spNoteRequired": "Write a note",
+  "spSaved": "Saved for {count}",
+  "@spSaved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spSomeFailed": "{count} couldn't be saved",
+  "@spSomeFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fundings": "Fundings",
+  "fundNew": "New funding",
+  "fundNone": "No savings yet",
+  "fundDeposits": "Deposits",
+  "fundWithdrawals": "Withdrawals",
+  "fundBalance": "Balance",
+  "fundDeposit": "Deposit",
+  "fundWithdrawal": "Withdrawal",
+  "fundPerson": "Person",
+  "fundAmountPositive": "Enter an amount above zero",
+  "lunchDuty": "Lunch duty",
+  "tagLab": "Lab lesson",
+  "tagAfter": "After-school lesson",
+  "updTitle": "Updates",
+  "updNothingNew": "Nothing new this week",
+  "updJustNow": "just now",
+  "updMinutesAgo": "{count} min ago",
+  "@updMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updHoursAgo": "{count} h ago",
+  "@updHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updYesterday": "yesterday",
+  "updDaysAgo": "{count} days ago",
+  "@updDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updPoints": "{points} points",
+  "@updPoints": {
+    "placeholders": {
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "updTakenFrom": "Taken from {name}",
+  "@updTakenFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "updAddedTo": "Added to {name}",
+  "@updAddedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "updUpcomingEvent": "Coming up",
+  "updTomorrow": "tomorrow",
+  "dombitTooltip": "Dombit $ PDF for last week",
+  "dombitFailed": "Could not make the PDF"
 }

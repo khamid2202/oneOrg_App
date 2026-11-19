@@ -41,7 +41,7 @@ dependencies:
   http: ^1.2.2
   url_launcher: ^6.2.0
   image_picker: ^1.2.3
-  image: ^4.9.1
+  image: '>=4.10.0 <4.11.0' # 4.11 needs a newer archive than pdf allows
   file_picker: ^11.0.3
   webview_flutter: ^4.14.1
   shared_preferences: ^2.5.5
@@ -49,6 +49,7 @@ dependencies:
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
   flutter_local_notifications: ^22.3.0
+  pdf: ^3.12.0
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +73,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   generate: true
+  assets:
+    # Font (with Cyrillic) and logo for the Dombit $ PDF.
+    - assets/pdf/
 
 flutter_launcher_icons:
   android: "launcher_icon"

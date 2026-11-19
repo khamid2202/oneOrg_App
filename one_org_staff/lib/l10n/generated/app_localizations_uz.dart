@@ -1064,4 +1064,634 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get suggestionsFailed => 'Yuborib bo\'lmadi. Qayta urinib ko\'ring.';
+
+  @override
+  String get edit => 'Tahrirlash';
+
+  @override
+  String get calendar => 'Kalendar';
+
+  @override
+  String get calToday => 'Bugun';
+
+  @override
+  String get calNewEvent => 'Yangi tadbir';
+
+  @override
+  String get calEditEvent => 'Tadbirni tahrirlash';
+
+  @override
+  String get calEvents => 'Tadbirlar';
+
+  @override
+  String get calHolidays => 'Bayramlar';
+
+  @override
+  String get calTerms => 'Choraklar';
+
+  @override
+  String get calExams => 'Imtihonlar';
+
+  @override
+  String get calAllEvents => 'Barcha tadbirlar';
+
+  @override
+  String get calNothingOnDay => 'Bu kunda hech narsa yo\'q';
+
+  @override
+  String get calEvent => 'Tadbir';
+
+  @override
+  String get calHoliday => 'Bayram';
+
+  @override
+  String get calTermStarts => 'Chorak boshlanadi';
+
+  @override
+  String get calTermEnds => 'Chorak tugaydi';
+
+  @override
+  String get calExamPeriod => 'Imtihon davri';
+
+  @override
+  String get calAllDay => 'Kun bo\'yi';
+
+  @override
+  String get calCancelled => 'Bekor qilingan';
+
+  @override
+  String get calDraft => 'Qoralama';
+
+  @override
+  String get calCancelEvent => 'Tadbirni bekor qilish';
+
+  @override
+  String get calCancelEventQ => 'Tadbir bekor qilinsinmi?';
+
+  @override
+  String get calDeleteEventQ => 'Tadbir o\'chirilsinmi?';
+
+  @override
+  String get calEventCancelled => 'Tadbir bekor qilindi';
+
+  @override
+  String get calEventDeleted => 'Tadbir o\'chirildi';
+
+  @override
+  String get calChangeFailed => 'O\'zgarishni saqlab bo\'lmadi';
+
+  @override
+  String get calTitle => 'Nomi';
+
+  @override
+  String get calTitleRequired => 'Nomini kiriting';
+
+  @override
+  String get calCategory => 'Turkum';
+
+  @override
+  String get calLocation => 'Joy';
+
+  @override
+  String get calDescription => 'Tavsif';
+
+  @override
+  String get calAudience => 'Kimlar ko\'radi';
+
+  @override
+  String get calAddAudience => 'Qo\'shish';
+
+  @override
+  String get calAllStaff => 'Barcha xodimlar';
+
+  @override
+  String get calAllStudents => 'Barcha o\'quvchilar';
+
+  @override
+  String get calGrade => 'Sinf darajasi';
+
+  @override
+  String get calClass => 'Sinf';
+
+  @override
+  String get calRole => 'Rol';
+
+  @override
+  String get calDepartment => 'Kafedra';
+
+  @override
+  String get calSaveAsDraft => 'Qoralama sifatida saqlash';
+
+  @override
+  String get calNotify => 'Bildirishnoma yuborish';
+
+  @override
+  String get calCatGeneral => 'Umumiy';
+
+  @override
+  String get calCatCeremony => 'Marosim';
+
+  @override
+  String get calCatParentMeeting => 'Ota-onalar yig\'ilishi';
+
+  @override
+  String get calCatTrip => 'Sayohat';
+
+  @override
+  String get calCatSports => 'Sport';
+
+  @override
+  String get calCatCompetition => 'Musobaqa';
+
+  @override
+  String get calCatDeadline => 'Muddat';
+
+  @override
+  String get calCatStaff => 'Xodimlar';
+
+  @override
+  String get calCatOther => 'Boshqa';
+
+  @override
+  String get myLessonAnalysis => 'Dars tahlili natijalari';
+
+  @override
+  String get myAnalysisShort => 'Tahlilim';
+
+  @override
+  String get lessonAnalysis => 'Dars tahlili';
+
+  @override
+  String get laNoneYet =>
+      'Hozircha tahlil yo\'q. Darsingiz tahlil qilinganda natijalar shu yerda chiqadi.';
+
+  @override
+  String get laTotalPoints => 'Jami ballar';
+
+  @override
+  String get laThisMonth => 'Shu oy';
+
+  @override
+  String get laLastMonth => 'O\'tgan oy';
+
+  @override
+  String get laAllTime => 'Butun vaqt';
+
+  @override
+  String get laAnalyses => 'Tahlillar';
+
+  @override
+  String get laLatest => 'Oxirgisi';
+
+  @override
+  String laNotesCount(int count) {
+    return '$count ta izoh';
+  }
+
+  @override
+  String get laNoNotes => 'Izoh yo\'q';
+
+  @override
+  String get laMyDepartment => 'Kafedram';
+
+  @override
+  String laAnalysedOf(int analysed, int total) {
+    return '$total o\'qituvchidan $analysed tasi tahlil qilingan';
+  }
+
+  @override
+  String laAnalysesCount(int count) {
+    return '$count ta tahlil';
+  }
+
+  @override
+  String get laNotAnalysed => 'Hali tahlil qilinmagan';
+
+  @override
+  String get laSortLast => 'Oxirgi tahlil';
+
+  @override
+  String get laSortMost => 'Eng ko\'p ball';
+
+  @override
+  String get laSortLeast => 'Eng kam ball';
+
+  @override
+  String get laSortName => 'Ism';
+
+  @override
+  String get laNewAnalysis => 'Yangi tahlil';
+
+  @override
+  String get laEditAnalysis => 'Tahlilni tahrirlash';
+
+  @override
+  String get laDeleteQ => 'Tahlil o\'chirilsinmi?';
+
+  @override
+  String get laDeleteBody => 'Uning ballari o\'qituvchidan qaytarib olinadi.';
+
+  @override
+  String get laDeleted => 'Tahlil o\'chirildi';
+
+  @override
+  String get laTeacher => 'O\'qituvchi';
+
+  @override
+  String get laLesson => 'Dars';
+
+  @override
+  String get laNoLessons => 'So\'nggi 60 kunda tahlil qilinadigan dars yo\'q.';
+
+  @override
+  String get laAnalysed => 'tahlil qilingan';
+
+  @override
+  String get laPoints => 'Ballar';
+
+  @override
+  String get laNotes => 'Izohlar';
+
+  @override
+  String get laChooseTeacher => 'O\'qituvchini tanlang';
+
+  @override
+  String get laChooseLesson => 'Darsni tanlang';
+
+  @override
+  String get laPointsWhole => 'Ball butun son bo\'lishi kerak';
+
+  @override
+  String get laSaved => 'Saqlandi';
+
+  @override
+  String get laSaveFailed => 'Tahlilni saqlab bo\'lmadi';
+
+  @override
+  String get myDepartment => 'Kafedram';
+
+  @override
+  String get deptNone => 'Siz kafedra rahbari emassiz.';
+
+  @override
+  String get deptHead => 'Rahbar';
+
+  @override
+  String get deptDeputy => 'O\'rinbosar';
+
+  @override
+  String deptCounts(int subjects, int members) {
+    return '$subjects ta fan · $members ta a\'zo';
+  }
+
+  @override
+  String get deptLessons => 'Darslar';
+
+  @override
+  String get deptAttendanceTaken => 'Davomat olingan';
+
+  @override
+  String get deptGradesEntered => 'Baholar kiritilgan';
+
+  @override
+  String get deptGrades => 'Baholar';
+
+  @override
+  String get deptAvgGrade => 'O\'rtacha baho';
+
+  @override
+  String get deptAttendance => 'Davomat';
+
+  @override
+  String get deptExamAvg => 'Imtihon o\'rtachasi';
+
+  @override
+  String get deptKpi => 'KPI';
+
+  @override
+  String get deptTeachers => 'O\'qituvchilar';
+
+  @override
+  String get deptSubjects => 'Fanlar';
+
+  @override
+  String get deptClasses => 'Sinflar';
+
+  @override
+  String get deptAllClasses => 'Barcha sinflar';
+
+  @override
+  String get cashier => 'Kassa';
+
+  @override
+  String get cashReview => 'Sababsiz xulq belgilari';
+
+  @override
+  String get cashSync => 'Baholarni sinxronlash';
+
+  @override
+  String get cashSyncFailed => 'Sinxronlab bo\'lmadi';
+
+  @override
+  String cashSyncedThrough(String date) {
+    return '$date gacha sinxronlangan';
+  }
+
+  @override
+  String get cashClasses => 'Sinflar';
+
+  @override
+  String get cashRanking => 'Maktab reytingi';
+
+  @override
+  String get cashSearch => 'O\'quvchi ismi';
+
+  @override
+  String get cashAmount => 'Miqdor';
+
+  @override
+  String get cashNote => 'Izoh';
+
+  @override
+  String get cashSpend => 'Sarflash';
+
+  @override
+  String get cashAdd => 'Qo\'shish';
+
+  @override
+  String get cashResetQ => 'Balans \$0 ga tushirilsinmi?';
+
+  @override
+  String get cashResetZero => '\$0 ga tushirish';
+
+  @override
+  String get cashHistory => 'Tarix';
+
+  @override
+  String get cashNoHistory => 'Hali tarix yo\'q';
+
+  @override
+  String get attendanceCheck => 'Davomat';
+
+  @override
+  String get attNotMarked => 'Belgilanmagan';
+
+  @override
+  String get attOnNow => 'Hozir';
+
+  @override
+  String get attMarked => 'Belgilangan';
+
+  @override
+  String get attLater => 'Keyinroq';
+
+  @override
+  String get attNoStudents => 'O\'quvchi yo\'q';
+
+  @override
+  String get attOnlyMissing => 'Faqat belgilanmagan darsli sinflar';
+
+  @override
+  String get attNoLessons => 'Bu kunda dars yo\'q';
+
+  @override
+  String get attAbsent => 'Kelmagan';
+
+  @override
+  String get attLate => 'Kechikkan';
+
+  @override
+  String get substitutions => 'Almashtirish';
+
+  @override
+  String get subNewAbsence => 'Yangi yo\'qlik';
+
+  @override
+  String get subNone => 'Bu ikki haftada almashtirish yo\'q';
+
+  @override
+  String get subNoLessonsYet =>
+      'Hali dars belgilanmagan — darslarni almashtirish uchun yo\'qlikni bosing.';
+
+  @override
+  String subLessonsCount(int count) {
+    return '$count ta dars';
+  }
+
+  @override
+  String get subRemove => 'Olib tashlash';
+
+  @override
+  String get subRemoveQ => 'Almashtirish olib tashlansinmi?';
+
+  @override
+  String subRemoveBody(String lesson, String time) {
+    return '$time dagi $lesson asl o\'qituvchisiga qaytadi. Hech kimga xabar berilmaydi.';
+  }
+
+  @override
+  String get subRemoved => 'Almashtirish olib tashlandi';
+
+  @override
+  String get subCover => 'Almashtirish';
+
+  @override
+  String get subMerge => 'Birlashtirish';
+
+  @override
+  String get subCancel => 'Bekor qilish';
+
+  @override
+  String get subNext => 'Keyingi';
+
+  @override
+  String get subReasonSick => 'Kasal';
+
+  @override
+  String get subReasonPersonal => 'Shaxsiy';
+
+  @override
+  String get subReasonTrip => 'Xizmat safari';
+
+  @override
+  String get subReasonTraining => 'O\'quv';
+
+  @override
+  String subCoverFor(String name) {
+    return '$name o\'rniga';
+  }
+
+  @override
+  String get subNoAffected => 'Bu yo\'qlikda dars yo\'q.';
+
+  @override
+  String get subArranged => 'Allaqachon belgilangan';
+
+  @override
+  String get subPickEach => 'Har biriga o\'rinbosar yoki dars tanlang';
+
+  @override
+  String get subSaved => 'Almashtirishlar saqlandi';
+
+  @override
+  String get subBusy => 'band';
+
+  @override
+  String get subAbsent => 'yo\'q';
+
+  @override
+  String get subUnavailable => 'mavjud emas';
+
+  @override
+  String get subSubject => 'fan';
+
+  @override
+  String get subKnowsClass => 'sinfni biladi';
+
+  @override
+  String subCoversMonth(int count) {
+    return 'oyiga $count ta';
+  }
+
+  @override
+  String get subSubstitute => 'O\'rinbosar';
+
+  @override
+  String get subMergeWith => 'Qaysi dars bilan';
+
+  @override
+  String get subAssignAnyway => 'Baribir tayinlash';
+
+  @override
+  String get staffPoints => 'Xodim ballari';
+
+  @override
+  String get spAward => 'Ball berish';
+
+  @override
+  String get spAwardShort => 'Berish';
+
+  @override
+  String get spDeduct => 'Ayirish';
+
+  @override
+  String get spThisWeek => 'Shu hafta';
+
+  @override
+  String get spThisYear => 'Shu yil';
+
+  @override
+  String get spChooseRecipients => 'Kimga ekanini tanlang';
+
+  @override
+  String get spAllTeachers => 'Barcha o\'qituvchilar';
+
+  @override
+  String get spNoCategory => 'Turkumsiz';
+
+  @override
+  String get spNoteRequired => 'Izoh yozing';
+
+  @override
+  String spSaved(int count) {
+    return '$count kishiga saqlandi';
+  }
+
+  @override
+  String spSomeFailed(int count) {
+    return '$count tasini saqlab bo\'lmadi';
+  }
+
+  @override
+  String get fundings => 'Jamg\'armalar';
+
+  @override
+  String get fundNew => 'Yangi yozuv';
+
+  @override
+  String get fundNone => 'Hali jamg\'arma yo\'q';
+
+  @override
+  String get fundDeposits => 'Kirimlar';
+
+  @override
+  String get fundWithdrawals => 'Chiqimlar';
+
+  @override
+  String get fundBalance => 'Balans';
+
+  @override
+  String get fundDeposit => 'Kirim';
+
+  @override
+  String get fundWithdrawal => 'Chiqim';
+
+  @override
+  String get fundPerson => 'Xodim';
+
+  @override
+  String get fundAmountPositive => 'Noldan katta miqdor kiriting';
+
+  @override
+  String get lunchDuty => 'Tushlik navbatchiligi';
+
+  @override
+  String get tagLab => 'Laboratoriya darsi';
+
+  @override
+  String get tagAfter => 'Darsdan keyingi dars';
+
+  @override
+  String get updTitle => 'Yangiliklar';
+
+  @override
+  String get updNothingNew => 'Bu hafta yangilik yo‘q';
+
+  @override
+  String get updJustNow => 'hozirgina';
+
+  @override
+  String updMinutesAgo(int count) {
+    return '$count daqiqa oldin';
+  }
+
+  @override
+  String updHoursAgo(int count) {
+    return '$count soat oldin';
+  }
+
+  @override
+  String get updYesterday => 'kecha';
+
+  @override
+  String updDaysAgo(int count) {
+    return '$count kun oldin';
+  }
+
+  @override
+  String updPoints(String points) {
+    return '$points ball';
+  }
+
+  @override
+  String updTakenFrom(String name) {
+    return '$name dan olindi';
+  }
+
+  @override
+  String updAddedTo(String name) {
+    return '$name ga qo‘shildi';
+  }
+
+  @override
+  String get updUpcomingEvent => 'Yaqinda';
+
+  @override
+  String get updTomorrow => 'ertaga';
+
+  @override
+  String get dombitTooltip => 'O‘tgan hafta uchun Dombit \$ PDF';
+
+  @override
+  String get dombitFailed => 'PDF tayyorlab bo‘lmadi';
 }

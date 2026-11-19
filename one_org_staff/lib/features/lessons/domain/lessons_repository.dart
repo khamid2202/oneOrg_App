@@ -50,6 +50,8 @@ class TeacherLesson {
     this.isSubstitution = false,
     this.attendanceTaken = false,
     this.gradesEntered = 0,
+    this.tags = const [],
+    this.isLunchDuty = false,
   });
 
   /// The timetable entry id.
@@ -75,6 +77,12 @@ class TeacherLesson {
   final bool attendanceTaken;
   final int gradesEntered;
 
+  /// The timetable entry's tags, e.g. `lab` or `after` ("+ after the lesson").
+  final List<String> tags;
+
+  /// A lunch duty slot: shown on the schedule, nothing to mark or grade.
+  final bool isLunchDuty;
+
   bool get isCancelled => status == 'cancelled';
 
   factory TeacherLesson.fromJson(Map<String, dynamic> json) {
@@ -98,6 +106,13 @@ class TeacherLesson {
       isSubstitution: json['is_substitution'] == true,
       attendanceTaken: json['attendance_taken'] == true,
       gradesEntered: _asInt(json['grades_entered']) ?? 0,
+      tags: json['tags'] is List
+          ? [
+              for (final tag in json['tags'] as List)
+                if (_asString(tag) != null) _asString(tag)!,
+            ]
+          : const [],
+      isLunchDuty: json['is_lunch_duty'] == true,
     );
   }
 }
@@ -184,7 +199,12 @@ class SheetStudent {
     this.importedScore,
     this.makeupScore,
     this.version = gradingVersion,
+    this.pictureUrl,
   }) : scores = scores ?? {};
+
+  /// The student's photo. The sheet doesn't carry it; it comes from the
+  /// class's `/students` list.
+  String? pictureUrl;
 
   /// 1 for rows graded before grading v2 (see lesson_grading.dart).
   final int version;

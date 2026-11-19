@@ -28,6 +28,8 @@ import 'package:one_org_staff/features/grades/presentation/gradebooks_page.dart'
 import 'package:one_org_staff/features/landing/application/next_lesson_day.dart';
 import 'package:one_org_staff/features/landing/domain/app_items.dart';
 import 'package:one_org_staff/features/landing/presentation/teacher_home.dart';
+import 'package:one_org_staff/features/landing/presentation/updates_card.dart';
+import 'package:one_org_staff/features/MyClass/dombit_pdf.dart';
 import 'package:one_org_staff/features/lessons/domain/lessons_repository.dart';
 import 'package:one_org_staff/features/lessons/presentation/lessons_page.dart';
 import 'package:one_org_staff/features/lessons/presentation/uploads_sheet.dart';
@@ -44,6 +46,16 @@ import 'package:one_org_staff/features/notifications/presentation/notification_p
 import 'package:one_org_staff/features/notifications/presentation/notifications_page.dart';
 import 'package:one_org_staff/features/point_report/presentation/point_report_page.dart';
 import 'package:one_org_staff/features/rewards/presentation/rewards_page.dart';
+import 'package:one_org_staff/features/attendance_check/attendance_check_page.dart';
+import 'package:one_org_staff/features/calendar/calendar_page.dart';
+import 'package:one_org_staff/features/cashier/cashier_page.dart';
+import 'package:one_org_staff/features/departments/my_department_page.dart';
+import 'package:one_org_staff/features/fundings/fundings_page.dart';
+import 'package:one_org_staff/features/lesson_analysis/lesson_analysis.dart';
+import 'package:one_org_staff/features/staff_points/staff_points_page.dart';
+import 'package:one_org_staff/features/substitutions/substitutions_page.dart';
+import 'package:one_org_staff/shared/staff_context.dart';
+import 'package:one_org_staff/shared/sub_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({
@@ -102,6 +114,10 @@ class _LandingPageState extends State<LandingPage> {
   String? _homeroom;
   List<RecentGrade>? _recentGrades;
 
+  /// Time left in the lesson that is on now, for the Schedule tab.
+  String? _countdown;
+  Timer? _countdownTimer;
+
   /// Null until `/users/me` answers, and if it can't.
   AppUserProfile? _profile;
 
@@ -114,6 +130,11 @@ class _LandingPageState extends State<LandingPage> {
     if (lessons != null) {
       _today = NextLessonDayLoader(getDay: lessons.getDay)..refreshIfStale();
     }
+    // Every second during a lesson the label moves; otherwise nothing changes.
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final next = lessonCountdown(_today?.result, DateTime.now());
+      if (next != _countdown && mounted) setState(() => _countdown = next);
+    });
     _branchId = widget.branchController?.activeBranchId;
     widget.branchController?.addListener(_branchChanged);
     unawaited(_loadProfile());
@@ -144,6 +165,7 @@ class _LandingPageState extends State<LandingPage> {
   void dispose() {
     widget.branchController?.removeListener(_branchChanged);
     _today?.dispose();
+    _countdownTimer?.cancel();
     widget.pushService?.onNotificationOpened = null;
     widget.notificationsController?.stop();
     super.dispose();
@@ -298,6 +320,16 @@ class _LandingPageState extends State<LandingPage> {
           icon: const Icon(Icons.search_rounded),
           tooltip: AppLocalizations.of(context).search,
         ),
+        // The web puts the dark/light switch next to the bell on phones.
+        IconButton(
+          key: const ValueKey('toggle-theme'),
+          onPressed: widget.themeController.toggleThemeMode,
+          icon: Icon(
+            widget.themeController.isDark
+                ? Icons.light_mode_rounded
+                : Icons.dark_mode_rounded,
+          ),
+        ),
         if (notifications != null && widget.pushService != null)
           NotificationBell(
             controller: notifications,
@@ -416,6 +448,9 @@ class _LandingPageState extends State<LandingPage> {
             onMark: _access.allows(AppItem.behavior)
                 ? () => _openTab(_tabOf(AppItem.behavior))
                 : null,
+            shareDombit: widget.controller.api == null
+                ? null
+                : (groupId) => shareDombitPdf(widget.controller.api!, groupId),
           )
         : PointReportPage(
             loadAcademicYears: widget.controller.loadAcademicYears,
@@ -514,7 +549,7 @@ class _LandingPageState extends State<LandingPage> {
           hasNotifications:
               widget.notificationsController != null &&
               widget.pushService != null,
-          onOpenItem: (item) => _openTab(_tabOf(item)),
+          onOpenItem: _openItem,
           onOpenPlace: (place) => switch (place) {
             SearchPlace.home => _openTab(_homeTab),
             SearchPlace.profile => _openTab(_profileTab),
@@ -562,7 +597,64 @@ class _LandingPageState extends State<LandingPage> {
     AppItem.myPlan => _planTab,
     AppItem.myPoints => _pointsTab,
     AppItem.myFundings => _fundingsTab,
+    // Pushed over the shell by [_openItem]; never a tab.
+    AppItem.calendar ||
+    AppItem.myLessonAnalysis ||
+    AppItem.lessonAnalysis ||
+    AppItem.myDepartment ||
+    AppItem.substitutions ||
+    AppItem.attendanceCheck ||
+    AppItem.cashier ||
+    AppItem.staffPoints ||
+    AppItem.fundings => _homeTab,
   };
+
+  /// Shared by the pages that came over from the web without a tab.
+  Widget? _updatesCard() {
+    final api = widget.controller.api;
+    final userId = _profile?.id;
+    if (api == null || userId == null) return null;
+    return UpdatesCard(
+      key: ValueKey('updates-$userId'),
+      api: api,
+      userId: userId,
+      onOpen: _openItem,
+    );
+  }
+
+  StaffContext? get _staffContext {
+    final api = widget.controller.api;
+    if (api == null) return null;
+    return StaffContext(
+      api: api,
+      profile: _profile,
+      loadAcademicYears: widget.controller.loadAcademicYears,
+    );
+  }
+
+  /// Opens [item]: a tab of the shell, or a page with a back arrow.
+  void _openItem(AppItem item) {
+    if (!pushedItems.contains(item)) {
+      _openTab(_tabOf(item));
+      return;
+    }
+    final ctx = _staffContext;
+    if (ctx == null) return;
+    final me = widget.controller.me;
+    final page = switch (item) {
+      AppItem.calendar => CalendarPage(ctx: ctx),
+      AppItem.myLessonAnalysis => MyLessonAnalysisPage(ctx: ctx),
+      AppItem.lessonAnalysis => LessonAnalysisPage(ctx: ctx),
+      AppItem.myDepartment => MyDepartmentPage(ctx: ctx),
+      AppItem.substitutions => SubstitutionsPage(ctx: ctx),
+      AppItem.attendanceCheck => AttendanceCheckPage(ctx: ctx),
+      AppItem.cashier => CashierPage(ctx: ctx),
+      AppItem.staffPoints => StaffPointsPage(ctx: ctx, me: me),
+      AppItem.fundings => FundingsPage(ctx: ctx, me: me),
+      _ => null,
+    };
+    if (page != null) SubPage.push(context, page);
+  }
 
   void _openTab(int tab) => setState(() {
     _lessonsDate = null;
@@ -675,7 +767,8 @@ class _LandingPageState extends State<LandingPage> {
       today: _today,
       homeroom: _homeroom,
       recentGrades: _recentGrades,
-      onOpen: (item) => _openTab(_tabOf(item)),
+      updates: _updatesCard(),
+      onOpen: _openItem,
       onOpenGradebook: (row) => setState(() {
         _gradebookRow = row;
         _selectedIndex = _gradesTab;
@@ -701,7 +794,13 @@ class _LandingPageState extends State<LandingPage> {
         ),
         for (final item in bar)
           BottomMenuItem(
-            label: appLabel(l, item, short: true),
+            // While a lesson is on, the Schedule tab shows the time left.
+            label: item == AppItem.lessons && _countdown != null
+                ? _countdown!
+                : appLabel(l, item, short: true),
+            labelColor: item == AppItem.lessons && _countdown != null
+                ? const Color(0xFFDC2626)
+                : null,
             icon: appIcon(item),
             color: appHue(context, item).strong,
           ),

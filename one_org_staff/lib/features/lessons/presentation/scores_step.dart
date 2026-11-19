@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../shared/photo_viewer.dart';
 import '../application/grading_sheet_controller.dart';
 import '../domain/lesson_grading.dart';
 import '../domain/lessons_repository.dart';
@@ -14,6 +15,17 @@ const _categoryIcons = {
   homeworkScore: Icons.edit_note_rounded,
   activityScore: Icons.back_hand_outlined,
   notesScore: Icons.draw_outlined,
+};
+
+/// One hue per score column, so the eye finds a column by colour (the web's
+/// `CATEGORY_COLORS`). The two homework columns are neighbours on the wheel;
+/// amber still marks a low score and there's no green, which means done.
+const _categoryHues = {
+  materialsScore: Color(0xFF0284C7),
+  homeworkDoneScore: Color(0xFF7C3AED),
+  homeworkScore: Color(0xFFC026D3),
+  activityScore: Color(0xFFE11D48),
+  notesScore: Color(0xFF4F46E5),
 };
 
 const _thumbGreen = Color(0xFF059669);
@@ -71,7 +83,7 @@ class ScoresLegend extends StatelessWidget {
                       Icon(
                         _categoryIcons[field],
                         size: 13,
-                        color: colors.mutedText,
+                        color: _categoryHues[field],
                       ),
                       Flexible(
                         child: Text(
@@ -236,12 +248,56 @@ class _ScoreRow extends StatelessWidget {
                         draft.scores[field] != null &&
                         draft.scores[field]! < startFor(field, draft.version)
                     ? _lowAmber
-                    : colors.mutedText,
+                    : away
+                    ? colors.mutedText
+                    : _categoryHues[field],
               ),
             ),
           ),
       ],
     );
+
+    final subline = <InlineSpan>[
+      if (draft.status == statusLate)
+        TextSpan(
+          text:
+              '+${l.minutesShort(draft.minutesLate ?? 0)}'
+              '${draft.version != 1 && (draft.minutesLate ?? 0) > 0 ? ' (${formatScore(lateDeduction(statusLate, draft.minutesLate)!)})' : ''}',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: statusColors[statusLate],
+          ),
+        ),
+      if (away && draft.status != null)
+        TextSpan(
+          text: statusShort(l, draft.status!),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: statusColors[draft.status],
+          ),
+        ),
+      if (draft.status == null)
+        TextSpan(
+          text: l.notMarked,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFB45309),
+          ),
+        ),
+      if (away && student.makeupScore != null)
+        TextSpan(
+          text: '${formatScore(student.makeupScore!)}*',
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF0369A1),
+          ),
+        ),
+      ..._behaviorCounts(marks),
+    ];
 
     return Container(
       color: needsComment ? _thumbRed.withValues(alpha: 0.07) : null,
@@ -259,61 +315,62 @@ class _ScoreRow extends StatelessWidget {
                 constraints: const BoxConstraints(minHeight: 34),
                 child: Row(
                   children: [
+                    ZoomableAvatar(
+                      url: student.pictureUrl,
+                      name: student.fullName,
+                      child: CircleAvatar(
+                        radius: 14,
+                        backgroundColor: colors.avatarPlaceholder,
+                        backgroundImage: student.pictureUrl == null
+                            ? null
+                            : NetworkImage(student.pictureUrl!),
+                        child: student.pictureUrl == null
+                            ? Text(
+                                _initials(student.fullName),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.softText,
+                                ),
+                              )
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // The name has its own line so a status never pushes it
+                    // out; the status and behaviour counts sit under it.
                     Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(text: student.fullName),
-                            if (draft.status == statusLate)
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            student.fullName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: focused
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: away && !focused ? colors.mutedText : null,
+                            ),
+                          ),
+                          if (subline.isNotEmpty)
+                            Text.rich(
                               TextSpan(
-                                text:
-                                    '  +${l.minutesShort(draft.minutesLate ?? 0)}'
-                                    '${draft.version != 1 && (draft.minutesLate ?? 0) > 0 ? ' (${formatScore(lateDeduction(statusLate, draft.minutesLate)!)})' : ''}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: statusColors[statusLate],
-                                ),
+                                children: [
+                                  for (final (i, span) in subline.indexed) ...[
+                                    if (i > 0) const TextSpan(text: '  '),
+                                    span,
+                                  ],
+                                ],
                               ),
-                            if (away && draft.status != null)
-                              TextSpan(
-                                text: '  ${statusShort(l, draft.status!)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: statusColors[draft.status],
-                                ),
-                              ),
-                            if (draft.status == null)
-                              TextSpan(
-                                text: '  ${l.notMarked}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFFB45309),
-                                ),
-                              ),
-                            if (away && student.makeupScore != null)
-                              TextSpan(
-                                text: '  ${formatScore(student.makeupScore!)}*',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0369A1),
-                                ),
-                              ),
-                            ..._behaviorCounts(marks),
-                          ],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: focused ? 15 : 14,
-                          fontWeight: focused
-                              ? FontWeight.w500
-                              : FontWeight.w400,
-                          color: away && !focused ? colors.mutedText : null,
-                        ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                        ],
                       ),
                     ),
                     if (focused) ...[
@@ -427,6 +484,7 @@ class _ScoreRow extends StatelessWidget {
                       if (index > 0) const SizedBox(width: 5),
                       Expanded(
                         child: _QuickValue(
+                          hue: _categoryHues[openPicker],
                           value: value,
                           selected: draft.scores[openPicker] == value,
                           onTap: () {
@@ -463,6 +521,13 @@ class _ScoreRow extends StatelessWidget {
     );
   }
 
+  static String _initials(String name) => name
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .take(2)
+      .map((part) => part[0].toUpperCase())
+      .join();
+
   List<InlineSpan> _behaviorCounts(List<BehaviorMark> marks) {
     if (marks.isEmpty) return const [];
     final up = marks.where((m) => m.type == behaviorPositive).length;
@@ -470,7 +535,7 @@ class _ScoreRow extends StatelessWidget {
     WidgetSpan thumb(IconData icon, Color color, int count) => WidgetSpan(
       alignment: PlaceholderAlignment.middle,
       child: Padding(
-        padding: const EdgeInsets.only(left: 5),
+        padding: const EdgeInsets.only(right: 2),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -520,27 +585,22 @@ class _CategoryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = appColorsOf(context);
     final low = !away && value != null && value! < start;
-    final foreground = open
-        ? colors.softText
-        : low
-        ? _lowAmber
-        : null;
+    final hue = _categoryHues[field] ?? colors.accent.solid;
+    final foreground = low ? _lowAmber : hue;
     return Opacity(
       opacity: onTap == null ? 0.6 : 1,
       child: Material(
-        color: open
-            ? colors.softBg
-            : low
+        color: low
             ? _lowAmber.withValues(alpha: 0.1)
-            : Colors.transparent,
+            : hue.withValues(alpha: open ? 0.14 : 0.06),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(
             color: open
-                ? colors.accent.solid
+                ? hue
                 : low
                 ? _lowAmber.withValues(alpha: 0.45)
-                : colors.line,
+                : hue.withValues(alpha: 0.3),
           ),
         ),
         child: InkWell(
@@ -572,11 +632,13 @@ class _CategoryButton extends StatelessWidget {
 
 class _QuickValue extends StatelessWidget {
   const _QuickValue({
+    this.hue,
     required this.value,
     required this.selected,
     required this.onTap,
   });
 
+  final Color? hue;
   final int value;
   final bool selected;
   final VoidCallback onTap;
@@ -584,11 +646,12 @@ class _QuickValue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = appColorsOf(context);
+    final pick = hue ?? colors.accent.solid;
     return Material(
-      color: selected ? colors.accent.solid : Colors.transparent,
+      color: selected ? pick : Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: selected ? colors.accent.solid : colors.line),
+        side: BorderSide(color: selected ? pick : colors.line),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
@@ -601,7 +664,7 @@ class _QuickValue extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: selected ? Colors.white : null,
+                color: selected ? Colors.white : hue,
               ),
             ),
           ),

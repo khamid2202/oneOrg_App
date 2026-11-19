@@ -127,20 +127,23 @@ void main() {
     });
   });
 
-  group('day rows', () {
-    test('every period keeps a line and lessons land in theirs', () {
-      final rows = buildDayRows(const [
+  group('day layout', () {
+    test('every bell period is kept and lessons sit on the time scale', () {
+      final layout = layoutDay(const [
         _p1,
         _p2,
         _p3,
       ], LessonDay(lessons: [lessonAt('08:50', '09:35')]));
-      expect(rows, hasLength(3));
-      expect(rows[0].isEmpty, isTrue);
-      expect(rows[1].items.single.lesson?.classLabel, '7B');
+      expect(layout.periods, hasLength(3));
+      expect(layout.start, 480);
+      expect(layout.end, 625);
+      expect(layout.taught(_p1), isFalse);
+      expect(layout.taught(_p2), isTrue);
+      expect(layout.items.single.item.lesson?.classLabel, '7B');
     });
 
-    test('overlapping choice lessons share one line', () {
-      final rows = buildDayRows(
+    test('overlapping choice lessons share the width side by side', () {
+      final layout = layoutDay(
         const [_p1],
         LessonDay(
           lessons: [
@@ -149,21 +152,22 @@ void main() {
           ],
         ),
       );
-      expect(rows.single.items, hasLength(2));
+      expect(layout.items.map((p) => p.column), [0, 1]);
+      expect(layout.items.map((p) => p.columns), [2, 2]);
     });
 
-    test('a double lesson swallows the empty period it runs through', () {
-      final rows = buildDayRows(const [
-        _p1,
-        _p2,
-        _p3,
-      ], LessonDay(lessons: [lessonAt('08:00', '09:35')]));
-      expect(rows, hasLength(2));
-      expect(rows[0].end, 575);
+    test('lessons that follow each other each take the full width', () {
+      final layout = layoutDay(
+        const [_p1, _p2],
+        LessonDay(
+          lessons: [lessonAt('08:00', '08:45'), lessonAt('08:50', '09:35')],
+        ),
+      );
+      expect(layout.items.map((p) => p.columns), [1, 1]);
     });
 
-    test('something outside the bells gets its own line in time order', () {
-      final rows = buildDayRows(
+    test('something outside the bells stretches the day', () {
+      final layout = layoutDay(
         const [_p1],
         const LessonDay(
           lessons: [],
@@ -176,15 +180,14 @@ void main() {
           ],
         ),
       );
-      expect(rows, hasLength(2));
-      expect(rows.last.period, isNull);
-      expect(rows.last.items.single.meeting?.title, 'Staff');
+      expect(layout.end, 16 * 60);
+      expect(layout.items.single.item.meeting?.title, 'Staff');
     });
 
     test('no bell schedule falls back to the standard day', () {
-      final rows = buildDayRows(const [], const LessonDay(lessons: []));
-      expect(rows, hasLength(10));
-      expect(rows.first.start, 8 * 60);
+      final layout = layoutDay(const [], const LessonDay(lessons: []));
+      expect(layout.periods, hasLength(10));
+      expect(layout.start, 8 * 60);
     });
   });
 
@@ -1029,6 +1032,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('7B'), findsOneWidget);
+      // Today's page scrolls to the current time; bring the lesson back.
+      await tester.ensureVisible(find.text('Math'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Math'));
       await tester.pump();
       expect(find.byType(GradingSheetPage), findsNothing);
@@ -1052,6 +1058,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(repository.dayLoads, 1);
 
+      // Today's page scrolls to the current time; bring the lesson back.
+      await tester.ensureVisible(find.text('Math'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Math'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.arrow_back_rounded));

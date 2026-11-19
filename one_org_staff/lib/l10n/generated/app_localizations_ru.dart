@@ -1073,4 +1073,634 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get suggestionsFailed => 'Не удалось отправить. Попробуйте ещё раз.';
+
+  @override
+  String get edit => 'Изменить';
+
+  @override
+  String get calendar => 'Календарь';
+
+  @override
+  String get calToday => 'Сегодня';
+
+  @override
+  String get calNewEvent => 'Новое событие';
+
+  @override
+  String get calEditEvent => 'Изменить событие';
+
+  @override
+  String get calEvents => 'События';
+
+  @override
+  String get calHolidays => 'Праздники';
+
+  @override
+  String get calTerms => 'Четверти';
+
+  @override
+  String get calExams => 'Экзамены';
+
+  @override
+  String get calAllEvents => 'Все события';
+
+  @override
+  String get calNothingOnDay => 'В этот день ничего нет';
+
+  @override
+  String get calEvent => 'Событие';
+
+  @override
+  String get calHoliday => 'Праздник';
+
+  @override
+  String get calTermStarts => 'Начало четверти';
+
+  @override
+  String get calTermEnds => 'Конец четверти';
+
+  @override
+  String get calExamPeriod => 'Период экзаменов';
+
+  @override
+  String get calAllDay => 'Весь день';
+
+  @override
+  String get calCancelled => 'Отменено';
+
+  @override
+  String get calDraft => 'Черновик';
+
+  @override
+  String get calCancelEvent => 'Отменить событие';
+
+  @override
+  String get calCancelEventQ => 'Отменить событие?';
+
+  @override
+  String get calDeleteEventQ => 'Удалить событие?';
+
+  @override
+  String get calEventCancelled => 'Событие отменено';
+
+  @override
+  String get calEventDeleted => 'Событие удалено';
+
+  @override
+  String get calChangeFailed => 'Не удалось сохранить';
+
+  @override
+  String get calTitle => 'Название';
+
+  @override
+  String get calTitleRequired => 'Введите название';
+
+  @override
+  String get calCategory => 'Категория';
+
+  @override
+  String get calLocation => 'Место';
+
+  @override
+  String get calDescription => 'Описание';
+
+  @override
+  String get calAudience => 'Кто видит';
+
+  @override
+  String get calAddAudience => 'Добавить';
+
+  @override
+  String get calAllStaff => 'Все сотрудники';
+
+  @override
+  String get calAllStudents => 'Все ученики';
+
+  @override
+  String get calGrade => 'Параллель';
+
+  @override
+  String get calClass => 'Класс';
+
+  @override
+  String get calRole => 'Роль';
+
+  @override
+  String get calDepartment => 'Кафедра';
+
+  @override
+  String get calSaveAsDraft => 'Сохранить как черновик';
+
+  @override
+  String get calNotify => 'Отправить уведомление';
+
+  @override
+  String get calCatGeneral => 'Общее';
+
+  @override
+  String get calCatCeremony => 'Церемония';
+
+  @override
+  String get calCatParentMeeting => 'Родительское собрание';
+
+  @override
+  String get calCatTrip => 'Поездка';
+
+  @override
+  String get calCatSports => 'Спорт';
+
+  @override
+  String get calCatCompetition => 'Соревнование';
+
+  @override
+  String get calCatDeadline => 'Дедлайн';
+
+  @override
+  String get calCatStaff => 'Сотрудники';
+
+  @override
+  String get calCatOther => 'Другое';
+
+  @override
+  String get myLessonAnalysis => 'Результаты анализа уроков';
+
+  @override
+  String get myAnalysisShort => 'Мой анализ';
+
+  @override
+  String get lessonAnalysis => 'Анализ уроков';
+
+  @override
+  String get laNoneYet =>
+      'Пока нет анализов. Когда ваш урок проанализируют, результаты появятся здесь.';
+
+  @override
+  String get laTotalPoints => 'Всего баллов';
+
+  @override
+  String get laThisMonth => 'Этот месяц';
+
+  @override
+  String get laLastMonth => 'Прошлый месяц';
+
+  @override
+  String get laAllTime => 'За всё время';
+
+  @override
+  String get laAnalyses => 'Анализы';
+
+  @override
+  String get laLatest => 'Последний';
+
+  @override
+  String laNotesCount(int count) {
+    return 'Заметок: $count';
+  }
+
+  @override
+  String get laNoNotes => 'Без заметок';
+
+  @override
+  String get laMyDepartment => 'Моя кафедра';
+
+  @override
+  String laAnalysedOf(int analysed, int total) {
+    return 'Проанализировано $analysed из $total учителей';
+  }
+
+  @override
+  String laAnalysesCount(int count) {
+    return 'Анализов: $count';
+  }
+
+  @override
+  String get laNotAnalysed => 'Ещё не анализировали';
+
+  @override
+  String get laSortLast => 'Последний анализ';
+
+  @override
+  String get laSortMost => 'Больше баллов';
+
+  @override
+  String get laSortLeast => 'Меньше баллов';
+
+  @override
+  String get laSortName => 'Имя';
+
+  @override
+  String get laNewAnalysis => 'Новый анализ';
+
+  @override
+  String get laEditAnalysis => 'Изменить анализ';
+
+  @override
+  String get laDeleteQ => 'Удалить анализ?';
+
+  @override
+  String get laDeleteBody => 'Баллы будут сняты с учителя.';
+
+  @override
+  String get laDeleted => 'Анализ удалён';
+
+  @override
+  String get laTeacher => 'Учитель';
+
+  @override
+  String get laLesson => 'Урок';
+
+  @override
+  String get laNoLessons => 'За последние 60 дней нет уроков для анализа.';
+
+  @override
+  String get laAnalysed => 'проанализирован';
+
+  @override
+  String get laPoints => 'Баллы';
+
+  @override
+  String get laNotes => 'Заметки';
+
+  @override
+  String get laChooseTeacher => 'Выберите учителя';
+
+  @override
+  String get laChooseLesson => 'Выберите урок';
+
+  @override
+  String get laPointsWhole => 'Баллы должны быть целым числом';
+
+  @override
+  String get laSaved => 'Сохранено';
+
+  @override
+  String get laSaveFailed => 'Не удалось сохранить анализ';
+
+  @override
+  String get myDepartment => 'Моя кафедра';
+
+  @override
+  String get deptNone => 'Вы не руководите кафедрой.';
+
+  @override
+  String get deptHead => 'Руководитель';
+
+  @override
+  String get deptDeputy => 'Заместитель';
+
+  @override
+  String deptCounts(int subjects, int members) {
+    return 'Предметов: $subjects · участников: $members';
+  }
+
+  @override
+  String get deptLessons => 'Уроки';
+
+  @override
+  String get deptAttendanceTaken => 'Посещаемость отмечена';
+
+  @override
+  String get deptGradesEntered => 'Оценки выставлены';
+
+  @override
+  String get deptGrades => 'Оценки';
+
+  @override
+  String get deptAvgGrade => 'Средняя оценка';
+
+  @override
+  String get deptAttendance => 'Посещаемость';
+
+  @override
+  String get deptExamAvg => 'Средний за экзамен';
+
+  @override
+  String get deptKpi => 'KPI';
+
+  @override
+  String get deptTeachers => 'Учителя';
+
+  @override
+  String get deptSubjects => 'Предметы';
+
+  @override
+  String get deptClasses => 'Классы';
+
+  @override
+  String get deptAllClasses => 'Все классы';
+
+  @override
+  String get cashier => 'Касса';
+
+  @override
+  String get cashReview => 'Отметки поведения без причины';
+
+  @override
+  String get cashSync => 'Синхронизировать оценки';
+
+  @override
+  String get cashSyncFailed => 'Синхронизация не удалась';
+
+  @override
+  String cashSyncedThrough(String date) {
+    return 'Синхронизировано по $date';
+  }
+
+  @override
+  String get cashClasses => 'Классы';
+
+  @override
+  String get cashRanking => 'Рейтинг школы';
+
+  @override
+  String get cashSearch => 'Имя ученика';
+
+  @override
+  String get cashAmount => 'Сумма';
+
+  @override
+  String get cashNote => 'Заметка';
+
+  @override
+  String get cashSpend => 'Списать';
+
+  @override
+  String get cashAdd => 'Добавить';
+
+  @override
+  String get cashResetQ => 'Обнулить баланс до \$0?';
+
+  @override
+  String get cashResetZero => 'Обнулить до \$0';
+
+  @override
+  String get cashHistory => 'История';
+
+  @override
+  String get cashNoHistory => 'Истории пока нет';
+
+  @override
+  String get attendanceCheck => 'Посещаемость';
+
+  @override
+  String get attNotMarked => 'Не отмечено';
+
+  @override
+  String get attOnNow => 'Идёт сейчас';
+
+  @override
+  String get attMarked => 'Отмечено';
+
+  @override
+  String get attLater => 'Позже';
+
+  @override
+  String get attNoStudents => 'Нет учеников';
+
+  @override
+  String get attOnlyMissing => 'Только классы с неотмеченными уроками';
+
+  @override
+  String get attNoLessons => 'В этот день нет уроков';
+
+  @override
+  String get attAbsent => 'Отсутствуют';
+
+  @override
+  String get attLate => 'Опоздали';
+
+  @override
+  String get substitutions => 'Замены';
+
+  @override
+  String get subNewAbsence => 'Новое отсутствие';
+
+  @override
+  String get subNone => 'За эти две недели замен нет';
+
+  @override
+  String get subNoLessonsYet =>
+      'Уроки ещё не распределены — нажмите на отсутствие.';
+
+  @override
+  String subLessonsCount(int count) {
+    return 'Уроков: $count';
+  }
+
+  @override
+  String get subRemove => 'Убрать';
+
+  @override
+  String get subRemoveQ => 'Убрать замену?';
+
+  @override
+  String subRemoveBody(String lesson, String time) {
+    return '$lesson в $time вернётся к своему учителю. Никто не будет уведомлён.';
+  }
+
+  @override
+  String get subRemoved => 'Замена убрана';
+
+  @override
+  String get subCover => 'Замена';
+
+  @override
+  String get subMerge => 'Объединить';
+
+  @override
+  String get subCancel => 'Отменить';
+
+  @override
+  String get subNext => 'Далее';
+
+  @override
+  String get subReasonSick => 'Болезнь';
+
+  @override
+  String get subReasonPersonal => 'Личное';
+
+  @override
+  String get subReasonTrip => 'Командировка';
+
+  @override
+  String get subReasonTraining => 'Обучение';
+
+  @override
+  String subCoverFor(String name) {
+    return 'Замена для $name';
+  }
+
+  @override
+  String get subNoAffected => 'У этого отсутствия нет уроков.';
+
+  @override
+  String get subArranged => 'Уже распределены';
+
+  @override
+  String get subPickEach => 'Выберите замену или урок для каждого';
+
+  @override
+  String get subSaved => 'Замены сохранены';
+
+  @override
+  String get subBusy => 'занят';
+
+  @override
+  String get subAbsent => 'отсутствует';
+
+  @override
+  String get subUnavailable => 'недоступен';
+
+  @override
+  String get subSubject => 'предмет';
+
+  @override
+  String get subKnowsClass => 'знает класс';
+
+  @override
+  String subCoversMonth(int count) {
+    return '$count замен/мес';
+  }
+
+  @override
+  String get subSubstitute => 'Замещающий';
+
+  @override
+  String get subMergeWith => 'Объединить с';
+
+  @override
+  String get subAssignAnyway => 'Назначить всё равно';
+
+  @override
+  String get staffPoints => 'Баллы сотрудников';
+
+  @override
+  String get spAward => 'Начислить баллы';
+
+  @override
+  String get spAwardShort => 'Начислить';
+
+  @override
+  String get spDeduct => 'Снять';
+
+  @override
+  String get spThisWeek => 'Эта неделя';
+
+  @override
+  String get spThisYear => 'Этот год';
+
+  @override
+  String get spChooseRecipients => 'Выберите кому';
+
+  @override
+  String get spAllTeachers => 'Все учителя';
+
+  @override
+  String get spNoCategory => 'Без категории';
+
+  @override
+  String get spNoteRequired => 'Напишите заметку';
+
+  @override
+  String spSaved(int count) {
+    return 'Сохранено для $count';
+  }
+
+  @override
+  String spSomeFailed(int count) {
+    return 'Не удалось сохранить: $count';
+  }
+
+  @override
+  String get fundings => 'Накопления';
+
+  @override
+  String get fundNew => 'Новая запись';
+
+  @override
+  String get fundNone => 'Накоплений пока нет';
+
+  @override
+  String get fundDeposits => 'Взносы';
+
+  @override
+  String get fundWithdrawals => 'Снятия';
+
+  @override
+  String get fundBalance => 'Баланс';
+
+  @override
+  String get fundDeposit => 'Взнос';
+
+  @override
+  String get fundWithdrawal => 'Снятие';
+
+  @override
+  String get fundPerson => 'Сотрудник';
+
+  @override
+  String get fundAmountPositive => 'Введите сумму больше нуля';
+
+  @override
+  String get lunchDuty => 'Дежурство на обеде';
+
+  @override
+  String get tagLab => 'Лабораторный урок';
+
+  @override
+  String get tagAfter => 'Урок после занятий';
+
+  @override
+  String get updTitle => 'Обновления';
+
+  @override
+  String get updNothingNew => 'На этой неделе ничего нового';
+
+  @override
+  String get updJustNow => 'только что';
+
+  @override
+  String updMinutesAgo(int count) {
+    return '$count мин назад';
+  }
+
+  @override
+  String updHoursAgo(int count) {
+    return '$count ч назад';
+  }
+
+  @override
+  String get updYesterday => 'вчера';
+
+  @override
+  String updDaysAgo(int count) {
+    return '$count дн назад';
+  }
+
+  @override
+  String updPoints(String points) {
+    return '$points баллов';
+  }
+
+  @override
+  String updTakenFrom(String name) {
+    return 'Снято: $name';
+  }
+
+  @override
+  String updAddedTo(String name) {
+    return 'Зачислено: $name';
+  }
+
+  @override
+  String get updUpcomingEvent => 'Скоро';
+
+  @override
+  String get updTomorrow => 'завтра';
+
+  @override
+  String get dombitTooltip => 'Dombit \$ PDF за прошлую неделю';
+
+  @override
+  String get dombitFailed => 'Не удалось создать PDF';
 }
