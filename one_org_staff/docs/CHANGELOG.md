@@ -14,6 +14,7 @@ Newest first. Every notable change to **this Flutter app** gets an entry here
 
 ## 2026-11-19 — Home and schedule polish from the web
 
+- Released as **1.0.7 (build 9)**, together with the web pages entry below.
 - **Updates card** on Home (`landing/presentation/updates_card.dart`), under today's lessons: points you got, money in or out of your funds (last 14 days), notifications and events in the next week. It rolls every 5 s, pauses after a touch, swipes, and a tap opens the matching page.
 - **Lesson countdown**: while one of today's lessons (or lunch duty) is on, the Schedule tab in the bottom bar shows the time left in red ("12:05"), as on the web. Meetings don't count (`lessonCountdown` in `next_lesson_day.dart`; `BottomMenuItem.labelColor`).
 - **Schedule page on a time scale**, like the web's `DaySchedule`: every bell period drawn at 1.15 px a minute whether or not you teach it, your lessons laid over them (overlapping ones side by side), a red now line with the time that the page scrolls to when today opens, lunch duty in violet and meetings in amber. `layoutDay` replaces `buildDayRows`; slots too short for their text clip instead of overflowing.
