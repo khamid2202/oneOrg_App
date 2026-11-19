@@ -1703,4 +1703,128 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get dombitFailed => 'Не удалось создать PDF';
+
+  @override
+  String get updates => 'Обновления';
+
+  @override
+  String get whatsNewPhotoZoomTitle => 'Нажмите на фото, чтобы увеличить';
+
+  @override
+  String get whatsNewPhotoZoomBody => 'Фото профиля открываются во весь экран';
+
+  @override
+  String get whatsNewGradingTitle => 'Новая ежедневная оценка';
+
+  @override
+  String get whatsNewGradingBody => 'Пять категорий, опоздание снижает балл';
+
+  @override
+  String get myAnalysis => 'Мои анализы';
+
+  @override
+  String get tourReplay => 'Пройти тур';
+
+  @override
+  String get tourSkip => 'Пропустить';
+
+  @override
+  String get tourFinish => 'Готово';
+
+  @override
+  String tourProgress(int current, int total) {
+    return '$current из $total';
+  }
+
+  @override
+  String tourWelcomeTitle(String name) {
+    return 'Добро пожаловать, $name!';
+  }
+
+  @override
+  String get tourWelcomeBody =>
+      'Короткий обзор основных разделов приложения — около минуты. Его можно пропустить и пройти снова в любое время из Профиля.';
+
+  @override
+  String get tourScheduleTitle => 'Ваш день';
+
+  @override
+  String get tourScheduleBody =>
+      'Уроки и встречи на сегодня, текущий урок выделен. Нажмите, чтобы отметить посещаемость и выставить оценки.';
+
+  @override
+  String get tourUpdatesTitle => 'Обновления';
+
+  @override
+  String get tourUpdatesBody =>
+      'Здесь сменяются ваши последние баллы, накопления, объявления и ближайшие события. Листайте вбок.';
+
+  @override
+  String get tourAppsTitle => 'Ваши приложения';
+
+  @override
+  String get tourAppsBody =>
+      'Здесь все доступные вам приложения. Нажмите на плитку, чтобы открыть. Нажмите и удерживайте плитку, чтобы переставить; порядок сохранится.';
+
+  @override
+  String get tourNotificationsTitle => 'Уведомления';
+
+  @override
+  String get tourNotificationsBody =>
+      'Здесь появляются новые сообщения и обновления для вас.';
+
+  @override
+  String get tourNavTitle => 'Быстрая навигация';
+
+  @override
+  String get tourNavBody =>
+      'Основные приложения всегда под рукой внизу экрана.';
+
+  @override
+  String get tourProfileTitle => 'Ваш профиль';
+
+  @override
+  String get tourProfileBody =>
+      'Настройки, язык, тема, предложения и выход. Отсюда можно пройти этот тур снова.';
+
+  @override
+  String get tourDoneTitle => 'Готово!';
+
+  @override
+  String get tourDoneBody =>
+      'Это всё. Всё новое появится в карточке «Обновления» на главной.';
+
+  @override
+  String get whatsNewCalendarTitle => 'Календарь, анализы и другое';
+
+  @override
+  String get whatsNewCalendarBody =>
+      'Новое на главной: Календарь, Мои анализы, Моя кафедра для руководителей и обзорный тур.';
+
+  @override
+  String get passkeySignIn => 'Войти с ключом доступа';
+
+  @override
+  String get passkeyOfferTitle => 'Входите быстрее в следующий раз';
+
+  @override
+  String get passkeyOfferBody =>
+      'Добавьте ключ доступа и в следующий раз входите по Face ID, отпечатку пальца или коду телефона вместо пароля.';
+
+  @override
+  String get passkeyAdd => 'Добавить ключ доступа';
+
+  @override
+  String get passkeyNotNow => 'Не сейчас';
+
+  @override
+  String get passkeyAdded => 'Ключ доступа добавлен';
+
+  @override
+  String get passkeyAddFailed =>
+      'Не удалось добавить ключ доступа. Попробуйте позже.';
+
+  @override
+  String get passkeyUnavailable =>
+      'Ключи доступа пока недоступны на этом телефоне.';
 }

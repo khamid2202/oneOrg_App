@@ -131,14 +131,8 @@ class _GuardiansTabState extends State<GuardiansTab> {
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(
-                'Guardians',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
+            // The page title is in the student screen's top bar.
+            const Spacer(),
             FilledButton.icon(
               onPressed: () => _openForm(),
               icon: const Icon(Icons.add_rounded, size: 18),

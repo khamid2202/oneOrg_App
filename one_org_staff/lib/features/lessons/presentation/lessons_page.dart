@@ -11,6 +11,7 @@ import '../application/lessons_outbox.dart';
 import '../domain/day_rows.dart';
 import '../domain/lessons_repository.dart';
 import 'grading_sheet_page.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 const _emerald = Color(0xFF059669);
 const _amber = Color(0xFFB45309);
@@ -134,8 +135,10 @@ class _LessonsPageState extends State<LessonsPage> {
     if (lesson.isLunchDuty) return;
     final instanceId = lesson.instanceId;
     if (instanceId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).noLessonRecord)),
+      showToast(
+        context,
+        AppLocalizations.of(context).noLessonRecord,
+        kind: ToastKind.warning,
       );
       return;
     }

@@ -97,7 +97,9 @@ class _MyClassPageState extends State<MyClassPage> {
 
   ClassSection _section = ClassSection.students;
   StudentEntry? _selectedStudent;
-  StudentTab _detailTab = StudentTab.profile;
+
+  /// Null opens the student's profile home; a tab opens that page directly.
+  StudentTab? _detailTab;
 
   @override
   void initState() {
@@ -139,7 +141,7 @@ class _MyClassPageState extends State<MyClassPage> {
     });
   }
 
-  void _openStudent(StudentEntry student, StudentTab tab) => setState(() {
+  void _openStudent(StudentEntry student, StudentTab? tab) => setState(() {
     _selectedStudent = student;
     _detailTab = tab;
   });
@@ -541,8 +543,7 @@ class _MyClassPageState extends State<MyClassPage> {
                           ),
                         _StudentRow(
                           student: students[i],
-                          onTap: () =>
-                              _openStudent(students[i], StudentTab.profile),
+                          onTap: () => _openStudent(students[i], null),
                           onContacts: () => _showContacts(students[i]),
                         ),
                       ],

@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../application/notifications_controller.dart';
 import '../application/push_service.dart';
 import '../domain/notifications_repository.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// The signed-in teacher's notification inbox.
 ///
@@ -82,9 +83,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     final granted = await push.requestPermission();
     if (!granted && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notifications stayed off.')),
-      );
+      showToast(context, 'Notifications stayed off.');
     }
   }
 

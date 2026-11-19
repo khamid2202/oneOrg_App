@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/lesson_tags.dart';
 import '../../lessons/domain/lessons_repository.dart';
+import '../application/home_tile_order.dart';
 import '../application/next_lesson_day.dart';
 import '../domain/app_items.dart';
 
@@ -136,6 +138,10 @@ class TeacherHome extends StatelessWidget {
     this.homeroom,
     this.recentGrades,
     this.updates,
+    this.userId,
+    this.tileOrder,
+    this.scheduleKey,
+    this.tilesKey,
   });
 
   final Widget header;
@@ -153,8 +159,18 @@ class TeacherHome extends StatelessWidget {
   /// Null while loading.
   final List<RecentGrade>? recentGrades;
 
-  /// The rolling Updates card, shown under today's lessons.
+  /// The rolling Updates card, beside the class card.
   final Widget? updates;
+
+  /// Whose tile order to use; null keeps the default order.
+  final Object? userId;
+
+  /// Where the tile order is kept. Tests pass their own.
+  final HomeTileOrder? tileOrder;
+
+  /// Where the product tour points for today's schedule and the tiles.
+  final GlobalKey? scheduleKey;
+  final GlobalKey? tilesKey;
 
   @override
   Widget build(BuildContext context) {
@@ -163,6 +179,21 @@ class TeacherHome extends StatelessWidget {
     final showClass = access.allows(AppItem.myClass) && homeroom != null;
     final showGrades = access.allows(AppItem.grades) && loader != null;
     final tiles = access.smallTiles;
+    final cards = <Widget>[
+      if (showClass)
+        _ClassCard(
+          name: homeroom!,
+          label: l.myClass,
+          onTap: () => onOpen(AppItem.myClass),
+        ),
+      ?updates,
+      if (showGrades)
+        _GradesCard(
+          label: l.grades,
+          recent: recentGrades,
+          onOpen: onOpenGradebook,
+        ),
+    ];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -172,55 +203,42 @@ class TeacherHome extends StatelessWidget {
           header,
           const SizedBox(height: 12),
           if (loader != null && access.allows(AppItem.lessons)) ...[
-            _TodayCard(
-              loader: loader,
-              label: l.mySchedule,
-              onOpenDay: onOpenDay,
+            KeyedSubtree(
+              key: scheduleKey,
+              child: _TodayCard(
+                loader: loader,
+                label: l.mySchedule,
+                onOpenDay: onOpenDay,
+              ),
             ),
             const SizedBox(height: 12),
           ],
-          if (updates != null) ...[updates!, const SizedBox(height: 12)],
-          if (showClass || showGrades) ...[
+          // Class, Updates and Grades in rows of two equal halves, so
+          // Updates is the size of the class card; a lone last one spans the
+          // row.
+          for (var i = 0; i < cards.length; i += 2) ...[
             SizedBox(
               height: 136,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (showClass)
-                    Expanded(
-                      child: _ClassCard(
-                        name: homeroom!,
-                        label: l.myClass,
-                        onTap: () => onOpen(AppItem.myClass),
-                      ),
-                    ),
-                  if (showClass && showGrades) const SizedBox(width: 12),
-                  if (showGrades)
-                    Expanded(
-                      child: _GradesCard(
-                        label: l.grades,
-                        recent: recentGrades,
-                        onOpen: onOpenGradebook,
-                      ),
-                    ),
+                  Expanded(child: cards[i]),
+                  if (i + 1 < cards.length) ...[
+                    const SizedBox(width: 12),
+                    Expanded(child: cards[i + 1]),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 12),
           ],
-          GridView.builder(
-            shrinkWrap: true,
-            padding: EdgeInsets.zero,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 100,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-            ),
-            itemCount: tiles.length,
-            itemBuilder: (context, index) => _SmallTile(
-              item: tiles[index],
-              onTap: () => onOpen(tiles[index]),
+          KeyedSubtree(
+            key: tilesKey,
+            child: _TileGrid(
+              tiles: tiles,
+              onOpen: onOpen,
+              userId: userId,
+              order: tileOrder,
             ),
           ),
         ],
@@ -792,10 +810,10 @@ class _GradesCard extends StatelessWidget {
 }
 
 class _SmallTile extends StatelessWidget {
-  const _SmallTile({required this.item, required this.onTap});
+  const _SmallTile({required this.item, this.onTap});
 
   final AppItem item;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -831,6 +849,216 @@ class _SmallTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The small tiles. Holding one (like a phone's home screen) makes them all
+/// wiggle and lifts it into a drag; dropping it over another tile moves it
+/// there. Done ends it, Reset goes back to the default order. The order is
+/// saved per user on this phone (see [HomeTileOrder]).
+class _TileGrid extends StatefulWidget {
+  const _TileGrid({
+    required this.tiles,
+    required this.onOpen,
+    this.userId,
+    this.order,
+  });
+
+  final List<AppItem> tiles;
+  final ValueChanged<AppItem> onOpen;
+  final Object? userId;
+  final HomeTileOrder? order;
+
+  @override
+  State<_TileGrid> createState() => _TileGridState();
+}
+
+class _TileGridState extends State<_TileGrid>
+    with SingleTickerProviderStateMixin {
+  late final HomeTileOrder _order = widget.order ?? HomeTileOrder();
+  late final AnimationController _jiggle = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 140),
+  );
+  List<String>? _saved;
+  List<AppItem>? _draft;
+  bool _editing = false;
+
+  List<AppItem> get _shown => _draft ?? sortTiles(widget.tiles, _saved);
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TileGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId) _load();
+  }
+
+  @override
+  void dispose() {
+    _jiggle.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final user = widget.userId;
+    if (user == null) return;
+    List<String>? saved;
+    try {
+      saved = await _order.load(user);
+    } catch (_) {
+      return; // No storage (some tests): keep the default order.
+    }
+    if (!mounted || user != widget.userId) return;
+    setState(() => _saved = saved);
+  }
+
+  Future<void> _save(List<AppItem>? order) async {
+    final user = widget.userId;
+    if (user == null) return;
+    try {
+      await _order.save(user, order);
+    } catch (_) {
+      // Not saved: the order still holds until the app restarts.
+    }
+  }
+
+  void _startEditing() {
+    if (_editing) return;
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _editing = true;
+      _draft = List.of(_shown);
+    });
+    _jiggle.repeat(reverse: true);
+  }
+
+  void _finish() {
+    _jiggle
+      ..stop()
+      ..value = 0.5;
+    setState(() {
+      _editing = false;
+      if (_draft != null) _saved = [for (final i in _draft!) i.name];
+      _draft = null;
+    });
+  }
+
+  void _reset() {
+    unawaited(_save(null));
+    setState(() {
+      _saved = null;
+      _draft = List.of(widget.tiles);
+    });
+  }
+
+  void _move(AppItem dragged, AppItem over) {
+    final list = _draft;
+    if (list == null || dragged == over) return;
+    final from = list.indexOf(dragged);
+    final to = list.indexOf(over);
+    if (from < 0 || to < 0) return;
+    setState(() {
+      list
+        ..removeAt(from)
+        ..insert(to, dragged);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final tiles = _shown;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 100,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+          ),
+          itemCount: tiles.length,
+          itemBuilder: (context, index) {
+            final item = tiles[index];
+            return LayoutBuilder(
+              builder: (context, box) {
+                final tile = _SmallTile(
+                  item: item,
+                  // While rearranging a tap opens nothing.
+                  onTap: _editing ? null : () => widget.onOpen(item),
+                );
+                // Neighbours wiggle in opposite directions, like a phone's.
+                final turns = Tween<double>(
+                  begin: index.isEven ? -0.006 : 0.006,
+                  end: index.isEven ? 0.006 : -0.006,
+                ).animate(_jiggle);
+                return DragTarget<AppItem>(
+                  onWillAcceptWithDetails: (details) {
+                    _move(details.data, item);
+                    return true;
+                  },
+                  onAcceptWithDetails: (_) =>
+                      unawaited(_save(List.of(_draft ?? tiles))),
+                  builder: (context, _, _) => LongPressDraggable<AppItem>(
+                    key: ValueKey('tile-${item.name}'),
+                    data: item,
+                    // Held to start; once rearranging, a short press drags.
+                    delay: Duration(milliseconds: _editing ? 120 : 400),
+                    onDragStarted: _startEditing,
+                    onDraggableCanceled: (_, _) =>
+                        unawaited(_save(List.of(_draft ?? tiles))),
+                    feedback: SizedBox(
+                      width: box.maxWidth,
+                      height: box.maxHeight,
+                      child: Transform.scale(
+                        scale: 1.08,
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: _SmallTile(item: item),
+                        ),
+                      ),
+                    ),
+                    childWhenDragging: Opacity(opacity: 0, child: tile),
+                    child: _editing
+                        ? RotationTransition(turns: turns, child: tile)
+                        : tile,
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        // Below the tiles, so they don't jump while one is held.
+        if (_editing)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  key: const ValueKey('tiles-reset'),
+                  onPressed: _reset,
+                  child: Text(l.reset),
+                ),
+                const SizedBox(width: 4),
+                FilledButton(
+                  key: const ValueKey('tiles-done'),
+                  onPressed: _finish,
+                  child: Text(l.done),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

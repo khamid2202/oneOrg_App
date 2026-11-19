@@ -241,6 +241,102 @@ class HttpMyRepository implements MyRepository {
     return rows.map(Funding.fromJson).toList();
   }
 
+  static const _recentLimit = '10';
+
+  @override
+  Future<List<PointRecord>> getRecentPoints(
+    int userId, {
+    required String from,
+  }) async {
+    final body = await _get('/user-points', {
+      'user_id': '$userId',
+      'date_from': from,
+      'sort_by': 'created_at',
+      'order': 'desc',
+      'limit': _recentLimit,
+    }, 'Unable to load your points.');
+    return _rows(body).map(PointRecord.fromJson).toList();
+  }
+
+  @override
+  Future<List<Funding>> getRecentFundings(
+    int userId, {
+    required String from,
+  }) async {
+    final body = await _get('/fundings', {
+      'user_id': '$userId',
+      'date_from': from,
+      'sort_by': 'created_at',
+      'order': 'desc',
+      'limit': _recentLimit,
+    }, 'Unable to load your savings.');
+    return _rows(body).map(Funding.fromJson).toList();
+  }
+
+  @override
+  Future<List<CalendarEntry>> getCalendar({
+    required String from,
+    required String to,
+  }) async {
+    final body = await _get('/calendar', {
+      'from': from,
+      'to': to,
+      'sources': 'event,holiday,exam_period',
+    }, 'Unable to load your calendar.');
+    return _rows(body).map(CalendarEntry.fromJson).toList();
+  }
+
+  @override
+  Future<List<CalendarEntry>> getFullCalendar({
+    required String from,
+    required String to,
+  }) async {
+    final body = await _get('/calendar', {
+      'from': from,
+      'to': to,
+    }, 'Unable to load the calendar.');
+    return _rows(body).map(CalendarEntry.fromJson).toList();
+  }
+
+  @override
+  Future<List<LessonObservation>> getMyObservations(int userId) async {
+    final rows = await _all('/lesson-observations', {
+      'teacher_id': '$userId',
+    }, 'Unable to load your lesson analyses.');
+    final list = rows.map(LessonObservation.fromJson).toList()
+      ..sort((a, b) {
+        final day = b.date.compareTo(a.date);
+        return day != 0
+            ? day
+            : (b.startTime ?? '').compareTo(a.startTime ?? '');
+      });
+    return list;
+  }
+
+  @override
+  Future<List<MyDepartmentEntry>> getMyDepartments() async {
+    final body = await _get(
+      '/departments/my',
+      const {},
+      'Unable to load your departments.',
+    );
+    return _rows(body).map(MyDepartmentEntry.fromJson).toList();
+  }
+
+  @override
+  Future<DepartmentStats> getDepartmentStats(
+    int departmentId, {
+    int? groupId,
+  }) async {
+    final body = await _get('/departments/$departmentId/statistics', {
+      if (groupId != null) 'group_id': '$groupId',
+    }, 'Unable to load the statistics.');
+    final result = body is Map ? body['result'] : null;
+    return DepartmentStats.fromJson(
+      result is Map ? Map<String, dynamic>.from(result) : const {},
+    );
+  }
+
   @override
   Future<List<FundingCategory>> getFundingCategories() async {
     final body = await _get(

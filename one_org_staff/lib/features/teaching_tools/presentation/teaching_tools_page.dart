@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../app/tab_back.dart';
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../lessons/domain/lessons_repository.dart';
@@ -100,57 +101,64 @@ class _TeachingToolsPageState extends State<TeachingToolsPage> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final tool = _tool;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 6, 16, 2),
-          child: Row(
-            children: [
-              if (tool != null)
-                IconButton(
-                  tooltip: l.back,
-                  onPressed: () => setState(() => _tool = null),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                )
-              else
-                const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  tool == null ? l.teachingTools : _toolLabel(l, tool),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+    return TabBackHandler(
+      onBack: () {
+        if (_tool == null) return false;
+        setState(() => _tool = null);
+        return true;
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 6, 16, 2),
+            child: Row(
+              children: [
+                if (tool != null)
+                  IconButton(
+                    tooltip: l.back,
+                    onPressed: () => setState(() => _tool = null),
+                    icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                  )
+                else
+                  const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    tool == null ? l.teachingTools : _toolLabel(l, tool),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: switch (tool) {
-            null => _hub(context, l),
-            _Tool.timer => ClassTimerTool(
-              clock: widget.clock,
-              bottomInset: widget.bottomInset,
-            ),
-            _ when _failed && _roster == null => RetryBanner(onRetry: _load),
-            _ when _roster == null => const Center(
-              child: CircularProgressIndicator(),
-            ),
-            _Tool.teams => _TeamShuffleTool(
-              roster: _roster!,
-              random: widget.random,
-              bottomInset: widget.bottomInset,
-            ),
-            _Tool.picker => _NamePickerTool(
-              roster: _roster!,
-              random: widget.random,
-              bottomInset: widget.bottomInset,
-            ),
-          },
-        ),
-      ],
+          Expanded(
+            child: switch (tool) {
+              null => _hub(context, l),
+              _Tool.timer => ClassTimerTool(
+                clock: widget.clock,
+                bottomInset: widget.bottomInset,
+              ),
+              _ when _failed && _roster == null => RetryBanner(onRetry: _load),
+              _ when _roster == null => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              _Tool.teams => _TeamShuffleTool(
+                roster: _roster!,
+                random: widget.random,
+                bottomInset: widget.bottomInset,
+              ),
+              _Tool.picker => _NamePickerTool(
+                roster: _roster!,
+                random: widget.random,
+                bottomInset: widget.bottomInset,
+              ),
+            },
+          ),
+        ],
+      ),
     );
   }
 

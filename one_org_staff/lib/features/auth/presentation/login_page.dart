@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 import '../application/auth_controller.dart';
 
@@ -240,6 +241,26 @@ class _LoginPageState extends State<LoginPage> {
                                   : const Text('Sign in'),
                             ),
                           ),
+                          if (widget.controller.passkeys != null) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: isSubmitting
+                                    ? null
+                                    : widget.controller.signInWithPasskey,
+                                icon: const Icon(Icons.fingerprint),
+                                label: Text(
+                                  AppLocalizations.of(context).passkeySignIn,
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

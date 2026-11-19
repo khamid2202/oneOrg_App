@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:one_org_staff/app/language_controller.dart';
+import 'package:one_org_staff/app/tab_back.dart';
 import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/app/theme_controller.dart';
 
@@ -10,6 +11,7 @@ import 'package:one_org_staff/features/branches/presentation/branch_switcher.dar
 
 import 'package:one_org_staff/l10n/generated/app_localizations.dart';
 import 'package:one_org_staff/shared/editable_avatar.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// What Profile shows: the list itself, or one of the screens it opens.
 enum ProfileView { list, password, system, suggestions }
@@ -34,6 +36,7 @@ class ProfilePage extends StatefulWidget {
     this.sendSuggestion,
     this.branchController,
     this.onLogout,
+    this.onStartTour,
   });
 
   final ThemeController themeController;
@@ -69,6 +72,9 @@ class ProfilePage extends StatefulWidget {
   /// Shown on the card when the person works at more than one branch.
   final BranchController? branchController;
   final VoidCallback? onLogout;
+
+  /// Shows the product tour again, from the start.
+  final VoidCallback? onStartTour;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -139,11 +145,8 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
+  void _toast(String message, [ToastKind kind = ToastKind.error]) =>
+      showToast(context, message, kind: kind);
 
   void _open(ProfileView view) => setState(() => _view = view);
 
@@ -159,22 +162,28 @@ class _ProfilePageState extends State<ProfilePage> {
     if (currentPassword.isEmpty ||
         newPassword.isEmpty ||
         confirmPassword.isEmpty) {
-      _showSnackBar('Fill in all password fields before updating.');
+      _toast('Fill in all password fields before updating.', ToastKind.warning);
       return;
     }
 
     if (newPassword.length < 6) {
-      _showSnackBar('New password must be at least 6 characters long.');
+      _toast(
+        'New password must be at least 6 characters long.',
+        ToastKind.warning,
+      );
       return;
     }
 
     if (newPassword == currentPassword) {
-      _showSnackBar('New password must be different from current password.');
+      _toast(
+        'New password must be different from current password.',
+        ToastKind.warning,
+      );
       return;
     }
 
     if (newPassword != confirmPassword) {
-      _showSnackBar('New password and confirmation do not match.');
+      _toast('New password and confirmation do not match.', ToastKind.warning);
       return;
     }
 
@@ -196,17 +205,17 @@ class _ProfilePageState extends State<ProfilePage> {
       _newPasswordController.clear();
       _confirmPasswordController.clear();
       FocusScope.of(context).unfocus();
-      _showSnackBar(message);
+      _toast(message, ToastKind.success);
     } on AuthFailure catch (error) {
       if (!mounted) {
         return;
       }
-      _showSnackBar(error.message);
+      _toast(error.message);
     } catch (_) {
       if (!mounted) {
         return;
       }
-      _showSnackBar('Unable to update the password right now.');
+      _toast('Unable to update the password right now.');
     } finally {
       if (mounted) {
         setState(() {
@@ -236,17 +245,21 @@ class _ProfilePageState extends State<ProfilePage> {
     );
     if (saved != null && mounted) {
       setState(() => _contact = saved);
-      _showSnackBar(AppLocalizations.of(context).profileContactSaved);
+      _toast(
+        AppLocalizations.of(context).profileContactSaved,
+        ToastKind.success,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    return TabBackHandler(
       // The system back gesture leaves a sub-screen before it leaves Profile.
-      canPop: _view == ProfileView.list,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _open(ProfileView.list);
+      onBack: () {
+        if (_view == ProfileView.list) return false;
+        _open(ProfileView.list);
+        return true;
       },
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
@@ -320,7 +333,7 @@ class _ProfilePageState extends State<ProfilePage> {
           uploadProfilePicture: widget.uploadProfilePicture,
           removeProfilePicture: widget.removeProfilePicture,
           onAvatarChanged: (url) => _applyAvatar(profile, url),
-          onError: _showSnackBar,
+          onError: _toast,
         ),
         _Group(
           label: l.profileAccount,
@@ -375,6 +388,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 title: l.profileSuggestions,
                 trailing: chevron,
                 onTap: () => _open(ProfileView.suggestions),
+              ),
+            if (widget.onStartTour != null)
+              _Item(
+                key: const ValueKey('profile-tour'),
+                icon: Icons.tour_outlined,
+                title: l.tourReplay,
+                trailing: chevron,
+                onTap: widget.onStartTour,
               ),
           ],
         ),
@@ -788,6 +809,7 @@ class _Group extends StatelessWidget {
 /// One row: leading icon, title with optional subtitle, trailing icon.
 class _Item extends StatelessWidget {
   const _Item({
+    super.key,
     required this.icon,
     required this.title,
     this.subtitle,
@@ -1048,7 +1070,6 @@ class _SuggestionsFormState extends State<_SuggestionsForm> {
   Future<void> _submit() async {
     if (!_canSend) return;
     final l = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
     setState(() => _sending = true);
     try {
       await widget.send!(message: _message.text.trim(), anonymous: _anonymous);
@@ -1056,19 +1077,14 @@ class _SuggestionsFormState extends State<_SuggestionsForm> {
       if (!mounted) return;
       FocusScope.of(context).unfocus();
       setState(() => _sent = true);
-      messenger
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(l.suggestionsSent)));
+      showToast(context, l.suggestionsSent, kind: ToastKind.success);
     } catch (error) {
-      messenger
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              error is AuthFailure ? error.message : l.suggestionsFailed,
-            ),
-          ),
-        );
+      if (!mounted) return;
+      showToast(
+        context,
+        error is AuthFailure ? error.message : l.suggestionsFailed,
+        kind: ToastKind.error,
+      );
     } finally {
       if (mounted) setState(() => _sending = false);
     }

@@ -204,14 +204,8 @@ class _DocumentsTabState extends State<DocumentsTab> {
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(
-                'Documents',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
+            // The page title is in the student screen's top bar.
+            const Spacer(),
             FilledButton.icon(
               onPressed: _isUploading ? null : _upload,
               icon: _isUploading

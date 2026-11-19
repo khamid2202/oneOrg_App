@@ -3213,6 +3213,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not make the PDF'**
   String get dombitFailed;
+
+  /// No description provided for @updates.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get updates;
+
+  /// No description provided for @whatsNewPhotoZoomTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a photo to enlarge it'**
+  String get whatsNewPhotoZoomTitle;
+
+  /// No description provided for @whatsNewPhotoZoomBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photos open full-size everywhere'**
+  String get whatsNewPhotoZoomBody;
+
+  /// No description provided for @whatsNewGradingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New daily grading'**
+  String get whatsNewGradingTitle;
+
+  /// No description provided for @whatsNewGradingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Five categories, lateness now deducts points'**
+  String get whatsNewGradingBody;
+
+  /// No description provided for @myAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'My Analysis'**
+  String get myAnalysis;
+
+  /// No description provided for @tourReplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Take the tour'**
+  String get tourReplay;
+
+  /// No description provided for @tourSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get tourSkip;
+
+  /// No description provided for @tourFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get tourFinish;
+
+  /// No description provided for @tourProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String tourProgress(int current, int total);
+
+  /// No description provided for @tourWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome, {name}!'**
+  String tourWelcomeTitle(String name);
+
+  /// No description provided for @tourWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s a one-minute look at the main parts of the app. You can skip it and take it again any time from your Profile.'**
+  String get tourWelcomeBody;
+
+  /// No description provided for @tourScheduleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day at a glance'**
+  String get tourScheduleTitle;
+
+  /// No description provided for @tourScheduleBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s lessons and meetings, with the one in progress highlighted. Tap it to take attendance and grade the lesson.'**
+  String get tourScheduleBody;
+
+  /// No description provided for @tourUpdatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get tourUpdatesTitle;
+
+  /// No description provided for @tourUpdatesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your latest points, savings, announcements and upcoming events roll by here. Swipe sideways to flip through them.'**
+  String get tourUpdatesBody;
+
+  /// No description provided for @tourAppsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your apps'**
+  String get tourAppsTitle;
+
+  /// No description provided for @tourAppsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every app you can use is here. Tap a tile to open it. Press and hold a tile to rearrange them; your order is saved.'**
+  String get tourAppsBody;
+
+  /// No description provided for @tourNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get tourNotificationsTitle;
+
+  /// No description provided for @tourNotificationsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New messages and updates for you land here.'**
+  String get tourNotificationsBody;
+
+  /// No description provided for @tourNavTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick navigation'**
+  String get tourNavTitle;
+
+  /// No description provided for @tourNavBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your main apps are always one tap away at the bottom of the screen.'**
+  String get tourNavBody;
+
+  /// No description provided for @tourProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile'**
+  String get tourProfileTitle;
+
+  /// No description provided for @tourProfileBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings, language, theme, suggestions and signing out. You can take this tour again from here.'**
+  String get tourProfileBody;
+
+  /// No description provided for @tourDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all set!'**
+  String get tourDoneTitle;
+
+  /// No description provided for @tourDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s the tour. Anything new shows up in the Updates card on your Home.'**
+  String get tourDoneBody;
+
+  /// No description provided for @whatsNewCalendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar, analyses and more'**
+  String get whatsNewCalendarTitle;
+
+  /// No description provided for @whatsNewCalendarBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New on Home: Calendar, My Analysis, My Department for heads, and a guided tour.'**
+  String get whatsNewCalendarBody;
+
+  /// No description provided for @passkeySignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with a passkey'**
+  String get passkeySignIn;
+
+  /// No description provided for @passkeyOfferTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in faster next time'**
+  String get passkeyOfferTitle;
+
+  /// No description provided for @passkeyOfferBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a passkey and next time sign in with Face ID, your fingerprint or your phone\'s passcode instead of a password.'**
+  String get passkeyOfferBody;
+
+  /// No description provided for @passkeyAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a passkey'**
+  String get passkeyAdd;
+
+  /// No description provided for @passkeyNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get passkeyNotNow;
+
+  /// No description provided for @passkeyAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Passkey added'**
+  String get passkeyAdded;
+
+  /// No description provided for @passkeyAddFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add the passkey. Try again later.'**
+  String get passkeyAddFailed;
+
+  /// No description provided for @passkeyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Passkeys aren\'t available on this phone yet.'**
+  String get passkeyUnavailable;
 }
 
 class _AppLocalizationsDelegate

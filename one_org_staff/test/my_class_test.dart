@@ -777,7 +777,8 @@ void main() {
 
       await tester.tap(find.text('Edit contacts'));
       await tester.pumpAndSettle();
-      expect(find.text('Student info'), findsOneWidget);
+      // Opens straight on the Guardians page.
+      expect(find.text('Guardians'), findsOneWidget);
       expect(find.text('No guardians recorded yet.'), findsOneWidget);
     });
 
@@ -846,6 +847,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Student info'), findsOneWidget);
+      await tester.tap(find.text('Edit profile'));
+      await tester.pumpAndSettle();
       expect(find.text('Details'), findsOneWidget);
       expect(find.text('15/03/2010'), findsOneWidget);
       expect(find.text('Female'), findsOneWidget);
@@ -882,21 +885,31 @@ void main() {
       expect(find.text('Yusupova Samira'), findsOneWidget);
     });
 
-    testWidgets('Info: the modal has Profile, Guardians and Documents', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_wrapPage(students: [_studentWithDetails]));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Info: the profile home leads to Edit profile, Guardians and Documents',
+      (tester) async {
+        await tester.pumpWidget(_wrapPage(students: [_studentWithDetails]));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Yusupova Samira'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Yusupova Samira'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Profile'), findsOneWidget);
-      expect(find.text('Guardians'), findsOneWidget);
-      expect(find.text('Documents'), findsOneWidget);
-      // Lands on Profile.
-      expect(find.text('Birth Date'), findsOneWidget);
-    });
+        // Lands on the profile home: photo, name, Edit profile and the menu.
+        expect(find.text('Edit profile'), findsOneWidget);
+        expect(find.text('Guardians'), findsOneWidget);
+        expect(find.text('Documents'), findsOneWidget);
+        expect(find.text('Birth Date'), findsNothing);
+
+        // A page opens with a back arrow that returns to the home.
+        await tester.tap(find.text('Edit profile'));
+        await tester.pumpAndSettle();
+        expect(find.text('Birth Date'), findsOneWidget);
+        await tester.tap(find.byTooltip('Back'));
+        await tester.pumpAndSettle();
+        expect(find.text('Birth Date'), findsNothing);
+        expect(find.text('Student info'), findsOneWidget);
+      },
+    );
 
     testWidgets('Guardians: existing guardians are listed', (tester) async {
       await tester.pumpWidget(
@@ -1068,6 +1081,8 @@ void main() {
 
       await tester.tap(find.text('Yusupova Samira'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit profile'));
+      await tester.pumpAndSettle();
 
       // Save is inert until something actually changes.
       await tester.ensureVisible(find.text('Save changes'));
@@ -1103,6 +1118,8 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Yusupova Samira'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit profile'));
       await tester.pumpAndSettle();
 
       final addressField = find.widgetWithText(

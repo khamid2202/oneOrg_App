@@ -11,6 +11,7 @@ import '../domain/lessons_repository.dart';
 import 'attendance_step.dart';
 import 'scores_step.dart';
 import 'uploads_sheet.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 enum _Step { attendance, scores }
 
@@ -54,11 +55,8 @@ class _GradingSheetPageState extends State<GradingSheetPage> {
     super.dispose();
   }
 
-  void _toast(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
+  void _toast(String message, ToastKind kind) =>
+      showToast(context, message, kind: kind);
 
   String _errorText(Object error) => error is AuthFailure
       ? error.message
@@ -67,7 +65,7 @@ class _GradingSheetPageState extends State<GradingSheetPage> {
   void _goToScores() {
     if (!_sheet.readOnly && _sheet.attendanceDirty) {
       _sheet.saveAttendance();
-      _toast(AppLocalizations.of(context).attendanceSaved);
+      _toast(AppLocalizations.of(context).attendanceSaved, ToastKind.success);
     }
     setState(() => _step = _Step.scores);
   }
@@ -75,11 +73,11 @@ class _GradingSheetPageState extends State<GradingSheetPage> {
   void _save() {
     final l = AppLocalizations.of(context);
     if (_sheet.problems.isNotEmpty) {
-      _toast(l.fixHighlightedRows);
+      _toast(l.fixHighlightedRows, ToastKind.warning);
       return;
     }
     _sheet.save();
-    _toast(l.scoresSaved);
+    _toast(l.scoresSaved, ToastKind.success);
   }
 
   Future<void> _confirmLeave() async {

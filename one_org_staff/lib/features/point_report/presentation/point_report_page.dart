@@ -13,6 +13,7 @@ import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 import 'package:one_org_staff/features/point_report/data/point_report_preferences.dart';
 import 'package:one_org_staff/features/point_report/presentation/column_picker.dart';
 import 'package:one_org_staff/features/point_report/presentation/point_report_table.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// Point report — a port of the web app's `features/point-report`.
 ///
@@ -382,7 +383,7 @@ class _PointReportPageState extends State<PointReportPage> {
           _tableKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
       if (boundary == null) {
-        _showMessage('The table is not ready yet.');
+        _showMessage('The table is not ready yet.', ToastKind.warning);
         return;
       }
 
@@ -424,13 +425,11 @@ class _PointReportPageState extends State<PointReportPage> {
     }
   }
 
-  void _showMessage(String message) {
+  void _showMessage(String message, [ToastKind kind = ToastKind.error]) {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showToast(context, message, kind: kind);
   }
 
   /// `point-report-10-a-aug-10-2026-aug-16-2026.png`, mirroring the web's

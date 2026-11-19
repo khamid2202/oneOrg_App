@@ -4,7 +4,6 @@ import 'package:one_org_staff/app/theme.dart';
 
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 import 'package:one_org_staff/shared/editable_avatar.dart';
-import 'package:one_org_staff/shared/underline_tabs.dart';
 
 import 'documents_tab.dart';
 import 'guardians_tab.dart';
@@ -87,7 +86,7 @@ class StudentInfoView extends StatefulWidget {
     required this.guardians,
     required this.documents,
     required this.peopleSync,
-    this.initialTab = StudentTab.profile,
+    this.initialTab,
   });
 
   final StudentEntry student;
@@ -120,8 +119,9 @@ class StudentInfoView extends StatefulWidget {
   /// Keeps guardians and contacts mirrored when either is saved.
   final StudentPeopleSync peopleSync;
 
-  /// Which tab to land on — Contacts on the roster opens straight to Guardians.
-  final StudentTab initialTab;
+  /// Which page to open on. Null lands on the profile home (photo, name,
+  /// rows); Contacts on the roster opens straight to Guardians.
+  final StudentTab? initialTab;
 
   @override
   State<StudentInfoView> createState() => _StudentInfoViewState();
@@ -144,7 +144,8 @@ class _StudentInfoViewState extends State<StudentInfoView> {
   /// Tracked separately from the student so a new photo shows immediately.
   String? _pictureUrl;
 
-  late StudentTab _tab;
+  /// The open page; null is the profile home.
+  StudentTab? _tab;
 
   @override
   void initState() {
@@ -277,73 +278,60 @@ class _StudentInfoViewState extends State<StudentInfoView> {
     FocusScope.of(context).unfocus();
   }
 
+  static const _titles = {
+    StudentTab.profile: 'Edit profile',
+    StudentTab.guardians: 'Guardians',
+    StudentTab.documents: 'Documents',
+  };
+
+  /// Back from a page goes to the profile home, unless the page is where the
+  /// screen was opened (Contacts → Guardians): then it returns to the class.
+  void _back() {
+    final tab = _tab;
+    if (tab == null || tab == widget.initialTab) {
+      widget.onBack();
+    } else {
+      setState(() => _tab = null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = widget.isDarkMode;
+    final colors = appColorsOf(context);
+    final tab = _tab;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Back, centred title, and a spacer the back button's size.
         Row(
           children: [
-            IconButton(
-              onPressed: widget.onBack,
+            IconButton.filledTonal(
+              onPressed: _back,
               icon: const Icon(Icons.chevron_left_rounded),
-              tooltip: 'Back to class',
+              tooltip: tab == null ? 'Back to class' : 'Back',
+              style: IconButton.styleFrom(
+                backgroundColor: colors.softBg,
+                foregroundColor: colors.softText,
+              ),
             ),
-            const SizedBox(width: 4),
             Expanded(
               child: Text(
-                'Student info',
-                style: theme.textTheme.titleLarge?.copyWith(
+                tab == null ? 'Student info' : _titles[tab]!,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ),
+            const SizedBox(width: 48),
           ],
         ),
-        const SizedBox(height: 8),
-        _IdentityCard(
-          student: widget.student,
-          classPair: widget.classPair,
-          isDarkMode: isDarkMode,
-          pictureUrl: _pictureUrl,
-          uploadPersonPicture: widget.uploadPersonPicture,
-          removePersonPicture: widget.removePersonPicture,
-          onPictureChanged: (url) {
-            setState(() => _pictureUrl = url);
-            widget.onPictureChanged(widget.student, url);
-          },
-          onError: (message) => ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message))),
-        ),
-        const SizedBox(height: 16),
-        UnderlineTabs<StudentTab>(
-          selected: _tab,
-          isDarkMode: isDarkMode,
-          onSelected: (tab) => setState(() => _tab = tab),
-          items: const [
-            UnderlineTabItem(
-              value: StudentTab.profile,
-              label: 'Profile',
-              icon: Icons.person_outline_rounded,
-            ),
-            UnderlineTabItem(
-              value: StudentTab.guardians,
-              label: 'Guardians',
-              icon: Icons.groups_outlined,
-            ),
-            UnderlineTabItem(
-              value: StudentTab.documents,
-              label: 'Documents',
-              icon: Icons.description_outlined,
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        switch (_tab) {
+        const SizedBox(height: 12),
+        switch (tab) {
+          null => _buildHome(theme, isDarkMode),
           StudentTab.profile => _buildProfileTab(theme, isDarkMode),
           StudentTab.guardians => GuardiansTab(
             personId: widget.student.personId,
@@ -360,6 +348,90 @@ class _StudentInfoViewState extends State<StudentInfoView> {
             deleteDocument: widget.documents.delete,
           ),
         },
+      ],
+    );
+  }
+
+  /// The profile home: photo, name, code, "Edit profile", then a menu.
+  Widget _buildHome(ThemeData theme, bool isDarkMode) {
+    final colors = appColorsOf(context);
+    final student = widget.student;
+    final subtitle = [
+      if (student.code != null) student.code!,
+      'Class ${widget.classPair}',
+    ].join(' · ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          // A thin accent ring with a gap around the photo.
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: theme.colorScheme.primary, width: 2),
+            ),
+            child: EditableAvatar(
+              fullName: student.fullName,
+              imageUrl: _pictureUrl,
+              // Pictures live on the person record, not the enrollment.
+              ownerId: student.personId,
+              isDarkMode: isDarkMode,
+              radius: 52,
+              uploadPicture: widget.uploadPersonPicture,
+              removePicture: widget.removePersonPicture,
+              onChanged: (url) {
+                setState(() => _pictureUrl = url);
+                widget.onPictureChanged(student, url);
+              },
+              onError: (message) => ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(message))),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          student.fullName,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(color: colors.mutedText),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: FilledButton(
+            onPressed: () => setState(() => _tab = StudentTab.profile),
+            style: FilledButton.styleFrom(
+              shape: const StadiumBorder(),
+              padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
+            ),
+            child: const Text(
+              'Edit profile',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Divider(color: colors.line, height: 1),
+        const SizedBox(height: 8),
+        _MenuRow(
+          icon: Icons.groups_outlined,
+          label: 'Guardians',
+          onTap: () => setState(() => _tab = StudentTab.guardians),
+        ),
+        _MenuRow(
+          icon: Icons.description_outlined,
+          label: 'Documents',
+          onTap: () => setState(() => _tab = StudentTab.documents),
+        ),
       ],
     );
   }
@@ -508,96 +580,50 @@ class _StudentInfoViewState extends State<StudentInfoView> {
   }
 }
 
-class _IdentityCard extends StatelessWidget {
-  const _IdentityCard({
-    required this.student,
-    required this.classPair,
-    required this.isDarkMode,
-    required this.pictureUrl,
-    required this.uploadPersonPicture,
-    required this.removePersonPicture,
-    required this.onPictureChanged,
-    required this.onError,
+/// One line of the profile's menu: icon tile, label, arrow.
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
   });
 
-  final StudentEntry student;
-  final String classPair;
-  final bool isDarkMode;
-  final String? pictureUrl;
-  final Future<String?> Function({
-    required int ownerId,
-    required List<int> bytes,
-    required String filename,
-  })
-  uploadPersonPicture;
-  final Future<String?> Function({required int ownerId}) removePersonPicture;
-  final ValueChanged<String?> onPictureChanged;
-  final ValueChanged<String> onError;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final mutedColor = appColorsOf(context).mutedText;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: appColorsOf(context).card,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: appColorsOf(context).line),
-      ),
-      child: Row(
-        children: [
-          EditableAvatar(
-            fullName: student.fullName,
-            imageUrl: pictureUrl,
-            // Pictures live on the person record, not the enrollment.
-            ownerId: student.personId,
-            isDarkMode: isDarkMode,
-            radius: 30,
-            uploadPicture: uploadPersonPicture,
-            removePicture: removePersonPicture,
-            onChanged: onPictureChanged,
-            onError: onError,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  student.fullName,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    if (student.code != null) ...[
-                      Text(
-                        'Code ${student.code!}',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                    ],
-                    Text(
-                      'Class $classPair',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: mutedColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+    final colors = appColorsOf(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: colors.softBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 20, color: colors.softText),
             ),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: colors.mutedText),
+          ],
+        ),
       ),
     );
   }

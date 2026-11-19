@@ -7,6 +7,7 @@ import 'package:one_org_staff/features/exams/domain/exams_repository.dart';
 
 import 'exam_common.dart';
 import 'exams_page.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// The score sheet for one class sitting one exam — a port of the web's
 /// `ExamGradingView`.
@@ -143,13 +144,11 @@ class ExamGradingViewState extends State<ExamGradingView> {
     _recomputeDirty();
   }
 
-  void _showMessage(String message) {
+  void _showMessage(String message, [ToastKind kind = ToastKind.info]) {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showToast(context, message, kind: kind);
   }
 
   /// Asks before losing edits. Returns true when it is safe to leave.
@@ -240,9 +239,12 @@ class ExamGradingViewState extends State<ExamGradingView> {
         return;
       }
       setState(() => _applyResults(_students, refreshed));
-      _showMessage('All grades saved successfully');
+      _showMessage('All grades saved successfully', ToastKind.success);
     } catch (error) {
-      _showMessage(examErrorMessage(error, 'Failed to save grades'));
+      _showMessage(
+        examErrorMessage(error, 'Failed to save grades'),
+        ToastKind.error,
+      );
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -398,6 +400,7 @@ class ExamGradingViewState extends State<ExamGradingView> {
             onChanged: (score) => _onScoreChanged(student.id, score),
             onOutOfRange: () => _showMessage(
               'Score must be between 0 and ${widget.exam.maxScore}',
+              ToastKind.warning,
             ),
           );
         },

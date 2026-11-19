@@ -7,6 +7,7 @@ import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/colleagues/domain/colleagues_repository.dart';
 import 'package:one_org_staff/l10n/generated/app_localizations.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// Staff directory — a port of the web app's Colleagues page.
 ///
@@ -97,7 +98,10 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
       if (!mounted || loader != widget.loadColleagues) return;
       // A failed refresh leaves the list it already had.
       if (_all != null) {
-        _showSnack(AppLocalizations.of(context).colleaguesLoadFailed);
+        _showSnack(
+          AppLocalizations.of(context).colleaguesLoadFailed,
+          ToastKind.error,
+        );
         return;
       }
       setState(() => _error = error);
@@ -109,15 +113,17 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
     _load();
   }
 
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
+  void _showSnack(String message, ToastKind kind) =>
+      showToast(context, message, kind: kind);
 
   Future<void> _copy(String phone) async {
     await Clipboard.setData(ClipboardData(text: phone));
-    if (mounted) _showSnack(AppLocalizations.of(context).colleaguesCopied);
+    if (mounted) {
+      _showSnack(
+        AppLocalizations.of(context).colleaguesCopied,
+        ToastKind.success,
+      );
+    }
   }
 
   /// Active staff only, matching the search, sorted by name — the same
@@ -150,7 +156,10 @@ class _ColleaguesPageState extends State<ColleaguesPage> {
 
     final launched = await launcher(uri);
     if (!launched && mounted) {
-      _showSnack(AppLocalizations.of(context).colleaguesCantCall);
+      _showSnack(
+        AppLocalizations.of(context).colleaguesCantCall,
+        ToastKind.warning,
+      );
     }
   }
 

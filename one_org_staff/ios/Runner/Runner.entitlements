@@ -12,5 +12,14 @@
 	     profile in one step. -->
 	<key>aps-environment</key>
 	<string>development</string>
+
+	<!-- Passkeys: the domain must match the server's WEBAUTHN_RP_ID and serve
+	     /.well-known/apple-app-site-association listing
+	     9LCJJJGA65.com.oneorg.staff under "webcredentials". Needs the
+	     "Associated Domains" capability in Xcode (same step as above). -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>webcredentials:oneorg.uz</string>
+	</array>
 </dict>
 </plist>

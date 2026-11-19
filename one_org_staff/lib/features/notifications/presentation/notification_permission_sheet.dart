@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../application/push_service.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// Asks the teacher, in the app's own words, before the OS dialog appears.
 ///
@@ -41,13 +42,10 @@ Future<void> maybeAskForNotificationPermission(
   final granted = await pushService.requestPermission();
 
   if (!granted && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Notifications stayed off. You can turn them on from the bell, '
-          'any time.',
-        ),
-      ),
+    showToast(
+      context,
+      'Notifications stayed off. You can turn them on from the bell, '
+      'any time.',
     );
   }
 }

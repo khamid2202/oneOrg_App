@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:one_org_staff/config/api_config.dart';
 import '../../timetable/time_table_repository.dart';
@@ -14,6 +15,7 @@ import '../../exams/domain/exams_repository.dart';
 import '../../notifications/domain/notifications_repository.dart';
 import '../../point_report/domain/point_report_repository.dart';
 import '../../../shared/api_client.dart';
+import '../data/passkey_service.dart';
 import '../data/token_storage.dart';
 import '../domain/auth_repository.dart';
 
@@ -36,6 +38,7 @@ class AuthController extends ChangeNotifier {
     this.search,
     this.classInsights,
     this.api,
+    this.passkeys,
   }) : _authRepository = authRepository,
        _tokenStorage = tokenStorage,
        _timetableRepository = timetableRepository,
@@ -81,6 +84,19 @@ class AuthController extends ChangeNotifier {
   /// pushing this user's notifications to a phone they signed out of.
   /// Failures here never block the sign-out.
   Future<void> Function()? onBeforeSignOut;
+
+  /// Passkey sign-in and the after-sign-in offer. Null in a test harness.
+  final PasskeyService? passkeys;
+
+  /// Usernames that already answered the passkey offer on this device.
+  static const _passkeyOfferDoneKey = 'passkey_offer_done';
+
+  bool _offerPasskey = false;
+  String? _offerUsername;
+
+  /// Right after a password sign-in: suggest adding a passkey, once per user
+  /// on this device, and only when they have none yet.
+  bool get offerPasskey => _offerPasskey;
 
   AuthStatus _status = AuthStatus.checking;
   bool _isSubmitting = false;
@@ -184,6 +200,7 @@ class AuthController extends ChangeNotifier {
         password: password,
       );
       await _tokenStorage.writeToken(token);
+      await _decidePasskeyOffer(token, username);
       _status = AuthStatus.authenticated;
       return true;
     } on AuthFailure catch (error) {
@@ -214,6 +231,95 @@ class AuthController extends ChangeNotifier {
       currentPassword: currentPassword,
       newPassword: newPassword,
     );
+  }
+
+  /// Signs in with a passkey on this phone. Returns false when the user
+  /// closed the system sheet or it failed ([errorMessage] says why).
+  Future<bool> signInWithPasskey() async {
+    final service = passkeys;
+    if (service == null || _isSubmitting) return false;
+    _isSubmitting = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final token = await service.signIn();
+      await _tokenStorage.writeToken(token);
+      _status = AuthStatus.authenticated;
+      return true;
+    } on PasskeyCancelled {
+      return false;
+    } catch (error) {
+      _errorMessage = switch (passkeyProblemOf(error)) {
+        PasskeyProblem.noneOnDevice =>
+          'No passkey for this account on this phone. Sign in with your password.',
+        PasskeyProblem.unavailable =>
+          "Passkeys aren't available here yet. Sign in with your password.",
+        PasskeyProblem.rejected =>
+          "The passkey wasn't accepted. Try again or use your password.",
+        _ => 'Unable to sign in with a passkey right now.',
+      };
+      return false;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+    }
+  }
+
+  /// Creates a passkey for the signed-in account. Throws [PasskeyCancelled]
+  /// if the user closes the system sheet.
+  Future<void> addPasskey() async {
+    final service = passkeys;
+    if (service == null) {
+      throw const AuthFailure('Passkeys are not configured.');
+    }
+    await service.add(await _requireToken());
+  }
+
+  /// The offer was answered (a passkey added, or "Not now"): don't ask this
+  /// user again on this device.
+  Future<void> closePasskeyOffer() async {
+    final username = _offerUsername;
+    _offerPasskey = false;
+    _offerUsername = null;
+    notifyListeners();
+    if (username == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final done = prefs.getStringList(_passkeyOfferDoneKey) ?? const [];
+      if (!done.contains(username)) {
+        await prefs.setStringList(_passkeyOfferDoneKey, [...done, username]);
+      }
+    } catch (_) {
+      // Worst case the offer shows once more.
+    }
+  }
+
+  Future<void> _decidePasskeyOffer(String token, String username) async {
+    _offerPasskey = false;
+    final service = passkeys;
+    final phone =
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.android);
+    if (service == null || !phone) return;
+    final key = username.trim().toLowerCase();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if ((prefs.getStringList(_passkeyOfferDoneKey) ?? const []).contains(
+        key,
+      )) {
+        return;
+      }
+      final has = await service
+          .hasAny(token)
+          .timeout(const Duration(seconds: 4));
+      if (!has) {
+        _offerPasskey = true;
+        _offerUsername = key;
+      }
+    } catch (_) {
+      // Can't tell: don't hold up the sign-in.
+    }
   }
 
   Future<String> _requireToken() async {
@@ -852,6 +958,8 @@ class AuthController extends ChangeNotifier {
     outbox?.clear();
     await lessons?.clearOffline();
     await _tokenStorage.clearToken();
+    _offerPasskey = false;
+    _offerUsername = null;
     _status = AuthStatus.unauthenticated;
     notifyListeners();
   }

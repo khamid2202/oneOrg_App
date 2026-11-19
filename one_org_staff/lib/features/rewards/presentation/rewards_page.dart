@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// Rewards — a port of the web app's `features/rewards` "Points Studio".
 ///
@@ -295,7 +296,10 @@ class _RewardsPageState extends State<RewardsPage> {
     }
 
     if (drafts.isEmpty) {
-      _showMessage('Selected students have no class assigned.');
+      _showMessage(
+        'Selected students have no class assigned.',
+        ToastKind.warning,
+      );
       return;
     }
 
@@ -303,7 +307,7 @@ class _RewardsPageState extends State<RewardsPage> {
       await widget.savePoints(drafts);
     } catch (error) {
       if (mounted) {
-        _showMessage(_messageFor(error));
+        _showMessage(_messageFor(error), ToastKind.error);
       }
       return;
     }
@@ -318,6 +322,7 @@ class _RewardsPageState extends State<RewardsPage> {
     _showMessage(
       '$verb $amount pts for $count ${count == 1 ? 'student' : 'students'}'
       '${skipped > 0 ? ' ($skipped skipped — no class)' : ''}.',
+      ToastKind.success,
     );
 
     // Show the new balances straight away rather than refetching, and drop the
@@ -340,13 +345,11 @@ class _RewardsPageState extends State<RewardsPage> {
     _clearSelection();
   }
 
-  void _showMessage(String message) {
+  void _showMessage(String message, [ToastKind kind = ToastKind.info]) {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showToast(context, message, kind: kind);
   }
 
   static String _messageFor(Object error) {

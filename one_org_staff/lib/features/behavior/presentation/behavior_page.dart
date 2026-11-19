@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/tab_back.dart';
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../lessons/application/lessons_outbox.dart';
@@ -521,51 +522,62 @@ class _MarkSectionState extends State<_MarkSection> {
       ),
     };
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_step != _Step.done) _progress(l),
-        Expanded(
-          child: switch (_step) {
-            _Step.who => _whoStep(l),
-            _Step.type => _typeStep(l),
-            _Step.why => _whyStep(l),
-            _Step.done => _doneStep(l),
-          },
-        ),
-        Container(
-          padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + widget.bottomInset),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: colors.line)),
+    return TabBackHandler(
+      // Same as the Back button under the wizard.
+      onBack: () {
+        if (_step != _Step.type && _step != _Step.why) return false;
+        _go(_step == _Step.why ? _Step.type : _Step.who);
+        return true;
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_step != _Step.done) _progress(l),
+          Expanded(
+            child: switch (_step) {
+              _Step.who => _whoStep(l),
+              _Step.type => _typeStep(l),
+              _Step.why => _whyStep(l),
+              _Step.done => _doneStep(l),
+            },
           ),
-          child: Row(
-            children: [
-              if (_step == _Step.type || _step == _Step.why)
-                TextButton.icon(
-                  onPressed: () =>
-                      _go(_step == _Step.why ? _Step.type : _Step.who),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 17),
-                  label: Text(l.back),
-                ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: SizedBox(
-                  height: 42,
-                  child: FilledButton(
-                    onPressed: run,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: colors.accent.solid,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+          Container(
+            padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + widget.bottomInset),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: colors.line)),
+            ),
+            child: Row(
+              children: [
+                if (_step == _Step.type || _step == _Step.why)
+                  TextButton.icon(
+                    onPressed: () =>
+                        _go(_step == _Step.why ? _Step.type : _Step.who),
+                    icon: const Icon(Icons.arrow_back_rounded, size: 17),
+                    label: Text(l.back),
+                  ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: SizedBox(
+                    height: 42,
+                    child: FilledButton(
+                      onPressed: run,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colors.accent.solid,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(label),
+                      ),
                     ),
-                    child: FittedBox(fit: BoxFit.scaleDown, child: Text(label)),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

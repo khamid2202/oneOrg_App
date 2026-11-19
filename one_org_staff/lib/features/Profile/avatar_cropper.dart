@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:one_org_staff/app/theme.dart';
 import 'package:image/image.dart' as img;
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// Preview viewport, in logical pixels. Matches the web cropper.
 const double kCropViewSize = 288;
@@ -268,8 +269,10 @@ class _AvatarCropperState extends State<AvatarCropper> {
     } catch (_) {
       if (mounted) {
         setState(() => _isCropping = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not process that image.')),
+        showToast(
+          context,
+          'Could not process that image.',
+          kind: ToastKind.error,
         );
       }
     }

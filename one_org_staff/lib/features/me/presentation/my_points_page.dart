@@ -5,6 +5,7 @@ import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../domain/my_records.dart';
 import 'period_bar.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// Points awarded to or deducted from the signed-in person. The balance is
 /// all-time; the period only narrows the history under it.
@@ -53,13 +54,11 @@ class _MyPointsPageState extends State<MyPointsPage> {
       if (_records == null) {
         setState(() => _failed = true);
       } else {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context).pointsRefreshFailed),
-            ),
-          );
+        showToast(
+          context,
+          AppLocalizations.of(context).pointsRefreshFailed,
+          kind: ToastKind.error,
+        );
       }
     }
   }

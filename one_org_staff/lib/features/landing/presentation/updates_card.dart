@@ -23,7 +23,7 @@ class UpdateItem {
   final String id;
 
   /// points, points-minus, funding, funding-out, announcement, substitution,
-  /// event, holiday, exams.
+  /// event, holiday, exams, news.
   final String kind;
   final String title;
   final String? detail;
@@ -31,6 +31,49 @@ class UpdateItem {
   final AppItem? opens;
   final int sort;
 }
+
+/// "New in the app" slides. Add one when a feature ships; each shows for
+/// [_showDays] after its date. Keep in step with the web's whatsNew.js.
+class WhatsNewEntry {
+  const WhatsNewEntry({
+    required this.id,
+    required this.date,
+    required this.title,
+    required this.body,
+    this.opens,
+  });
+
+  final String id;
+
+  /// "YYYY-MM-DD".
+  final String date;
+  final String Function(AppLocalizations l) title;
+  final String Function(AppLocalizations l) body;
+  final AppItem? opens;
+}
+
+final whatsNew = <WhatsNewEntry>[
+  WhatsNewEntry(
+    id: 'calendar-analysis-department',
+    date: '2026-11-18',
+    title: (l) => l.whatsNewCalendarTitle,
+    body: (l) => l.whatsNewCalendarBody,
+    opens: AppItem.calendar,
+  ),
+  WhatsNewEntry(
+    id: 'photo-zoom',
+    date: '2026-11-17',
+    title: (l) => l.whatsNewPhotoZoomTitle,
+    body: (l) => l.whatsNewPhotoZoomBody,
+  ),
+  WhatsNewEntry(
+    id: 'grading-v2',
+    date: '2026-11-16',
+    title: (l) => l.whatsNewGradingTitle,
+    body: (l) => l.whatsNewGradingBody,
+    opens: AppItem.lessons,
+  ),
+];
 
 const _showDays = 14;
 const _eventDays = 7;
@@ -70,6 +113,7 @@ Future<List<UpdateItem>> loadUpdates(
   AppLocalizations l,
   String locale, {
   DateTime? clock,
+  List<WhatsNewEntry>? news,
 }) async {
   final now = clock ?? DateTime.now();
   final today = isoDay(now);
@@ -210,13 +254,31 @@ Future<List<UpdateItem>> loadUpdates(
       ),
     );
   }
+  for (final n in news ?? whatsNew) {
+    final day = DateTime.tryParse(n.date);
+    if (day == null) continue;
+    // A day, not a time: count it from midday.
+    final t = day.add(const Duration(hours: 12));
+    if (t.isBefore(since)) continue;
+    items.add(
+      UpdateItem(
+        id: 'news-${n.id}',
+        kind: 'news',
+        title: n.title(l),
+        detail: n.body(l),
+        when: t.isAfter(now) ? l.calToday : agoText(l, t, now),
+        opens: n.opens,
+        sort: (t.isAfter(now) ? now : t).millisecondsSinceEpoch,
+      ),
+    );
+  }
   items.sort((a, b) => b.sort.compareTo(a.sort));
   return items.take(_maxItems).toList();
 }
 
 /// Updates: a rolling stack like a phone's widget stack — my latest points,
 /// fundings, notifications and the week's calendar, one at a time. It moves
-/// on every 5 seconds, waits after a touch, and can be swiped.
+/// on every 5 seconds, waits after a touch, and can be swiped sideways.
 class UpdatesCard extends StatefulWidget {
   const UpdatesCard({
     super.key,
@@ -302,8 +364,8 @@ class _UpdatesCardState extends State<UpdatesCard> {
         : _kindTone(item.kind, dark);
 
     return GestureDetector(
+      // Sideways only, so up and down still scroll the Home page.
       onHorizontalDragEnd: (d) => _go((d.primaryVelocity ?? 0) < 0 ? 1 : -1),
-      onVerticalDragEnd: (d) => _go((d.primaryVelocity ?? 0) < 0 ? 1 : -1),
       onTap: item?.opens == null ? null : () => widget.onOpen(item!.opens!),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 500),
@@ -396,9 +458,11 @@ class _UpdatesCardState extends State<UpdatesCard> {
                             ),
                           ),
                           if (item.detail != null)
+                            // One line: the card shares its row with
+                            // My Class, so two would overflow the slide.
                             Text(
                               item.detail!,
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontSize: 12),
                             ),

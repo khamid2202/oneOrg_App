@@ -76,6 +76,47 @@ class _FakeMe implements MyRepository {
 
   @override
   Future<List<FundingCategory>> getFundingCategories() async => categories;
+
+  @override
+  Future<List<PointRecord>> getRecentPoints(
+    int userId, {
+    required String from,
+  }) async => points;
+
+  @override
+  Future<List<Funding>> getRecentFundings(
+    int userId, {
+    required String from,
+  }) async => fundings;
+
+  @override
+  Future<List<CalendarEntry>> getCalendar({
+    required String from,
+    required String to,
+  }) async => const [];
+
+  @override
+  Future<List<CalendarEntry>> getFullCalendar({
+    required String from,
+    required String to,
+  }) async => const [];
+
+  @override
+  Future<List<LessonObservation>> getMyObservations(int userId) async =>
+      const [];
+
+  @override
+  Future<List<MyDepartmentEntry>> getMyDepartments() async => const [];
+
+  @override
+  Future<DepartmentStats> getDepartmentStats(
+    int departmentId, {
+    int? groupId,
+  }) async => const DepartmentStats(
+    summary: DepartmentFigures(id: 0, name: ''),
+    subjectCount: 0,
+    memberCount: 0,
+  );
 }
 
 Widget _app(Widget child) => MaterialApp(

@@ -10,6 +10,7 @@ import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 
 import 'exam_common.dart';
 import 'exams_page.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 /// "Create a new exam" — a port of the web's `UserExams`.
 ///
@@ -109,13 +110,11 @@ class _CreateExamViewState extends State<CreateExamView> {
     _reloadExams();
   }
 
-  void _showMessage(String message) {
+  void _showMessage(String message, [ToastKind kind = ToastKind.warning]) {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showToast(context, message, kind: kind);
   }
 
   Future<void> _submit() async {
@@ -160,10 +159,13 @@ class _CreateExamViewState extends State<CreateExamView> {
         _groupId = null;
         _maxScoreController.text = '100';
       });
-      _showMessage('Exam created');
+      _showMessage('Exam created', ToastKind.success);
       _reloadExams();
     } catch (error) {
-      _showMessage(examErrorMessage(error, 'Failed to create exam'));
+      _showMessage(
+        examErrorMessage(error, 'Failed to create exam'),
+        ToastKind.error,
+      );
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -199,10 +201,13 @@ class _CreateExamViewState extends State<CreateExamView> {
 
     try {
       await widget.api.deleteExam(exam.id);
-      _showMessage('Exam deleted');
+      _showMessage('Exam deleted', ToastKind.success);
       _reloadExams();
     } catch (error) {
-      _showMessage(examErrorMessage(error, 'Failed to delete exam'));
+      _showMessage(
+        examErrorMessage(error, 'Failed to delete exam'),
+        ToastKind.error,
+      );
     }
   }
 

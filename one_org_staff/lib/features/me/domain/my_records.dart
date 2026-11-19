@@ -1,5 +1,9 @@
 import 'dart:typed_data';
 
+import 'staff_records.dart';
+
+export 'staff_records.dart';
+
 int? _int(dynamic value) => value is num
     ? value.toInt()
     : value is String
@@ -502,6 +506,70 @@ Map<String, int> netByCurrency(Iterable<Funding> records) {
 /// The signed-in person's own plan, points and savings. Every read names them
 /// explicitly: without a `user_id`, anyone allowed to see everyone's records
 /// would get the whole school's added up as "mine".
+/// One item of `GET /calendar` (mine only): a calendar event meant for me,
+/// a holiday or an exam period.
+class CalendarEntry {
+  const CalendarEntry({
+    required this.key,
+    required this.source,
+    required this.id,
+    required this.title,
+    required this.startDate,
+    this.endDate,
+    this.startTime,
+    this.allDay = true,
+    this.status,
+    this.location,
+    this.endTime,
+    this.description,
+    this.category,
+  });
+
+  factory CalendarEntry.fromJson(Map<String, dynamic> json) {
+    final source = json['source']?.toString() ?? 'event';
+    final id = _int(json['id']) ?? 0;
+    return CalendarEntry(
+      key: json['key']?.toString() ?? '$source:$id',
+      source: source,
+      id: id,
+      title: json['title']?.toString() ?? '',
+      startDate: json['start_date']?.toString() ?? '',
+      endDate: json['end_date']?.toString(),
+      startTime: json['start_time']?.toString(),
+      allDay: json['all_day'] != false,
+      status: json['status']?.toString(),
+      location: json['location']?.toString(),
+      endTime: json['end_time']?.toString(),
+      description: json['description']?.toString(),
+      category: json['category']?.toString(),
+    );
+  }
+
+  final String key;
+
+  /// `event`, `holiday`, `term_start`, `term_end` or `exam_period`.
+  final String source;
+  final int id;
+  final String title;
+
+  /// "YYYY-MM-DD".
+  final String startDate;
+  final String? endDate;
+
+  /// "HH:MM" or null for all-day items.
+  final String? startTime;
+  final bool allDay;
+  final String? status;
+  final String? location;
+
+  /// "HH:MM", for timed items.
+  final String? endTime;
+  final String? description;
+
+  /// An event's kind: `sports`, `parent_meeting`, `staff`…
+  final String? category;
+}
+
 abstract class MyRepository {
   Future<List<UserPlan>> getPlans({
     required int userId,
@@ -525,4 +593,33 @@ abstract class MyRepository {
   Future<List<Funding>> getFundings(int userId);
 
   Future<List<FundingCategory>> getFundingCategories();
+
+  /// My newest points added since [from] ("YYYY-MM-DD"), one short page.
+  Future<List<PointRecord>> getRecentPoints(int userId, {required String from});
+
+  /// My newest fundings since [from] ("YYYY-MM-DD"), one short page.
+  Future<List<Funding>> getRecentFundings(int userId, {required String from});
+
+  /// My calendar between [from] and [to]: events meant for me, holidays and
+  /// exam periods. Open to every staff member.
+  Future<List<CalendarEntry>> getCalendar({
+    required String from,
+    required String to,
+  });
+
+  /// Everything on my calendar between [from] and [to] (at most 93 days
+  /// apart), terms included, for the Calendar page.
+  Future<List<CalendarEntry>> getFullCalendar({
+    required String from,
+    required String to,
+  });
+
+  /// Every analysis of my lessons, newest lesson first.
+  Future<List<LessonObservation>> getMyObservations(int userId);
+
+  /// The departments I'm in, with my role in each.
+  Future<List<MyDepartmentEntry>> getMyDepartments();
+
+  /// One department's figures over the active academic year, or one class.
+  Future<DepartmentStats> getDepartmentStats(int departmentId, {int? groupId});
 }

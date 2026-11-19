@@ -8,6 +8,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../MyLessons/lesson_points_repository.dart';
 import '../domain/my_records.dart';
 import 'period_bar.dart';
+import 'package:one_org_staff/shared/app_toast.dart';
 
 const _maxFileBytes = 10 * 1024 * 1024;
 
@@ -117,11 +118,8 @@ class _MyPlanPageState extends State<MyPlanPage> {
     }
   }
 
-  void _snack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
+  void _snack(String message, ToastKind kind) =>
+      showToast(context, message, kind: kind);
 
   Future<void> _changeStatus(UserPlan plan, String status) async {
     if (status == plan.status) return;
@@ -139,7 +137,7 @@ class _MyPlanPageState extends State<MyPlanPage> {
     } catch (_) {
       if (!mounted) return;
       replace(plan);
-      _snack(l.planStatusFailed);
+      _snack(l.planStatusFailed, ToastKind.error);
     }
   }
 
@@ -191,7 +189,7 @@ class _MyPlanPageState extends State<MyPlanPage> {
       ),
     );
     if (saved != null && mounted) {
-      _snack(saved);
+      _snack(saved, ToastKind.success);
       await _load();
     }
   }

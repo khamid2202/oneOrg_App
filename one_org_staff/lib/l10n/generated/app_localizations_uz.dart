@@ -1694,4 +1694,126 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get dombitFailed => 'PDF tayyorlab bo‘lmadi';
+
+  @override
+  String get updates => 'Yangiliklar';
+
+  @override
+  String get whatsNewPhotoZoomTitle => 'Kattalashtirish uchun rasmga bosing';
+
+  @override
+  String get whatsNewPhotoZoomBody => 'Profil rasmlari toʻliq ochiladi';
+
+  @override
+  String get whatsNewGradingTitle => 'Yangi kundalik baholash';
+
+  @override
+  String get whatsNewGradingBody => 'Besh toifa, kechikish ball ayiradi';
+
+  @override
+  String get myAnalysis => 'Tahlillarim';
+
+  @override
+  String get tourReplay => 'Turni ko\'rish';
+
+  @override
+  String get tourSkip => 'O\'tkazib yuborish';
+
+  @override
+  String get tourFinish => 'Tugatish';
+
+  @override
+  String tourProgress(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String tourWelcomeTitle(String name) {
+    return 'Xush kelibsiz, $name!';
+  }
+
+  @override
+  String get tourWelcomeBody =>
+      'Ilovaning asosiy bo\'limlari bilan bir daqiqalik tanishuv. Uni o\'tkazib yuborib, istalgan vaqtda Profildan qayta ko\'rishingiz mumkin.';
+
+  @override
+  String get tourScheduleTitle => 'Kuningiz bir qarashda';
+
+  @override
+  String get tourScheduleBody =>
+      'Bugungi darslar va yig\'ilishlar, hozirgi dars ajratib ko\'rsatilgan. Davomat va baholash uchun bosing.';
+
+  @override
+  String get tourUpdatesTitle => 'Yangiliklar';
+
+  @override
+  String get tourUpdatesBody =>
+      'So\'nggi ballaringiz, jamg\'armalar, e\'lonlar va yaqin tadbirlar shu yerda almashib turadi. Varaqlash uchun yon tomonga suring.';
+
+  @override
+  String get tourAppsTitle => 'Ilovalaringiz';
+
+  @override
+  String get tourAppsBody =>
+      'Sizga ochiq barcha ilovalar shu yerda. Ochish uchun plitkani bosing. Tartibini o\'zgartirish uchun plitkani bosib turing; tartib saqlanadi.';
+
+  @override
+  String get tourNotificationsTitle => 'Bildirishnomalar';
+
+  @override
+  String get tourNotificationsBody =>
+      'Sizga kelgan yangi xabarlar va yangiliklar shu yerda.';
+
+  @override
+  String get tourNavTitle => 'Tez o\'tish';
+
+  @override
+  String get tourNavBody => 'Asosiy ilovalar doim ekran pastida, bir bosishda.';
+
+  @override
+  String get tourProfileTitle => 'Profilingiz';
+
+  @override
+  String get tourProfileBody =>
+      'Sozlamalar, til, mavzu, takliflar va chiqish. Bu turni shu yerdan qayta ko\'rishingiz mumkin.';
+
+  @override
+  String get tourDoneTitle => 'Hammasi tayyor!';
+
+  @override
+  String get tourDoneBody =>
+      'Tur shu bilan tugadi. Yangiliklar bosh sahifadagi Yangiliklar kartasida chiqadi.';
+
+  @override
+  String get whatsNewCalendarTitle => 'Taqvim, tahlillar va boshqalar';
+
+  @override
+  String get whatsNewCalendarBody =>
+      'Bosh sahifada yangi: Taqvim, Tahlillarim, rahbarlar uchun Kafedram va tanishuv turi.';
+
+  @override
+  String get passkeySignIn => 'Passkey bilan kirish';
+
+  @override
+  String get passkeyOfferTitle => 'Keyingi safar tezroq kiring';
+
+  @override
+  String get passkeyOfferBody =>
+      'Passkey qoʻshing va keyingi safar parol kiritmasdan Face ID, barmoq izi yoki telefon kodi bilan kiring.';
+
+  @override
+  String get passkeyAdd => 'Passkey qoʻshish';
+
+  @override
+  String get passkeyNotNow => 'Hozir emas';
+
+  @override
+  String get passkeyAdded => 'Passkey qoʻshildi';
+
+  @override
+  String get passkeyAddFailed =>
+      'Passkey qoʻshib boʻlmadi. Keyinroq qayta urinib koʻring.';
+
+  @override
+  String get passkeyUnavailable => 'Bu telefonda passkey hozircha ishlamaydi.';
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:one_org_staff/features/BottomBar/bottom_menu.dart';
 import 'package:one_org_staff/app/swipe_back_detector.dart';
+import 'package:one_org_staff/app/tab_back.dart';
 import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/app/language_controller.dart';
 import 'package:one_org_staff/app/theme_controller.dart';
@@ -56,6 +57,7 @@ import 'package:one_org_staff/features/staff_points/staff_points_page.dart';
 import 'package:one_org_staff/features/substitutions/substitutions_page.dart';
 import 'package:one_org_staff/shared/staff_context.dart';
 import 'package:one_org_staff/shared/sub_page.dart';
+import 'package:one_org_staff/features/tour/product_tour.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({
@@ -66,6 +68,7 @@ class LandingPage extends StatefulWidget {
     this.notificationsController,
     this.pushService,
     this.branchController,
+    this.tourStore,
   });
 
   final AuthController controller;
@@ -77,6 +80,10 @@ class LandingPage extends StatefulWidget {
   final NotificationsController? notificationsController;
   final PushService? pushService;
   final BranchController? branchController;
+
+  /// Shows the product tour once per user. Null (tests) never starts it on
+  /// its own; Profile can still start it.
+  final ProductTourStore? tourStore;
 
   @override
   State<LandingPage> createState() => _LandingPageState();
@@ -106,6 +113,13 @@ class _LandingPageState extends State<LandingPage> {
   static const _fundingsTab = 15;
 
   int _selectedIndex = 0;
+
+  /// Tabs opened before the current one, oldest first, so Android's back
+  /// button walks back through them instead of closing the app.
+  final List<int> _history = [];
+
+  /// Pages inside the open tab that step back on their own first.
+  final List<bool Function()> _backHandlers = [];
   bool _returningViaSwipe = false;
   DateTime? _lessonsDate;
   RecentGrade? _gradebookRow;
@@ -122,6 +136,17 @@ class _LandingPageState extends State<LandingPage> {
   AppUserProfile? _profile;
 
   AppAccess get _access => AppAccess(_profile);
+
+  /// A new key per branch, so a branch switch reloads the Updates stack.
+  GlobalKey _updatesKey = GlobalKey();
+
+  // What the product tour points at.
+  final _tourSchedule = GlobalKey();
+  final _tourTiles = GlobalKey();
+  final _tourBell = GlobalKey();
+  final _tourNav = GlobalKey();
+  final _tourProfile = GlobalKey();
+  bool _touring = false;
 
   @override
   void initState() {
@@ -177,10 +202,42 @@ class _LandingPageState extends State<LandingPage> {
       return;
     }
     if (!mounted || _selectedIndex == _notificationsTab) return;
+    setState(() => _select(_notificationsTab));
+  }
+
+  /// Switches to [tab], remembering where we came from. Going back to a tab
+  /// already in the history drops what was opened after it, so back never
+  /// loops.
+  void _select(int tab) {
+    if (tab == _selectedIndex) return;
+    final seen = _history.indexOf(tab);
+    if (seen >= 0) {
+      _history.removeRange(seen, _history.length);
+    } else {
+      _history.add(_selectedIndex);
+    }
+    // Home is where back ends: nothing before it is worth returning to.
+    if (tab == _homeTab) _history.clear();
+    _selectedIndex = tab;
+  }
+
+  /// Android back: closes the tour, then steps back a tab, then Home.
+  void _goBack() {
+    if (_touring) {
+      _endTour();
+      return;
+    }
+    if (TabBackScope.dispatch(_backHandlers)) return;
     setState(() {
-      _selectedIndex = _notificationsTab;
+      _lessonsDate = null;
+      _gradebookRow = null;
+      _selectedIndex = _history.isNotEmpty ? _history.removeLast() : _homeTab;
+      if (_selectedIndex == _homeTab) _history.clear();
     });
   }
+
+  bool get _canLeave =>
+      !_touring && _selectedIndex == _homeTab && _history.isEmpty;
 
   /// Asks once per install, and only after sign-in — a teacher who has just
   /// seen what the app is for has some basis for answering, which someone
@@ -199,11 +256,89 @@ class _LandingPageState extends State<LandingPage> {
     await maybeAskForNotificationPermission(context, push);
   }
 
+  /// The first time someone signs in on this phone, once Home is settled and
+  /// nothing (like the notifications prompt) is on top of it.
+  Future<void> _maybeStartTour(int userId) async {
+    final store = widget.tourStore;
+    if (store == null || await store.hasSeen(userId)) return;
+    for (var i = 0; i < 30; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      if (!mounted || _touring) return;
+      final onTop = ModalRoute.of(context)?.isCurrent ?? true;
+      if (onTop && _selectedIndex == _homeTab) {
+        _startTour();
+        return;
+      }
+    }
+  }
+
+  void _startTour() {
+    setState(() {
+      _select(_homeTab);
+      _touring = true;
+    });
+  }
+
+  void _endTour() {
+    setState(() => _touring = false);
+    final userId = _profile?.id;
+    if (userId != null) unawaited(widget.tourStore?.markSeen(userId));
+  }
+
+  List<TourStep> _tourSteps(AppLocalizations l) {
+    final name = _profile?.fullName.trim().split(' ').first ?? '';
+    return [
+      TourStep(
+        id: 'welcome',
+        title: l.tourWelcomeTitle(name),
+        body: l.tourWelcomeBody,
+      ),
+      TourStep(
+        id: 'schedule',
+        title: l.tourScheduleTitle,
+        body: l.tourScheduleBody,
+        target: _tourSchedule,
+      ),
+      TourStep(
+        id: 'updates',
+        title: l.tourUpdatesTitle,
+        body: l.tourUpdatesBody,
+        target: _updatesKey,
+      ),
+      TourStep(
+        id: 'apps',
+        title: l.tourAppsTitle,
+        body: l.tourAppsBody,
+        target: _tourTiles,
+      ),
+      TourStep(
+        id: 'notifications',
+        title: l.tourNotificationsTitle,
+        body: l.tourNotificationsBody,
+        target: _tourBell,
+      ),
+      TourStep(
+        id: 'nav',
+        title: l.tourNavTitle,
+        body: l.tourNavBody,
+        target: _tourNav,
+      ),
+      TourStep(
+        id: 'profile',
+        title: l.tourProfileTitle,
+        body: l.tourProfileBody,
+        target: _tourProfile,
+      ),
+      TourStep(id: 'done', title: l.tourDoneTitle, body: l.tourDoneBody),
+    ];
+  }
+
   Future<void> _loadProfile() async {
     try {
       final profile = await widget.controller.loadCurrentUserProfile();
       if (!mounted) return;
       setState(() => _profile = profile);
+      unawaited(_maybeStartTour(profile.id));
     } catch (_) {
       // Home falls back to what a regular teacher sees.
     }
@@ -216,6 +351,7 @@ class _LandingPageState extends State<LandingPage> {
     if (id == _branchId) return;
     _branchId = id;
     setState(() {
+      _updatesKey = GlobalKey();
       _homeroom = null;
       _recentGrades = null;
     });
@@ -332,6 +468,7 @@ class _LandingPageState extends State<LandingPage> {
         ),
         if (notifications != null && widget.pushService != null)
           NotificationBell(
+            key: _tourBell,
             controller: notifications,
             onTap: _openNotificationsTab,
           ),
@@ -393,6 +530,7 @@ class _LandingPageState extends State<LandingPage> {
             loadContact: widget.controller.loadContact,
             saveContact: widget.controller.saveContact,
             sendSuggestion: widget.controller.sendSuggestion,
+            onStartTour: _startTour,
             branchController: widget.branchController,
             // Never sign out straight from the tap — confirm first.
             onLogout: _showSignOutDialog,
@@ -614,11 +752,15 @@ class _LandingPageState extends State<LandingPage> {
     final api = widget.controller.api;
     final userId = _profile?.id;
     if (api == null || userId == null) return null;
-    return UpdatesCard(
-      key: ValueKey('updates-$userId'),
-      api: api,
-      userId: userId,
-      onOpen: _openItem,
+    // The tour points at it; a new key per branch reloads it.
+    return KeyedSubtree(
+      key: _updatesKey,
+      child: UpdatesCard(
+        key: ValueKey('updates-$userId'),
+        api: api,
+        userId: userId,
+        onOpen: _openItem,
+      ),
     );
   }
 
@@ -659,7 +801,7 @@ class _LandingPageState extends State<LandingPage> {
   void _openTab(int tab) => setState(() {
     _lessonsDate = null;
     _gradebookRow = null;
-    _selectedIndex = tab;
+    _select(tab);
   });
 
   Future<List<GradebookPair>> _loadGradebookPairs() async {
@@ -769,13 +911,16 @@ class _LandingPageState extends State<LandingPage> {
       recentGrades: _recentGrades,
       updates: _updatesCard(),
       onOpen: _openItem,
+      userId: _profile?.id,
+      scheduleKey: _tourSchedule,
+      tilesKey: _tourTiles,
       onOpenGradebook: (row) => setState(() {
         _gradebookRow = row;
-        _selectedIndex = _gradesTab;
+        _select(_gradesTab);
       }),
       onOpenDay: (day) => setState(() {
         _lessonsDate = day;
-        _selectedIndex = _lessonsTab;
+        _select(_lessonsTab);
       }),
     );
   }
@@ -804,7 +949,11 @@ class _LandingPageState extends State<LandingPage> {
             icon: appIcon(item),
             color: appHue(context, item).strong,
           ),
-        BottomMenuItem(label: l.profile, icon: Icons.person_rounded),
+        BottomMenuItem(
+          label: l.profile,
+          icon: Icons.person_rounded,
+          targetKey: _tourProfile,
+        ),
       ],
       selectedIndex: tabs.indexOf(_selectedIndex),
       onSelected: (index) => _openTab(tabs[index]),
@@ -817,124 +966,143 @@ class _LandingPageState extends State<LandingPage> {
     final accentColors = appColorsOf(context);
     final notifications = widget.notificationsController;
 
-    return Scaffold(
-      extendBody: true,
-      body: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          // A faint wash of the accent over the scaffold colour, so the chosen
-          // colour reads on the page itself and not only on the controls.
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).scaffoldBackgroundColor,
-              Color.alphaBlend(
-                accentColors.accent.solid.withValues(
-                  alpha: isDarkMode ? 0.10 : 0.07,
-                ),
+    return PopScope(
+      canPop: _canLeave,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBack();
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            // A faint wash of the accent over the scaffold colour, so the chosen
+            // colour reads on the page itself and not only on the controls.
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
                 Theme.of(context).scaffoldBackgroundColor,
-              ),
-            ],
+                Color.alphaBlend(
+                  accentColors.accent.solid.withValues(
+                    alpha: isDarkMode ? 0.10 : 0.07,
+                  ),
+                  Theme.of(context).scaffoldBackgroundColor,
+                ),
+              ],
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            SafeArea(
-              bottom: false,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 820),
-                      child: AnimatedSwitcher(
-                        duration: _returningViaSwipe
-                            ? Duration.zero
-                            : const Duration(milliseconds: 220),
-                        // The page being left has to go at once, not fade.
-                        // Tabs paint no background of their own — the gradient
-                        // behind them belongs to the shell — so an outgoing
-                        // page is *visible through* the incoming one for as
-                        // long as it lingers, which read as the old page
-                        // flashing back before the dashboard settled. It has to
-                        // be a constant: `AnimatedSwitcher` hands each entry
-                        // its durations when the entry is created and never
-                        // revisits them, so the conditional `duration` above
-                        // only ever shortens the fade *in* — the outgoing page
-                        // still left on whatever duration was in force when it
-                        // arrived.
-                        reverseDuration: Duration.zero,
-                        switchInCurve: Curves.easeOut,
-                        switchOutCurve: Curves.easeIn,
-                        child: SwipeBackDetector(
-                          key: ValueKey(_selectedIndex),
-                          enabled: _selectedIndex != _homeTab,
-                          onSwipeBack: () {
-                            setState(() {
-                              _returningViaSwipe = true;
-                              _selectedIndex = _homeTab;
-                            });
-                            // Reset the flag after the frame so future
-                            // tab switches animate normally.
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (mounted) {
-                                _returningViaSwipe = false;
-                              }
-                            });
-                          },
-                          underneathChild: _selectedIndex == _homeTab
-                              ? null
-                              : SizedBox(
-                                  height: constraints.maxHeight,
-                                  width: double.infinity,
-                                  child: SingleChildScrollView(
-                                    physics: const ClampingScrollPhysics(),
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: _bottomMenuOverlaySpace,
-                                      ),
-                                      child: ConstrainedBox(
-                                        constraints: BoxConstraints(
-                                          minHeight:
-                                              (constraints.maxHeight -
-                                                      _bottomMenuOverlaySpace) >
-                                                  0
-                                              ? constraints.maxHeight -
-                                                    _bottomMenuOverlaySpace
-                                              : 0,
+          child: Stack(
+            children: [
+              SafeArea(
+                bottom: false,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 820),
+                        child: AnimatedSwitcher(
+                          duration: _returningViaSwipe
+                              ? Duration.zero
+                              : const Duration(milliseconds: 220),
+                          // The page being left has to go at once, not fade.
+                          // Tabs paint no background of their own — the gradient
+                          // behind them belongs to the shell — so an outgoing
+                          // page is *visible through* the incoming one for as
+                          // long as it lingers, which read as the old page
+                          // flashing back before the dashboard settled. It has to
+                          // be a constant: `AnimatedSwitcher` hands each entry
+                          // its durations when the entry is created and never
+                          // revisits them, so the conditional `duration` above
+                          // only ever shortens the fade *in* — the outgoing page
+                          // still left on whatever duration was in force when it
+                          // arrived.
+                          reverseDuration: Duration.zero,
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          child: SwipeBackDetector(
+                            key: ValueKey(_selectedIndex),
+                            enabled: _selectedIndex != _homeTab,
+                            onSwipeBack: () {
+                              setState(() {
+                                _returningViaSwipe = true;
+                                _select(_homeTab);
+                              });
+                              // Reset the flag after the frame so future
+                              // tab switches animate normally.
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  _returningViaSwipe = false;
+                                }
+                              });
+                            },
+                            underneathChild: _selectedIndex == _homeTab
+                                ? null
+                                : SizedBox(
+                                    height: constraints.maxHeight,
+                                    width: double.infinity,
+                                    child: SingleChildScrollView(
+                                      physics: const ClampingScrollPhysics(),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: _bottomMenuOverlaySpace,
                                         ),
-                                        child: _buildHomeDashboard(),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minHeight:
+                                                (constraints.maxHeight -
+                                                        _bottomMenuOverlaySpace) >
+                                                    0
+                                                ? constraints.maxHeight -
+                                                      _bottomMenuOverlaySpace
+                                                : 0,
+                                          ),
+                                          child: _buildHomeDashboard(),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                          child: _buildTabViewport(constraints),
+                            child: TabBackScope(
+                              handlers: _backHandlers,
+                              child: _buildTabViewport(constraints),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-            if (widget.controller.outbox != null)
+              if (widget.controller.outbox != null)
+                Positioned(
+                  right: 14,
+                  bottom: 104,
+                  child: UploadsPill(outbox: widget.controller.outbox!),
+                ),
               Positioned(
-                right: 14,
-                bottom: 104,
-                child: UploadsPill(outbox: widget.controller.outbox!),
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: KeyedSubtree(
+                  key: _tourNav,
+                  child: notifications == null
+                      ? _buildBottomMenu(context)
+                      : ListenableBuilder(
+                          listenable: notifications,
+                          builder: (context, _) => _buildBottomMenu(context),
+                        ),
+                ),
               ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: notifications == null
-                  ? _buildBottomMenu(context)
-                  : ListenableBuilder(
-                      listenable: notifications,
-                      builder: (context, _) => _buildBottomMenu(context),
-                    ),
-            ),
-          ],
+              if (_touring)
+                Positioned.fill(
+                  child: ProductTour(
+                    steps: _tourSteps(AppLocalizations.of(context)),
+                    onDone: _endTour,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -8,8 +8,10 @@ import '../../branches/presentation/branch_gate.dart';
 import '../../landing/presentation/landing_page.dart';
 import '../../notifications/application/notifications_controller.dart';
 import '../../notifications/application/push_service.dart';
+import '../../tour/product_tour.dart';
 import '../application/auth_controller.dart';
 import 'login_page.dart';
+import 'passkey_offer_page.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({
@@ -20,6 +22,7 @@ class AuthGate extends StatelessWidget {
     this.notificationsController,
     this.pushService,
     this.branchController,
+    this.tourStore,
   });
 
   final AuthController controller;
@@ -34,6 +37,9 @@ class AuthGate extends StatelessWidget {
   /// Null in a test harness, which then runs without selecting a branch.
   final BranchController? branchController;
 
+  /// Null in a test harness, so the product tour never starts on its own.
+  final ProductTourStore? tourStore;
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -43,6 +49,9 @@ class AuthGate extends StatelessWidget {
           case AuthStatus.checking:
             return const _StartupLoader();
           case AuthStatus.authenticated:
+            if (controller.offerPasskey) {
+              return PasskeyOfferPage(controller: controller);
+            }
             final landing = LandingPage(
               controller: controller,
               themeController: themeController,
@@ -50,6 +59,7 @@ class AuthGate extends StatelessWidget {
               notificationsController: notificationsController,
               pushService: pushService,
               branchController: branchController,
+              tourStore: tourStore,
             );
             final branches = branchController;
             return branches == null

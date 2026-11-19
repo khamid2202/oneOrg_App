@@ -939,5 +939,58 @@
   "updUpcomingEvent": "Coming up",
   "updTomorrow": "tomorrow",
   "dombitTooltip": "Dombit $ PDF for last week",
-  "dombitFailed": "Could not make the PDF"
+  "dombitFailed": "Could not make the PDF",
+  "updates": "Updates",
+  "whatsNewPhotoZoomTitle": "Tap a photo to enlarge it",
+  "whatsNewPhotoZoomBody": "Profile photos open full-size everywhere",
+  "whatsNewGradingTitle": "New daily grading",
+  "whatsNewGradingBody": "Five categories, lateness now deducts points",
+  "myAnalysis": "My Analysis",
+  "tourReplay": "Take the tour",
+  "tourSkip": "Skip",
+  "tourFinish": "Finish",
+  "tourProgress": "{current} of {total}",
+  "@tourProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tourWelcomeTitle": "Welcome, {name}!",
+  "@tourWelcomeTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tourWelcomeBody": "Here's a one-minute look at the main parts of the app. You can skip it and take it again any time from your Profile.",
+  "tourScheduleTitle": "Your day at a glance",
+  "tourScheduleBody": "Today's lessons and meetings, with the one in progress highlighted. Tap it to take attendance and grade the lesson.",
+  "tourUpdatesTitle": "Updates",
+  "tourUpdatesBody": "Your latest points, savings, announcements and upcoming events roll by here. Swipe sideways to flip through them.",
+  "tourAppsTitle": "Your apps",
+  "tourAppsBody": "Every app you can use is here. Tap a tile to open it. Press and hold a tile to rearrange them; your order is saved.",
+  "tourNotificationsTitle": "Notifications",
+  "tourNotificationsBody": "New messages and updates for you land here.",
+  "tourNavTitle": "Quick navigation",
+  "tourNavBody": "Your main apps are always one tap away at the bottom of the screen.",
+  "tourProfileTitle": "Your profile",
+  "tourProfileBody": "Settings, language, theme, suggestions and signing out. You can take this tour again from here.",
+  "tourDoneTitle": "You're all set!",
+  "tourDoneBody": "That's the tour. Anything new shows up in the Updates card on your Home.",
+  "whatsNewCalendarTitle": "Calendar, analyses and more",
+  "whatsNewCalendarBody": "New on Home: Calendar, My Analysis, My Department for heads, and a guided tour.",
+  "passkeySignIn": "Sign in with a passkey",
+  "passkeyOfferTitle": "Sign in faster next time",
+  "passkeyOfferBody": "Add a passkey and next time sign in with Face ID, your fingerprint or your phone's passcode instead of a password.",
+  "passkeyAdd": "Add a passkey",
+  "passkeyNotNow": "Not now",
+  "passkeyAdded": "Passkey added",
+  "passkeyAddFailed": "Couldn't add the passkey. Try again later.",
+  "passkeyUnavailable": "Passkeys aren't available on this phone yet."
 }

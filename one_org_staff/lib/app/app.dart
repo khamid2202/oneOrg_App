@@ -12,6 +12,7 @@ import '../features/timetable/http_time_table_repository.dart';
 import '../features/MyLessons/http_lesson_points_repository.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/data/http_auth_repository.dart';
+import '../features/auth/data/passkey_service.dart';
 import '../features/auth/data/token_storage.dart';
 import '../features/auth/presentation/auth_gate.dart';
 import '../features/branches/application/branch_controller.dart';
@@ -26,6 +27,7 @@ import '../features/lessons/application/lessons_outbox.dart';
 import '../features/lessons/data/http_lessons_repository.dart';
 import '../features/lessons/data/offline_cache.dart';
 import '../features/point_report/data/http_point_report_repository.dart';
+import '../features/tour/product_tour.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../shared/api_client.dart';
 import 'language_controller.dart';
@@ -51,6 +53,7 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
   late final bool _ownsThemeController;
   late final ThemeController _themeController;
   final LanguageController _languageController = LanguageController();
+  final _tourStore = ProductTourStore();
   LessonsOutbox? _outbox;
   AppLifecycleListener? _lifecycle;
   http.Client? _client;
@@ -89,6 +92,7 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
           cache: offlineCache,
         ),
         tokenStorage: tokenStorage,
+        passkeys: PasskeyService(client: _client!, baseUrl: ApiConfig.baseUrl),
         timetableRepository: HttpTimetableRepository(
           client: _client!,
           baseUrl: ApiConfig.baseUrl,
@@ -256,6 +260,7 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
             notificationsController: _notificationsController,
             pushService: _pushService,
             branchController: _branchController,
+            tourStore: _ownsController ? _tourStore : null,
           ),
         );
       },

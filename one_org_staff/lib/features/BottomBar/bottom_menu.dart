@@ -9,6 +9,7 @@ class BottomMenuItem {
     this.color,
     this.showDot = false,
     this.labelColor,
+    this.targetKey,
   });
 
   final String label;
@@ -22,6 +23,9 @@ class BottomMenuItem {
 
   /// A bold label in this colour, e.g. the red time left in a lesson.
   final Color? labelColor;
+
+  /// Lets the product tour point at this button.
+  final GlobalKey? targetKey;
 }
 
 /// The phone bar, docked like the web's. [selectedIndex] is -1 on a page that
@@ -58,6 +62,7 @@ class BottomMenu extends StatelessWidget {
                 children: [
                   for (var index = 0; index < items.length; index++)
                     Expanded(
+                      key: items[index].targetKey,
                       child: _BottomMenuButton(
                         item: items[index],
                         isSelected: index == selectedIndex,

@@ -1705,4 +1705,129 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dombitFailed => 'Could not make the PDF';
+
+  @override
+  String get updates => 'Updates';
+
+  @override
+  String get whatsNewPhotoZoomTitle => 'Tap a photo to enlarge it';
+
+  @override
+  String get whatsNewPhotoZoomBody =>
+      'Profile photos open full-size everywhere';
+
+  @override
+  String get whatsNewGradingTitle => 'New daily grading';
+
+  @override
+  String get whatsNewGradingBody =>
+      'Five categories, lateness now deducts points';
+
+  @override
+  String get myAnalysis => 'My Analysis';
+
+  @override
+  String get tourReplay => 'Take the tour';
+
+  @override
+  String get tourSkip => 'Skip';
+
+  @override
+  String get tourFinish => 'Finish';
+
+  @override
+  String tourProgress(int current, int total) {
+    return '$current of $total';
+  }
+
+  @override
+  String tourWelcomeTitle(String name) {
+    return 'Welcome, $name!';
+  }
+
+  @override
+  String get tourWelcomeBody =>
+      'Here\'s a one-minute look at the main parts of the app. You can skip it and take it again any time from your Profile.';
+
+  @override
+  String get tourScheduleTitle => 'Your day at a glance';
+
+  @override
+  String get tourScheduleBody =>
+      'Today\'s lessons and meetings, with the one in progress highlighted. Tap it to take attendance and grade the lesson.';
+
+  @override
+  String get tourUpdatesTitle => 'Updates';
+
+  @override
+  String get tourUpdatesBody =>
+      'Your latest points, savings, announcements and upcoming events roll by here. Swipe sideways to flip through them.';
+
+  @override
+  String get tourAppsTitle => 'Your apps';
+
+  @override
+  String get tourAppsBody =>
+      'Every app you can use is here. Tap a tile to open it. Press and hold a tile to rearrange them; your order is saved.';
+
+  @override
+  String get tourNotificationsTitle => 'Notifications';
+
+  @override
+  String get tourNotificationsBody =>
+      'New messages and updates for you land here.';
+
+  @override
+  String get tourNavTitle => 'Quick navigation';
+
+  @override
+  String get tourNavBody =>
+      'Your main apps are always one tap away at the bottom of the screen.';
+
+  @override
+  String get tourProfileTitle => 'Your profile';
+
+  @override
+  String get tourProfileBody =>
+      'Settings, language, theme, suggestions and signing out. You can take this tour again from here.';
+
+  @override
+  String get tourDoneTitle => 'You\'re all set!';
+
+  @override
+  String get tourDoneBody =>
+      'That\'s the tour. Anything new shows up in the Updates card on your Home.';
+
+  @override
+  String get whatsNewCalendarTitle => 'Calendar, analyses and more';
+
+  @override
+  String get whatsNewCalendarBody =>
+      'New on Home: Calendar, My Analysis, My Department for heads, and a guided tour.';
+
+  @override
+  String get passkeySignIn => 'Sign in with a passkey';
+
+  @override
+  String get passkeyOfferTitle => 'Sign in faster next time';
+
+  @override
+  String get passkeyOfferBody =>
+      'Add a passkey and next time sign in with Face ID, your fingerprint or your phone\'s passcode instead of a password.';
+
+  @override
+  String get passkeyAdd => 'Add a passkey';
+
+  @override
+  String get passkeyNotNow => 'Not now';
+
+  @override
+  String get passkeyAdded => 'Passkey added';
+
+  @override
+  String get passkeyAddFailed => 'Couldn\'t add the passkey. Try again later.';
+
+  @override
+  String get passkeyUnavailable =>
+      'Passkeys aren\'t available on this phone yet.';
 }
