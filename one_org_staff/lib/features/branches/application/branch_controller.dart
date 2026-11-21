@@ -64,7 +64,7 @@ class BranchController extends ChangeNotifier {
     final savedId = await _readSavedId();
     List<Branch>? loaded;
     try {
-      loaded = await _loadBranches();
+      loaded = await _loadBranches().timeout(const Duration(seconds: 12));
     } catch (_) {
       if (ticket != _loadTicket) {
         return;
@@ -142,13 +142,21 @@ class BranchController extends ChangeNotifier {
 
   Future<SharedPreferences?> get _prefs async {
     try {
-      return _preferences ??= await SharedPreferences.getInstance();
+      return _preferences ??= await SharedPreferences.getInstance().timeout(
+        const Duration(seconds: 2),
+      );
     } catch (_) {
       return null;
     }
   }
 
-  Future<int?> _readSavedId() async => (await _prefs)?.getInt(_savedKey);
+  Future<int?> _readSavedId() async {
+    try {
+      return (await _prefs)?.getInt(_savedKey);
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> _save(int? branchId) async {
     final prefs = await _prefs;

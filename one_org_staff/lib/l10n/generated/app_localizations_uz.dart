@@ -1075,6 +1075,12 @@ class AppLocalizationsUz extends AppLocalizations {
   String get calToday => 'Bugun';
 
   @override
+  String get calMonthView => 'Oy';
+
+  @override
+  String get calScheduleView => 'Roʻyxat';
+
+  @override
   String get calNewEvent => 'Yangi tadbir';
 
   @override
@@ -1461,6 +1467,33 @@ class AppLocalizationsUz extends AppLocalizations {
   String get attLate => 'Kechikkan';
 
   @override
+  String get attStatistics => 'Davomat statistikasi';
+
+  @override
+  String get attThisWeek => 'Shu hafta';
+
+  @override
+  String get attThisMonth => 'Shu oy';
+
+  @override
+  String get attAttendanceRate => 'Davomat foizi';
+
+  @override
+  String get attPresent => 'Qatnashgan';
+
+  @override
+  String get attExcused => 'Uzrli';
+
+  @override
+  String get attByClass => 'Sinflar bo‘yicha';
+
+  @override
+  String get attByStudent => 'O‘quvchilar bo‘yicha';
+
+  @override
+  String get attNoMarks => 'Bu davrda davomat belgilanmagan';
+
+  @override
   String get substitutions => 'Almashtirish';
 
   @override
@@ -1700,6 +1733,20 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get whatsNewPhotoZoomTitle => 'Kattalashtirish uchun rasmga bosing';
+
+  @override
+  String get whatsNewAttendanceTitle => 'Davomat statistikasi';
+
+  @override
+  String get whatsNewAttendanceBody =>
+      'Sinflar va o‘quvchilar bo‘yicha davomat';
+
+  @override
+  String get whatsNewPasskeysTitle => 'Kirish kaliti bilan kiring';
+
+  @override
+  String get whatsNewPasskeysBody =>
+      'Parol o‘rniga barmoq izi yoki yuzingizdan foydalaning';
 
   @override
   String get whatsNewPhotoZoomBody => 'Profil rasmlari toʻliq ochiladi';

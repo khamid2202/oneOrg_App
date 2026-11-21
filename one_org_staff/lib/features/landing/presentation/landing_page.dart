@@ -760,6 +760,7 @@ class _LandingPageState extends State<LandingPage> {
         api: api,
         userId: userId,
         onOpen: _openItem,
+        canOpen: _access.allows,
       ),
     );
   }

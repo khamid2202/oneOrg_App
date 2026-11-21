@@ -17,10 +17,15 @@ class HttpBranchesRepository implements BranchesRepository {
 
   @override
   Future<List<Branch>?> getMyBranches(String token) async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/branches/my'),
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-    );
+    final response = await _client
+        .get(
+          Uri.parse('$_baseUrl/branches/my'),
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        )
+        .timeout(const Duration(seconds: 12));
 
     if (response.statusCode == 404) {
       return null;

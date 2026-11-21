@@ -141,6 +141,57 @@ class _CreateExamViewState extends State<CreateExamView> {
       return;
     }
 
+    final data = await _dataFuture;
+    if (!mounted) return;
+    var highMaxConfirmed = false;
+    final reviewed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Review exam before creating'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(data.periodNames[periodId] ?? 'Period #$periodId'),
+              Text(data.subjectNames[subjectId] ?? 'Subject #$subjectId'),
+              Text(data.groupNames[groupId] ?? 'Group #$groupId'),
+              Text(
+                '$maxScore points',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              if (maxScore >= 100) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Double-check this 100+ point maximum against the exam plan.',
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('This maximum is intentional'),
+                  value: highMaxConfirmed,
+                  onChanged: (value) =>
+                      setDialogState(() => highMaxConfirmed = value ?? false),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Back'),
+            ),
+            FilledButton(
+              onPressed: maxScore >= 100 && !highMaxConfirmed
+                  ? null
+                  : () => Navigator.pop(context, true),
+              child: const Text('Create exam'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (reviewed != true || !mounted) return;
+
     setState(() => _submitting = true);
     try {
       await widget.api.createExam(

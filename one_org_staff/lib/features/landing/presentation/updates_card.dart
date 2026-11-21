@@ -54,6 +54,19 @@ class WhatsNewEntry {
 
 final whatsNew = <WhatsNewEntry>[
   WhatsNewEntry(
+    id: 'attendance-statistics',
+    date: '2026-11-21',
+    title: (l) => l.whatsNewAttendanceTitle,
+    body: (l) => l.whatsNewAttendanceBody,
+    opens: AppItem.attendanceCheck,
+  ),
+  WhatsNewEntry(
+    id: 'passkeys',
+    date: '2026-11-18',
+    title: (l) => l.whatsNewPasskeysTitle,
+    body: (l) => l.whatsNewPasskeysBody,
+  ),
+  WhatsNewEntry(
     id: 'calendar-analysis-department',
     date: '2026-11-18',
     title: (l) => l.whatsNewCalendarTitle,
@@ -136,7 +149,7 @@ Future<List<UpdateItem>> loadUpdates(
   final results = await Future.wait([
     safe(api.get('/user-points', recentQuery)),
     safe(api.get('/fundings', recentQuery)),
-    safe(api.get('/notifications', {'page': 1, 'limit': 10})),
+    safe(api.get('/notifications', {'page': 1, 'limit': 10, 'is_read': false})),
     safe(
       api.get('/calendar', {
         'from': today,
@@ -193,6 +206,7 @@ Future<List<UpdateItem>> loadUpdates(
       if ((asStr(e['source']) ?? 'event') == 'event') '${e['id']}',
   };
   for (final n in results[2]) {
+    if (n['is_read'] != false) continue;
     final t = at(n['created_at']);
     if (t == null || t.isBefore(since)) continue;
     final data = n['data'];
@@ -285,11 +299,13 @@ class UpdatesCard extends StatefulWidget {
     required this.api,
     required this.userId,
     required this.onOpen,
+    required this.canOpen,
   });
 
   final ApiClient api;
   final int userId;
   final ValueChanged<AppItem> onOpen;
+  final bool Function(AppItem) canOpen;
 
   @override
   State<UpdatesCard> createState() => _UpdatesCardState();
@@ -325,7 +341,9 @@ class _UpdatesCardState extends State<UpdatesCard> {
     if (!mounted) return;
     final l = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toString();
-    final items = await loadUpdates(widget.api, widget.userId, l, locale);
+    final items = (await loadUpdates(widget.api, widget.userId, l, locale))
+        .where((item) => item.opens == null || widget.canOpen(item.opens!))
+        .toList();
     _remembered[widget.userId] = items;
     if (mounted) {
       setState(() {

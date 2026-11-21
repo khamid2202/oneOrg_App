@@ -176,6 +176,16 @@ void main() {
       expect(prefs.getInt('active_branch_id'), 1);
     });
 
+    test('a malformed saved branch does not block first sign-in', () async {
+      final c = _controller(
+        await _prefs({'active_branch_id': 'old-value'}),
+        load: () async => [_main],
+      );
+      await c.load();
+      expect(c.status, BranchStatus.ready);
+      expect(c.activeBranchId, 1);
+    });
+
     test('runs without a branch when the API predates them', () async {
       final c = _controller(await _prefs(), load: () async => null);
       await c.load();

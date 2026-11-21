@@ -2044,6 +2044,18 @@ abstract class AppLocalizations {
   /// **'Today'**
   String get calToday;
 
+  /// No description provided for @calMonthView.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get calMonthView;
+
+  /// No description provided for @calScheduleView.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get calScheduleView;
+
   /// No description provided for @calNewEvent.
   ///
   /// In en, this message translates to:
@@ -2794,6 +2806,60 @@ abstract class AppLocalizations {
   /// **'Late'**
   String get attLate;
 
+  /// No description provided for @attStatistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance statistics'**
+  String get attStatistics;
+
+  /// No description provided for @attThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get attThisWeek;
+
+  /// No description provided for @attThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get attThisMonth;
+
+  /// No description provided for @attAttendanceRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance rate'**
+  String get attAttendanceRate;
+
+  /// No description provided for @attPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Present'**
+  String get attPresent;
+
+  /// No description provided for @attExcused.
+  ///
+  /// In en, this message translates to:
+  /// **'Excused'**
+  String get attExcused;
+
+  /// No description provided for @attByClass.
+  ///
+  /// In en, this message translates to:
+  /// **'By class'**
+  String get attByClass;
+
+  /// No description provided for @attByStudent.
+  ///
+  /// In en, this message translates to:
+  /// **'By student'**
+  String get attByStudent;
+
+  /// No description provided for @attNoMarks.
+  ///
+  /// In en, this message translates to:
+  /// **'No attendance marks in this period'**
+  String get attNoMarks;
+
   /// No description provided for @substitutions.
   ///
   /// In en, this message translates to:
@@ -3225,6 +3291,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap a photo to enlarge it'**
   String get whatsNewPhotoZoomTitle;
+
+  /// No description provided for @whatsNewAttendanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance statistics'**
+  String get whatsNewAttendanceTitle;
+
+  /// No description provided for @whatsNewAttendanceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance rates by class and student'**
+  String get whatsNewAttendanceBody;
+
+  /// No description provided for @whatsNewPasskeysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with a passkey'**
+  String get whatsNewPasskeysTitle;
+
+  /// No description provided for @whatsNewPasskeysBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your fingerprint or face instead of a password'**
+  String get whatsNewPasskeysBody;
 
   /// No description provided for @whatsNewPhotoZoomBody.
   ///

@@ -113,6 +113,7 @@ class _CalendarPageState extends State<CalendarPage> {
   final Map<String, List<CalendarItem>> _cache = {};
   final Set<String> _hidden = {};
   bool _showAll = false;
+  bool _scheduleView = false;
   bool _loading = false;
   Object? _error;
   int _epoch = 0;
@@ -171,6 +172,17 @@ class _CalendarPageState extends State<CalendarPage> {
       _selected = now.year == _month.year && now.month == _month.month
           ? isoDay(now)
           : isoDay(_month);
+    });
+    _ensure();
+  }
+
+  void _selectDay(String day) {
+    final selected = DateTime.parse(day);
+    setState(() {
+      _selected = day;
+      if (selected.year != _month.year || selected.month != _month.month) {
+        _month = DateTime(selected.year, selected.month);
+      }
     });
     _ensure();
   }
@@ -281,43 +293,60 @@ class _CalendarPageState extends State<CalendarPage> {
               ),
             ),
             const SizedBox(height: 8),
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment(value: false, label: Text(l.calMonthView)),
+                ButtonSegment(value: true, label: Text(l.calScheduleView)),
+              ],
+              selected: {_scheduleView},
+              onSelectionChanged: (values) =>
+                  setState(() => _scheduleView = values.first),
+            ),
+            const SizedBox(height: 8),
             if (_loading) const LinearProgressIndicator(minHeight: 2),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: ErrorState(error: _error!, onRetry: _reload),
               ),
-            _MonthGrid(
-              month: _month,
-              selected: _selected,
-              items: items,
-              onSelect: (day) => setState(() => _selected = day),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              DateFormat.MMMMEEEEd(locale).format(DateTime.parse(_selected)),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: colors.mutedText,
+            if (_scheduleView)
+              _ScheduleList(month: _month, items: items, onTap: _openDetails)
+            else ...[
+              _MonthGrid(
+                month: _month,
+                selected: _selected,
+                items: items,
+                onSelect: _selectDay,
               ),
-            ),
-            const SizedBox(height: 6),
-            if (dayItems.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Text(
-                  l.calNothingOnDay,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: colors.mutedText),
+              const SizedBox(height: 14),
+              Text(
+                DateFormat.MMMMEEEEd(locale).format(DateTime.parse(_selected)),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: colors.mutedText,
                 ),
-              )
-            else
-              for (final item in dayItems)
+              ),
+              const SizedBox(height: 6),
+              if (dayItems.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _ItemCard(item: item, onTap: () => _openDetails(item)),
-                ),
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Text(
+                    l.calNothingOnDay,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: colors.mutedText),
+                  ),
+                )
+              else
+                for (final item in dayItems)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ItemCard(
+                      item: item,
+                      onTap: () => _openDetails(item),
+                    ),
+                  ),
+            ],
           ],
         ),
       ),
@@ -510,6 +539,73 @@ class _MonthGrid extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ScheduleList extends StatelessWidget {
+  const _ScheduleList({
+    required this.month,
+    required this.items,
+    required this.onTap,
+  });
+
+  final DateTime month;
+  final List<CalendarItem> items;
+  final ValueChanged<CalendarItem> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    final lastDay = DateTime(month.year, month.month + 1, 0).day;
+    final groups = <(DateTime, List<CalendarItem>)>[];
+    for (var day = 1; day <= lastDay; day++) {
+      final date = DateTime(month.year, month.month, day);
+      final key = isoDay(date);
+      final on =
+          items
+              .where(
+                (item) =>
+                    item.covers(key) &&
+                    (item.startDate == key ||
+                        day == 1 && item.startDate.compareTo(key) < 0),
+              )
+              .toList()
+            ..sort((a, b) {
+              if (a.allDay != b.allDay) return a.allDay ? -1 : 1;
+              return (a.startTime ?? '').compareTo(b.startTime ?? '');
+            });
+      if (on.isNotEmpty) groups.add((date, on));
+    }
+    if (groups.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: Text(l.calNothingOnDay)),
+      );
+    }
+    return Column(
+      children: [
+        for (final (date, dayItems) in groups)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  DateFormat.MMMEd(locale).format(date),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                for (final item in dayItems)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: _ItemCard(item: item, onTap: () => onTap(item)),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

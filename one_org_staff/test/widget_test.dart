@@ -9,11 +9,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 import 'package:one_org_staff/app/app.dart';
 import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 import 'package:one_org_staff/features/auth/application/auth_controller.dart';
 import 'package:one_org_staff/features/auth/data/token_storage.dart';
+import 'package:one_org_staff/features/auth/data/http_auth_repository.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/BottomBar/bottom_menu.dart';
 import 'package:one_org_staff/features/MyClass/my_class.dart';
@@ -30,6 +33,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'support/fake_lessons_repository.dart';
 
 void main() {
+  test('rate limiting does not discard a valid saved session', () async {
+    final storage = InMemoryTokenStorage(initialToken: 'saved-token');
+    final controller = AuthController(
+      authRepository: HttpAuthRepository(
+        client: MockClient(
+          (_) async => http.Response('Too many requests', 429),
+        ),
+        baseUrl: 'https://api.test',
+      ),
+      tokenStorage: storage,
+    );
+    await controller.restoreSession();
+    expect(controller.status, AuthStatus.authenticated);
+    expect(await storage.readToken(), 'saved-token');
+  });
+
   test('no connection at start keeps the session', () async {
     final storage = InMemoryTokenStorage(initialToken: 'saved-token');
     final controller = AuthController(
@@ -50,6 +69,16 @@ void main() {
     await controller.restoreSession();
     expect(controller.status, AuthStatus.unauthenticated);
     expect(await storage.readToken(), isNull);
+  });
+
+  test('saved-token read failure opens a retryable sign-in screen', () async {
+    final controller = AuthController(
+      authRepository: FakeAuthRepository(),
+      tokenStorage: _UnreadableTokenStorage(),
+    );
+    await controller.restoreSession();
+    expect(controller.status, AuthStatus.unauthenticated);
+    expect(controller.errorMessage, contains('saved session'));
   });
 
   testWidgets('shows the login screen when no saved token exists', (
@@ -616,6 +645,11 @@ class InMemoryTokenStorage implements TokenStorage {
   Future<void> writeToken(String token) async {
     initialToken = token;
   }
+}
+
+class _UnreadableTokenStorage extends InMemoryTokenStorage {
+  @override
+  Future<String?> readToken() async => throw const SocketException('storage');
 }
 
 class _UnreachableAuthRepository extends FakeAuthRepository {

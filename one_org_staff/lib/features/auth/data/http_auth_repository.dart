@@ -25,15 +25,17 @@ class HttpAuthRepository implements AuthRepository {
     required String username,
     required String password,
   }) async {
-    final response = await _client.post(
-      _buildUri('/auth/signin'),
-      headers: _jsonHeaders,
-      body: jsonEncode({
-        'username': username,
-        'password': password,
-        'uses_bearer_token': 'true',
-      }),
-    );
+    final response = await _client
+        .post(
+          _buildUri('/auth/signin'),
+          headers: _jsonHeaders,
+          body: jsonEncode({
+            'username': username,
+            'password': password,
+            'uses_bearer_token': 'true',
+          }),
+        )
+        .timeout(const Duration(seconds: 12));
 
     final responseBody = _decodeBody(response.body);
     if (!_isSuccess(response.statusCode)) {
@@ -91,13 +93,17 @@ class HttpAuthRepository implements AuthRepository {
 
   @override
   Future<void> validate(String token) async {
-    final response = await _client.get(
-      _buildUri('/auth/validate'),
-      headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
-    );
+    final response = await _client
+        .get(
+          _buildUri('/auth/validate'),
+          headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+        )
+        .timeout(const Duration(seconds: 12));
 
-    // A server having a bad moment says nothing about the session.
-    if (response.statusCode >= 500) {
+    // Only an authentication rejection proves that the stored token is invalid.
+    if (response.statusCode != 401 &&
+        response.statusCode != 403 &&
+        !_isSuccess(response.statusCode)) {
       throw SessionUncheckable(response.statusCode);
     }
 

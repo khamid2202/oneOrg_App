@@ -454,6 +454,10 @@ void main() {
       await tester.enterText(find.byType(TextField).first, '80');
       await tester.tap(find.text('Create exam').last);
       await tester.pumpAndSettle();
+      expect(recorder.createdExams, isEmpty);
+      expect(find.text('Review exam before creating'), findsOneWidget);
+      await tester.tap(find.text('Create exam').last);
+      await tester.pumpAndSettle();
 
       expect(recorder.createdExams, [
         {
@@ -482,6 +486,40 @@ void main() {
 
       expect(recorder.createdExams, isEmpty);
       expect(find.text('Select a subject'), findsOneWidget);
+    });
+
+    testWidgets('requires confirmation for a 100 point maximum', (
+      tester,
+    ) async {
+      final recorder = _ExamsRecorder();
+      await tester.pumpWidget(
+        _wrap(_api(recorder), section: ExamsSection.create),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButtonFormField<int>).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Midterm 2026 (2026-03-25)').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mathematics').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(CheckboxListTile, '5-B'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create exam').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Review exam before creating'), findsOneWidget);
+      expect(find.text('100 points'), findsOneWidget);
+      expect(recorder.createdExams, isEmpty);
+      await tester.tap(
+        find.widgetWithText(CheckboxListTile, 'This maximum is intentional'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create exam').last);
+      await tester.pumpAndSettle();
+      expect(recorder.createdExams.single['max_score'], 100);
     });
 
     testWidgets('shows who created each exam in the list', (tester) async {

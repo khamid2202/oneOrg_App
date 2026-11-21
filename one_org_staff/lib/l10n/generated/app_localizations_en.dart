@@ -1085,6 +1085,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calToday => 'Today';
 
   @override
+  String get calMonthView => 'Month';
+
+  @override
+  String get calScheduleView => 'Schedule';
+
+  @override
   String get calNewEvent => 'New event';
 
   @override
@@ -1472,6 +1478,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attLate => 'Late';
 
   @override
+  String get attStatistics => 'Attendance statistics';
+
+  @override
+  String get attThisWeek => 'This week';
+
+  @override
+  String get attThisMonth => 'This month';
+
+  @override
+  String get attAttendanceRate => 'Attendance rate';
+
+  @override
+  String get attPresent => 'Present';
+
+  @override
+  String get attExcused => 'Excused';
+
+  @override
+  String get attByClass => 'By class';
+
+  @override
+  String get attByStudent => 'By student';
+
+  @override
+  String get attNoMarks => 'No attendance marks in this period';
+
+  @override
   String get substitutions => 'Substitution';
 
   @override
@@ -1711,6 +1744,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewPhotoZoomTitle => 'Tap a photo to enlarge it';
+
+  @override
+  String get whatsNewAttendanceTitle => 'Attendance statistics';
+
+  @override
+  String get whatsNewAttendanceBody => 'Attendance rates by class and student';
+
+  @override
+  String get whatsNewPasskeysTitle => 'Sign in with a passkey';
+
+  @override
+  String get whatsNewPasskeysBody =>
+      'Use your fingerprint or face instead of a password';
 
   @override
   String get whatsNewPhotoZoomBody =>

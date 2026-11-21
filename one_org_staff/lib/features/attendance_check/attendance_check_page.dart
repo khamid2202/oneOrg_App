@@ -8,6 +8,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../shared/api_client.dart';
 import '../../shared/staff_context.dart';
 import '../../shared/sub_page.dart';
+import 'attendance_statistics_page.dart';
 
 enum _State { done, overdue, open, upcoming, cancelled, empty }
 
@@ -151,6 +152,16 @@ class _AttendanceCheckPageState extends State<AttendanceCheckPage> {
 
     return SubPage(
       title: l.attendanceCheck,
+      actions: [
+        IconButton(
+          tooltip: l.attStatistics,
+          icon: const Icon(Icons.bar_chart_rounded),
+          onPressed: () => SubPage.push<void>(
+            context,
+            AttendanceStatisticsPage(ctx: widget.ctx),
+          ),
+        ),
+      ],
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(

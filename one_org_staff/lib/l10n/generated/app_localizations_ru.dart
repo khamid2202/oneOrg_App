@@ -1084,6 +1084,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get calToday => 'Сегодня';
 
   @override
+  String get calMonthView => 'Месяц';
+
+  @override
+  String get calScheduleView => 'Список';
+
+  @override
   String get calNewEvent => 'Новое событие';
 
   @override
@@ -1470,6 +1476,33 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attLate => 'Опоздали';
 
   @override
+  String get attStatistics => 'Статистика посещаемости';
+
+  @override
+  String get attThisWeek => 'Эта неделя';
+
+  @override
+  String get attThisMonth => 'Этот месяц';
+
+  @override
+  String get attAttendanceRate => 'Процент посещаемости';
+
+  @override
+  String get attPresent => 'Присутствовали';
+
+  @override
+  String get attExcused => 'Уважительная причина';
+
+  @override
+  String get attByClass => 'По классам';
+
+  @override
+  String get attByStudent => 'По ученикам';
+
+  @override
+  String get attNoMarks => 'Нет отметок за этот период';
+
+  @override
   String get substitutions => 'Замены';
 
   @override
@@ -1709,6 +1742,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get whatsNewPhotoZoomTitle => 'Нажмите на фото, чтобы увеличить';
+
+  @override
+  String get whatsNewAttendanceTitle => 'Статистика посещаемости';
+
+  @override
+  String get whatsNewAttendanceBody => 'Посещаемость по классам и ученикам';
+
+  @override
+  String get whatsNewPasskeysTitle => 'Вход с ключом доступа';
+
+  @override
+  String get whatsNewPasskeysBody => 'Вход по отпечатку пальца или лицу';
 
   @override
   String get whatsNewPhotoZoomBody => 'Фото профиля открываются во весь экран';

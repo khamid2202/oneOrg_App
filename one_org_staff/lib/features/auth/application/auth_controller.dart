@@ -163,7 +163,18 @@ class AuthController extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final storedToken = await _tokenStorage.readToken();
+    String? storedToken;
+    try {
+      storedToken = await _tokenStorage.readToken().timeout(
+        const Duration(seconds: 12),
+      );
+    } catch (_) {
+      _errorMessage =
+          'Could not read your saved session. Try signing in again.';
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+      return;
+    }
     if (storedToken == null || storedToken.isEmpty) {
       _status = AuthStatus.unauthenticated;
       notifyListeners();
@@ -199,7 +210,9 @@ class AuthController extends ChangeNotifier {
         username: username,
         password: password,
       );
-      await _tokenStorage.writeToken(token);
+      await _tokenStorage
+          .writeToken(token)
+          .timeout(const Duration(seconds: 12));
       await _decidePasskeyOffer(token, username);
       _status = AuthStatus.authenticated;
       return true;
@@ -243,7 +256,9 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
     try {
       final token = await service.signIn();
-      await _tokenStorage.writeToken(token);
+      await _tokenStorage
+          .writeToken(token)
+          .timeout(const Duration(seconds: 12));
       _status = AuthStatus.authenticated;
       return true;
     } on PasskeyCancelled {
@@ -284,7 +299,9 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
     if (username == null) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(seconds: 2),
+      );
       final done = prefs.getStringList(_passkeyOfferDoneKey) ?? const [];
       if (!done.contains(username)) {
         await prefs.setStringList(_passkeyOfferDoneKey, [...done, username]);
@@ -304,7 +321,9 @@ class AuthController extends ChangeNotifier {
     if (service == null || !phone) return;
     final key = username.trim().toLowerCase();
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(seconds: 2),
+      );
       if ((prefs.getStringList(_passkeyOfferDoneKey) ?? const []).contains(
         key,
       )) {

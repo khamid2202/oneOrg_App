@@ -69,6 +69,33 @@ void main() {
     expect(items.map((i) => i.id), ['point-7', 'news-a']);
   });
 
+  test('Updates includes unread notifications only', () async {
+    final items = await loadUpdates(
+      _api({
+        '/notifications': [
+          {
+            'id': 1,
+            'is_read': true,
+            'title': 'Read',
+            'created_at': '2026-11-19T09:00:00',
+          },
+          {
+            'id': 2,
+            'is_read': false,
+            'title': 'Unread',
+            'created_at': '2026-11-19T10:00:00',
+          },
+        ],
+      }),
+      1,
+      l,
+      'en',
+      clock: now,
+      news: [],
+    );
+    expect(items.map((item) => item.title), ['Unread']);
+  });
+
   test('a news entry dated today does not claim to be in the future', () async {
     final items = await loadUpdates(
       _api(),
