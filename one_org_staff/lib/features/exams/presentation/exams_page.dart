@@ -30,6 +30,7 @@ class ExamsApi {
     required this.createExamResultsBulk,
     required this.updateExamResult,
     required this.deleteExamResult,
+    this.loadDivision,
   });
 
   final Future<AppUserProfile> Function() loadProfile;
@@ -58,6 +59,10 @@ class ExamsApi {
   final Future<void> Function({required int resultId, required double score})
   updateExamResult;
   final Future<void> Function(int resultId) deleteExamResult;
+
+  /// `GET /group-divisions/:id` — its subgroups and their students. Without
+  /// it, a subgroup teacher's sheet lets them score nobody.
+  final Future<Map<String, dynamic>> Function(int divisionId)? loadDivision;
 
   /// The academic year the API marks active, falling back to the first listed.
   ///

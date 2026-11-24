@@ -24,6 +24,7 @@ enum AppItem {
   cashier,
   staffPoints,
   fundings,
+  resetGrades,
 }
 
 /// Pages opened over the shell (with a back arrow) instead of as a tab.
@@ -37,6 +38,7 @@ const pushedItems = {
   AppItem.cashier,
   AppItem.staffPoints,
   AppItem.fundings,
+  AppItem.resetGrades,
 };
 
 List<String> _keys(String resource) => [
@@ -89,6 +91,9 @@ class AppAccess {
     AppItem.cashier => _any(_keys('cashier')),
     AppItem.staffPoints => _any(_keys('user_points')),
     AppItem.fundings => _any(_keys('fundings')),
+    AppItem.resetGrades =>
+      _any(const ['lesson_grades.delete']) &&
+          _any(const ['lesson_instances.read']),
   };
 
   /// Small Home tiles, in the order teachers reach for them.
@@ -111,6 +116,7 @@ class AppAccess {
     AppItem.cashier,
     AppItem.staffPoints,
     AppItem.fundings,
+    AppItem.resetGrades,
   ].where(allows).toList();
 
   bool get _regularTeacher => _teacher && !_admin;

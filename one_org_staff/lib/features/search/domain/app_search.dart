@@ -237,6 +237,15 @@ const searchCatalog = [
     'накопления',
     'взнос',
   ]),
+  SearchEntry.item(AppItem.resetGrades, [
+    'reset grades',
+    'clear grades',
+    'grade reset',
+    'baholarni tozalash',
+    'baholarni bekor qilish',
+    'оценки сбросить',
+    'сброс оценок',
+  ]),
   SearchEntry.place(SearchPlace.home, [
     'dashboard',
     'today',

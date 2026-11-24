@@ -63,6 +63,69 @@ Future<List<Observation>> fetchObservations(
 
 enum AnalysisPeriod { thisMonth, lastMonth, all }
 
+class AnalysisTerm {
+  const AnalysisTerm({
+    required this.id,
+    required this.name,
+    required this.from,
+    required this.to,
+  });
+
+  final int id;
+  final String name;
+  final String from;
+  final String to;
+}
+
+Future<List<AnalysisTerm>> fetchAnalysisTerms(ApiClient api) async {
+  try {
+    final today = isoDay(DateTime.now());
+    final started =
+        ApiClient.rows(await api.get('/academic-terms'))
+            .map((row) {
+              final from = asStr(row['start_date'])?.substring(0, 10) ?? '';
+              final to = asStr(row['end_date'])?.substring(0, 10) ?? '';
+              final name = asStr(row['name']) ?? '';
+              return (
+                id: asInt(row['id']),
+                yearId: '${row['academic_year_id'] ?? ''}',
+                name: name.replaceFirst(
+                  RegExp(r'\s*quarter$', caseSensitive: false),
+                  ' Q',
+                ),
+                from: from,
+                to: to,
+              );
+            })
+            .where(
+              (term) =>
+                  term.id != null &&
+                  term.from.isNotEmpty &&
+                  term.to.isNotEmpty &&
+                  term.from.compareTo(today) <= 0,
+            )
+            .toList()
+          ..sort((a, b) => b.from.compareTo(a.from));
+    final yearId = started.firstOrNull?.yearId;
+    return started
+        .where((term) => term.yearId == yearId)
+        .map(
+          (term) => AnalysisTerm(
+            id: term.id!,
+            name: term.name,
+            from: term.from,
+            to: term.to,
+          ),
+        )
+        .toList();
+  } catch (_) {
+    return [];
+  }
+}
+
+Map<String, Object?> _termQuery(AnalysisTerm? term) =>
+    term == null ? const {} : {'date_from': term.from, 'date_to': term.to};
+
 Map<String, Object?> periodQuery(AnalysisPeriod p, [DateTime? now]) {
   final n = now ?? DateTime.now();
   return switch (p) {
@@ -427,6 +490,8 @@ class LessonAnalysisPage extends StatefulWidget {
 
 class _LessonAnalysisPageState extends State<LessonAnalysisPage> {
   AnalysisPeriod _period = AnalysisPeriod.thisMonth;
+  List<AnalysisTerm> _terms = const [];
+  int? _termId;
   String _sort = 'last';
   String _search = '';
   bool _deptOnly = true;
@@ -442,7 +507,14 @@ class _LessonAnalysisPageState extends State<LessonAnalysisPage> {
   @override
   void initState() {
     super.initState();
-    _load();
+    fetchAnalysisTerms(ctx.api).then((terms) {
+      if (!mounted) return;
+      setState(() {
+        _terms = terms;
+        _termId = terms.firstOrNull?.id;
+      });
+      _load();
+    });
     ctx.teachers().then((t) {
       if (mounted) setState(() => _teachers = t);
     });
@@ -455,7 +527,11 @@ class _LessonAnalysisPageState extends State<LessonAnalysisPage> {
     final id = ++_req;
     setState(() => _error = null);
     try {
-      final rows = await fetchObservations(ctx.api, periodQuery(_period));
+      final term = _terms.where((t) => t.id == _termId).firstOrNull;
+      final rows = await fetchObservations(
+        ctx.api,
+        term == null ? periodQuery(_period) : _termQuery(term),
+      );
       if (mounted && id == _req) setState(() => _rows = rows);
     } catch (e) {
       if (mounted && id == _req) setState(() => _error = e);
@@ -538,20 +614,42 @@ class _LessonAnalysisPageState extends State<LessonAnalysisPage> {
                 children: [
                   Wrap(
                     spacing: 6,
+                    runSpacing: 6,
                     children: [
-                      for (final (p, label) in [
-                        (AnalysisPeriod.thisMonth, l.laThisMonth),
-                        (AnalysisPeriod.lastMonth, l.laLastMonth),
-                        (AnalysisPeriod.all, l.laAllTime),
-                      ])
+                      for (final term in _terms)
                         ChoiceChip(
-                          label: Text(label),
-                          selected: _period == p,
+                          label: Text(term.name),
+                          selected: _termId == term.id,
                           onSelected: (_) {
-                            setState(() => _period = p);
+                            setState(() => _termId = term.id);
                             _load();
                           },
                         ),
+                      ChoiceChip(
+                        label: Text(l.laThisMonth),
+                        selected:
+                            _termId == null &&
+                            _period == AnalysisPeriod.thisMonth,
+                        onSelected: (_) {
+                          setState(() {
+                            _termId = null;
+                            _period = AnalysisPeriod.thisMonth;
+                          });
+                          _load();
+                        },
+                      ),
+                      ChoiceChip(
+                        label: Text(l.laAllTime),
+                        selected:
+                            _termId == null && _period == AnalysisPeriod.all,
+                        onSelected: (_) {
+                          setState(() {
+                            _termId = null;
+                            _period = AnalysisPeriod.all;
+                          });
+                          _load();
+                        },
+                      ),
                       if (_members.isNotEmpty)
                         FilterChip(
                           label: Text(l.laMyDepartment),
@@ -725,6 +823,8 @@ class TeacherAnalysisPage extends StatefulWidget {
 
 class _TeacherAnalysisPageState extends State<TeacherAnalysisPage> {
   List<Observation>? _rows;
+  List<AnalysisTerm> _terms = const [];
+  int? _termId;
   Object? _error;
 
   StaffContext get ctx => widget.ctx;
@@ -732,14 +832,23 @@ class _TeacherAnalysisPageState extends State<TeacherAnalysisPage> {
   @override
   void initState() {
     super.initState();
-    _load();
+    fetchAnalysisTerms(ctx.api).then((terms) {
+      if (!mounted) return;
+      setState(() {
+        _terms = terms;
+        _termId = terms.firstOrNull?.id;
+      });
+      _load();
+    });
   }
 
   Future<void> _load() async {
     setState(() => _error = null);
     try {
+      final term = _terms.where((t) => t.id == _termId).firstOrNull;
       final rows = await fetchObservations(ctx.api, {
         'teacher_id': widget.teacherId,
+        ..._termQuery(term),
       });
       if (mounted) setState(() => _rows = rows);
     } catch (e) {
@@ -807,6 +916,31 @@ class _TeacherAnalysisPageState extends State<TeacherAnalysisPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
                 children: [
+                  if (_terms.isNotEmpty)
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final term in _terms)
+                          ChoiceChip(
+                            label: Text(term.name),
+                            selected: _termId == term.id,
+                            onSelected: (_) {
+                              setState(() => _termId = term.id);
+                              _load();
+                            },
+                          ),
+                        ChoiceChip(
+                          label: Text(l.laAllTime),
+                          selected: _termId == null,
+                          onSelected: (_) {
+                            setState(() => _termId = null);
+                            _load();
+                          },
+                        ),
+                      ],
+                    ),
+                  if (_terms.isNotEmpty) const SizedBox(height: 8),
                   _StatStrip(rows: rows),
                   ..._monthGroups(
                     context,
@@ -858,16 +992,32 @@ class AnalysisFormPage extends StatefulWidget {
 
 class _AnalysisFormPageState extends State<AnalysisFormPage> {
   int? _teacherId;
+  List<AnalysisTerm> _terms = const [];
+  int? _termId;
   List<Map<String, dynamic>> _lessons = const [];
   Set<int> _done = const {};
   int? _lessonId;
   bool _lessonsLoading = false;
+  bool _criteriaLoading = true;
+  int _lessonRequest = 0;
   final _points = TextEditingController(text: '0');
   List<Map<String, dynamic>> _criteria = const [];
   final Map<int, TextEditingController> _notes = {};
+  final Map<int, int?> _scores = {};
+  final Map<int, Set<String>> _checked = {};
+  final Map<int, TextEditingController> _kpiNotes = {};
+  final Set<String> _communication = {};
+  final Set<String> _recommendations = {};
+  final _action = TextEditingController();
+  String? _type;
   bool _saving = false;
 
   bool get _isEdit => widget.observation != null;
+  bool get _legacy => _isEdit && widget.observation!.raw['score'] == null;
+  bool get _kpiMode =>
+      !_legacy &&
+      (widget.observation?.raw['score'] != null ||
+          _criteria.any((c) => (asDouble(c['weight']) ?? 0) > 0));
   StaffContext get ctx => widget.ctx;
 
   @override
@@ -881,13 +1031,53 @@ class _AnalysisFormPageState extends State<AnalysisFormPage> {
         final id = asInt(n['criterion_id']);
         if (id != null) {
           _notes[id] = TextEditingController(text: asStr(n['note']) ?? '');
+          _scores[id] = asInt(n['score']);
+          _checked[id] = n['checked'] is List
+              ? (n['checked'] as List).whereType<String>().toSet()
+              : <String>{};
+          _kpiNotes[id] = TextEditingController(text: asStr(n['note']) ?? '');
         }
       }
-    } else if (widget.teacherId != null) {
+      _type = asStr(o.raw['type']);
+      _action.text = asStr(o.raw['action']) ?? '';
+      if (o.raw['communication'] is List) {
+        _communication.addAll(
+          (o.raw['communication'] as List).whereType<String>(),
+        );
+      }
+      if (o.raw['recommendations'] is List) {
+        _recommendations.addAll(
+          (o.raw['recommendations'] as List).whereType<String>(),
+        );
+      }
+    } else {
       _teacherId = widget.teacherId;
-      _loadLessons();
     }
+    _loadTerms();
     _loadCriteria();
+  }
+
+  @override
+  void dispose() {
+    _points.dispose();
+    _action.dispose();
+    for (final controller in _notes.values) {
+      controller.dispose();
+    }
+    for (final controller in _kpiNotes.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _loadTerms() async {
+    final terms = await fetchAnalysisTerms(ctx.api);
+    if (!mounted) return;
+    setState(() {
+      _terms = terms;
+      _termId = terms.firstOrNull?.id;
+    });
+    if (!_isEdit && _teacherId != null) _loadLessons();
   }
 
   Future<void> _loadCriteria() async {
@@ -896,12 +1086,17 @@ class _AnalysisFormPageState extends State<AnalysisFormPage> {
         await ctx.api.get('/lesson-observation-criteria'),
       );
       if (mounted) setState(() => _criteria = rows);
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _criteriaLoading = false);
+    }
   }
 
   Future<void> _loadLessons() async {
     final teacher = _teacherId;
     if (teacher == null) return;
+    final request = ++_lessonRequest;
+    final term = _terms.where((t) => t.id == _termId).firstOrNull;
     setState(() {
       _lessonsLoading = true;
       _lessons = const [];
@@ -909,14 +1104,33 @@ class _AnalysisFormPageState extends State<AnalysisFormPage> {
     });
     try {
       final now = DateTime.now();
+      final from = term?.from ?? isoDay(now.subtract(const Duration(days: 59)));
+      final end = term?.to ?? isoDay(now);
+      final to = end.compareTo(isoDay(now)) > 0 ? isoDay(now) : end;
+      final startDate = DateTime.tryParse(from);
+      final endDate = DateTime.tryParse(to);
+      final windows = <(String, String)>[];
+      if (startDate != null && endDate != null && !startDate.isAfter(endDate)) {
+        var cursor = startDate;
+        while (!cursor.isAfter(endDate)) {
+          final stop = cursor.add(const Duration(days: 59));
+          final last = stop.isBefore(endDate) ? stop : endDate;
+          windows.add((isoDay(cursor), isoDay(last)));
+          cursor = last.add(const Duration(days: 1));
+        }
+      }
+      final pages = await Future.wait(
+        windows.map(
+          (window) => ctx.api.all('/lesson-instances', {
+            'teacher_id': teacher,
+            'from': window.$1,
+            'to': window.$2,
+          }),
+        ),
+      );
       final list =
-          ApiClient.rows(
-                await ctx.api.get('/lesson-instances', {
-                  'teacher_id': teacher,
-                  'from': isoDay(now.subtract(const Duration(days: 59))),
-                  'to': isoDay(now),
-                }),
-              )
+          pages
+              .expand((page) => page)
               .where((x) => x['status'] != 'cancelled' && _started(x, now))
               .toList()
             ..sort(
@@ -935,7 +1149,9 @@ class _AnalysisFormPageState extends State<AnalysisFormPage> {
           done = {for (final o in mine) ?asInt(o.raw['lesson_instance_id'])};
         } catch (_) {}
       }
-      if (!mounted || teacher != _teacherId) return;
+      if (!mounted || request != _lessonRequest || teacher != _teacherId) {
+        return;
+      }
       setState(() {
         _lessons = list;
         _done = done;
@@ -948,7 +1164,9 @@ class _AnalysisFormPageState extends State<AnalysisFormPage> {
       });
     } catch (_) {
     } finally {
-      if (mounted) setState(() => _lessonsLoading = false);
+      if (mounted && request == _lessonRequest) {
+        setState(() => _lessonsLoading = false);
+      }
     }
   }
 
@@ -981,32 +1199,102 @@ class _AnalysisFormPageState extends State<AnalysisFormPage> {
 
   Future<void> _save() async {
     final l = AppLocalizations.of(context);
-    final value = int.tryParse(_points.text.trim());
     if (!_isEdit && _teacherId == null) {
       return toast(context, l.laChooseTeacher);
     }
     if (!_isEdit && _lessonId == null) return toast(context, l.laChooseLesson);
-    if (value == null || value.abs() > 100000) {
-      return toast(context, l.laPointsWhole);
+    if (_criteriaLoading) return;
+    if (_isEdit && _kpiMode && _criteria.isEmpty) {
+      return toast(context, l.laSaveFailed);
     }
-    final notes = [
-      for (final e in _notes.entries)
-        if (e.value.text.trim().isNotEmpty)
-          {'criterion_id': e.key, 'note': e.value.text.trim()},
-    ];
+
+    final criteria = _criteria.where((c) {
+      final id = asInt(c['id']);
+      final hasEntry =
+          id != null &&
+          (_scores[id] != null ||
+              (_checked[id]?.isNotEmpty ?? false) ||
+              (_kpiNotes[id]?.text.trim().isNotEmpty ?? false));
+      return c['is_active'] != false || hasEntry;
+    }).toList();
+    final scored = criteria
+        .where((c) => (asDouble(c['weight']) ?? 0) > 0)
+        .toList();
+    final notes =
+        [
+              for (final c in criteria)
+                () {
+                  final id = asInt(c['id'])!;
+                  final note = _kpiNotes[id]?.text.trim() ?? '';
+                  final checked = _checked[id] ?? const <String>{};
+                  final score = _scores[id];
+                  return {
+                    'criterion_id': id,
+                    if ((asDouble(c['weight']) ?? 0) > 0 && score != null)
+                      'score': score,
+                    'checked': checked.toList(),
+                    'note': note,
+                  };
+                }(),
+            ]
+            .where(
+              (note) =>
+                  note['score'] != null ||
+                  (note['checked'] as List).isNotEmpty ||
+                  '${note['note']}'.isNotEmpty,
+            )
+            .toList();
+
+    if (_kpiMode) {
+      final missing = scored
+          .where((c) => _scores[asInt(c['id'])] == null)
+          .length;
+      if (missing > 0) return toast(context, l.laScoreMissing(missing));
+    } else {
+      final value = int.tryParse(_points.text.trim());
+      if (value == null || value.abs() > 100000) {
+        return toast(context, l.laPointsWhole);
+      }
+    }
+
+    final points = int.tryParse(_points.text.trim());
+    final kpiBody = <String, dynamic>{
+      'type': _type,
+      'communication': _communication.toList(),
+      'recommendations': _recommendations.toList(),
+      'action': _action.text.trim().isEmpty ? null : _action.text.trim(),
+      'notes': notes,
+    };
     setState(() => _saving = true);
     try {
       if (_isEdit) {
-        await ctx.api.patch('/lesson-observations/${widget.observation!.id}', {
-          'points': value,
-          'notes': notes,
-        });
+        await ctx.api.patch(
+          '/lesson-observations/${widget.observation!.id}',
+          _kpiMode
+              ? kpiBody
+              : {
+                  'points': points,
+                  'notes': [
+                    for (final e in _notes.entries)
+                      if (e.value.text.trim().isNotEmpty)
+                        {'criterion_id': e.key, 'note': e.value.text.trim()},
+                  ],
+                },
+        );
       } else {
         await ctx.api.post('/lesson-observations', {
           'lesson_instance_id': _lessonId,
           'teacher_id': _teacherId,
-          'points': value,
-          'notes': notes,
+          if (_kpiMode)
+            ...kpiBody
+          else ...{
+            'points': points,
+            'notes': [
+              for (final e in _notes.entries)
+                if (e.value.text.trim().isNotEmpty)
+                  {'criterion_id': e.key, 'note': e.value.text.trim()},
+            ],
+          },
         });
       }
       if (mounted) {
@@ -1075,6 +1363,21 @@ class _AnalysisFormPageState extends State<AnalysisFormPage> {
                     },
             ),
             const SizedBox(height: 12),
+            if (_terms.isNotEmpty)
+              DropdownButtonFormField<int>(
+                initialValue: _termId,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l.laTerm),
+                items: [
+                  for (final term in _terms)
+                    DropdownMenuItem(value: term.id, child: Text(term.name)),
+                ],
+                onChanged: (value) {
+                  setState(() => _termId = value);
+                  _loadLessons();
+                },
+              ),
+            if (_terms.isNotEmpty) const SizedBox(height: 12),
             if (_lessonsLoading)
               const LinearProgressIndicator()
             else if (_teacherId != null && _lessons.isEmpty)
@@ -1100,37 +1403,316 @@ class _AnalysisFormPageState extends State<AnalysisFormPage> {
                 onChanged: (v) => setState(() => _lessonId = v),
               ),
           ],
-          const SizedBox(height: 12),
-          TextField(
-            controller: _points,
-            keyboardType: const TextInputType.numberWithOptions(signed: true),
-            decoration: InputDecoration(labelText: l.laPoints),
-          ),
-          const SizedBox(height: 16),
-          if (shown.isNotEmpty)
-            Text(
-              l.laNotes,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+          if (_criteriaLoading && !_isEdit)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_kpiMode) ...[
+            const SizedBox(height: 8),
+            _buildKpiForm(shown, l),
+          ] else ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _points,
+              keyboardType: const TextInputType.numberWithOptions(signed: true),
+              decoration: InputDecoration(labelText: l.laPoints),
             ),
-          for (final c in shown)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: TextField(
-                controller: _notes.putIfAbsent(
-                  asInt(c['id'])!,
-                  TextEditingController.new,
-                ),
-                minLines: 1,
-                maxLines: 5,
-                maxLength: 2000,
-                decoration: InputDecoration(
-                  labelText: asStr(c['name']) ?? asStr(c['title']) ?? '',
-                  helperText: asStr(c['description']),
+            const SizedBox(height: 16),
+            if (shown.isNotEmpty)
+              Text(
+                l.laNotes,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            for (final c in shown)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: TextField(
+                  controller: _notes.putIfAbsent(
+                    asInt(c['id'])!,
+                    TextEditingController.new,
+                  ),
+                  minLines: 1,
+                  maxLines: 5,
+                  maxLength: 2000,
+                  decoration: InputDecoration(
+                    labelText: asStr(c['name']) ?? asStr(c['title']) ?? '',
+                    helperText: asStr(c['description']),
+                  ),
                 ),
               ),
-            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildKpiForm(List<Map<String, dynamic>> shown, AppLocalizations l) {
+    final scored = shown
+        .where((c) => (asDouble(c['weight']) ?? 0) > 0)
+        .toList();
+    final scoredValues = scored
+        .where((c) => _scores[asInt(c['id'])] != null)
+        .toList();
+    final totalWeight = scoredValues.fold<double>(
+      0,
+      (sum, c) => sum + (asDouble(c['weight']) ?? 0),
+    );
+    final weighted = totalWeight == 0
+        ? null
+        : scoredValues.fold<double>(
+                0,
+                (sum, c) =>
+                    sum +
+                    (asDouble(c['weight']) ?? 0) *
+                        (_scores[asInt(c['id'])] ?? 0),
+              ) /
+              totalWeight *
+              10;
+    final communicationLabels = <String, String>{
+      'teacher_student': l.laTeacherToStudent,
+      'student_teacher': l.laStudentToTeacher,
+      'student_student': l.laStudentToStudent,
+    };
+    final recommendations = <(String, String)>[
+      (
+        'Increase teacher interaction with students at the back, sides and corners.',
+        l.laRecCoverage,
+      ),
+      (
+        'Balance teacher-to-student communication with student-to-teacher and student-to-student communication.',
+        l.laRecBalance,
+      ),
+      (
+        'Move around the classroom so communication is not concentrated in one area.',
+        l.laRecMovement,
+      ),
+      (
+        'Use questioning strategies that involve a wider range of students, not only frequent volunteers.',
+        l.laRecQuestions,
+      ),
+      (
+        'Give quieter or less-involved students structured opportunities to contribute.',
+        l.laRecQuietStudents,
+      ),
+      (
+        'Use pair/group discussion where appropriate to increase meaningful peer communication.',
+        l.laRecPeerTalk,
+      ),
+      (
+        'Review seating/grouping if the arrangement limits participation or teacher access.',
+        l.laRecSeating,
+      ),
+      (
+        'Recheck previously neglected areas during the next observation.',
+        l.laRecRecheck,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppCard(
+          color: appColorsOf(context).softBg,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l.laKpiPoints,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                weighted == null
+                    ? '— / 50'
+                    : '${weighted.toStringAsFixed(1)} / 50',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text('${scoredValues.length}/${scored.length}'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (final c in shown)
+          _KpiCriterion(
+            criterion: c,
+            score: _scores[asInt(c['id'])],
+            checked: _checked[asInt(c['id'])] ?? const {},
+            note: _kpiNotes.putIfAbsent(
+              asInt(c['id'])!,
+              () => TextEditingController(text: asStr(c['note']) ?? ''),
+            ),
+            onScore: (score) => setState(() {
+              final id = asInt(c['id'])!;
+              _scores[id] = _scores[id] == score ? null : score;
+            }),
+            onChecked: (value, selected) => setState(() {
+              final id = asInt(c['id'])!;
+              final next = Set<String>.from(_checked[id] ?? const {});
+              if (selected) {
+                next.add(value);
+              } else {
+                next.remove(value);
+              }
+              _checked[id] = next;
+            }),
+          ),
+        const Divider(height: 24),
+        Text(
+          l.laObservationType,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          children: [
+            for (final (value, label) in [
+              ('routine', l.laRoutine),
+              ('formal', l.laFormal),
+              ('follow_up', l.laFollowUp),
+            ])
+              ChoiceChip(
+                label: Text(label),
+                selected: _type == value,
+                onSelected: (_) =>
+                    setState(() => _type = _type == value ? null : value),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          l.laCommunication,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        Wrap(
+          spacing: 6,
+          children: [
+            for (final entry in communicationLabels.entries)
+              FilterChip(
+                label: Text(entry.value),
+                selected: _communication.contains(entry.key),
+                onSelected: (selected) => setState(() {
+                  if (selected) {
+                    _communication.add(entry.key);
+                  } else {
+                    _communication.remove(entry.key);
+                  }
+                }),
+              ),
+          ],
+        ),
+        ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          title: Text(l.laRecommendations),
+          children: [
+            for (final (value, label) in recommendations)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(label),
+                value: _recommendations.contains(value),
+                onChanged: (selected) => setState(() {
+                  if (selected == true) {
+                    _recommendations.add(value);
+                  } else {
+                    _recommendations.remove(value);
+                  }
+                }),
+              ),
+          ],
+        ),
+        TextField(
+          controller: _action,
+          minLines: 2,
+          maxLines: 4,
+          maxLength: 2000,
+          decoration: InputDecoration(labelText: l.laAction),
+        ),
+      ],
+    );
+  }
+}
+
+class _KpiCriterion extends StatelessWidget {
+  const _KpiCriterion({
+    required this.criterion,
+    required this.score,
+    required this.checked,
+    required this.note,
+    required this.onScore,
+    required this.onChecked,
+  });
+
+  final Map<String, dynamic> criterion;
+  final int? score;
+  final Set<String> checked;
+  final TextEditingController note;
+  final ValueChanged<int> onScore;
+  final void Function(String value, bool selected) onChecked;
+
+  @override
+  Widget build(BuildContext context) {
+    final weight = asDouble(criterion['weight']) ?? 0;
+    final rawItems = criterion['items'];
+    final items = rawItems is List
+        ? rawItems.whereType<String>().toList()
+        : const <String>[];
+    final title = asStr(criterion['name']) ?? asStr(criterion['title']) ?? '';
+    return Column(
+      children: [
+        ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          title: Text(title),
+          subtitle: Text(
+            weight > 0 ? '${weight.round()}% · ${score ?? '—'}/5' : ' ',
+          ),
+          initiallyExpanded:
+              score != null || checked.isNotEmpty || note.text.isNotEmpty,
+          childrenPadding: const EdgeInsets.only(bottom: 10),
+          children: [
+            if (weight > 0)
+              Wrap(
+                spacing: 6,
+                children: [
+                  for (var value = 1; value <= 5; value++)
+                    ChoiceChip(
+                      label: Text('$value'),
+                      selected: score == value,
+                      onSelected: (_) => onScore(value),
+                    ),
+                ],
+              ),
+            if (items.isNotEmpty)
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  for (final item in items)
+                    FilterChip(
+                      label: Text(item),
+                      selected: checked.contains(item),
+                      onSelected: (selected) => onChecked(item, selected),
+                    ),
+                ],
+              ),
+            TextField(
+              controller: note,
+              minLines: 1,
+              maxLines: 4,
+              maxLength: 2000,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).laNotes,
+              ),
+            ),
+          ],
+        ),
+        const Divider(height: 1),
+      ],
     );
   }
 }

@@ -299,8 +299,10 @@ String _clock24(int minutes) =>
     '${(minutes ~/ 60).toString().padLeft(2, '0')}:'
     '${(minutes % 60).toString().padLeft(2, '0')}';
 
-/// Vertical scale of the day, as on the web: a 45-minute period is ~52 px.
+/// Vertical scale of the day, as on the web: a 45-minute period is ~52 px,
+/// or ~86 px when lessons carry the weekly graded count.
 const _pxPerMinute = 1.15;
+const _pxPerMinuteWithCounts = 1.9;
 const _gutter = 56.0;
 const _nowRed = Color(0xFFEF4444);
 const _violet = Color(0xFF7C3AED);
@@ -324,8 +326,15 @@ class _DayTimeline extends StatelessWidget {
   final ValueChanged<TeacherLesson> onOpen;
   final LessonsOutbox outbox;
 
+  double get _scale =>
+      layout.items.any(
+        (placed) => placed.item.lesson?.showsWeeklyCount ?? false,
+      )
+      ? _pxPerMinuteWithCounts
+      : _pxPerMinute;
+
   double _y(int minutes) =>
-      (minutes.clamp(layout.start, layout.end) - layout.start) * _pxPerMinute;
+      (minutes.clamp(layout.start, layout.end) - layout.start) * _scale;
 
   @override
   Widget build(BuildContext context) {
@@ -441,7 +450,7 @@ class _DayTimeline extends StatelessWidget {
                   final item = placed.item;
                   final width = laneWidth / placed.columns;
                   final gap = placed.column > 0 ? 2.0 : 0.0;
-                  final height = (item.end - item.start) * _pxPerMinute - 2;
+                  final height = (item.end - item.start) * _scale - 2;
                   final card = item.meeting != null
                       ? _MeetingCard(meeting: item.meeting!)
                       : _LessonCard(
@@ -706,6 +715,11 @@ class _LessonCard extends StatelessWidget {
                                   ),
                               ],
                             ),
+                            if (lesson.showsWeeklyCount)
+                              Text(
+                                l.gradedTimesThisWeek(lesson.gradedThisWeek!),
+                                style: TextStyle(fontSize: 12, color: muted),
+                              ),
                             if (chips.isNotEmpty) ...[
                               const SizedBox(height: 2),
                               Wrap(
@@ -735,12 +749,14 @@ class _LessonCard extends StatelessWidget {
                     size: 15,
                     color: attendanceDone ? _emerald : colors.line,
                   ),
-                  const SizedBox(width: 3),
-                  Icon(
-                    Icons.assignment_turned_in_outlined,
-                    size: 15,
-                    color: gradesDone ? _emerald : colors.line,
-                  ),
+                  if (!lesson.showsWeeklyCount && lesson.isGraded) ...[
+                    const SizedBox(width: 3),
+                    Icon(
+                      Icons.assignment_turned_in_outlined,
+                      size: 15,
+                      color: gradesDone ? _emerald : colors.line,
+                    ),
+                  ],
                 ],
                 Padding(
                   padding: const EdgeInsets.only(left: 2, right: 4),

@@ -17,8 +17,8 @@ import 'package:one_org_staff/shared/app_toast.dart';
 /// Same rules as the web: the exam periods offered are the active ones, the
 /// subjects and classes offered are only those the signed-in teacher actually
 /// teaches (read off the timetable), Homeroom is filtered out because it is a
-/// timetable placeholder rather than an examinable subject, and exactly one
-/// class is posted per exam even though the API accepts several.
+/// timetable placeholder rather than an examinable subject. Parallel choice
+/// classes share one setup row and are created together.
 class CreateExamView extends StatefulWidget {
   const CreateExamView({super.key, required this.api, required this.onBack});
 
@@ -143,6 +143,7 @@ class _CreateExamViewState extends State<CreateExamView> {
 
     final data = await _dataFuture;
     if (!mounted) return;
+    final groupIds = data.groupIdsFor(subjectId, groupId);
     var highMaxConfirmed = false;
     final reviewed = await showDialog<bool>(
       context: context,
@@ -155,7 +156,7 @@ class _CreateExamViewState extends State<CreateExamView> {
             children: [
               Text(data.periodNames[periodId] ?? 'Period #$periodId'),
               Text(data.subjectNames[subjectId] ?? 'Subject #$subjectId'),
-              Text(data.groupNames[groupId] ?? 'Group #$groupId'),
+              Text(data.groupLabelFor(subjectId, groupId)),
               Text(
                 '$maxScore points',
                 style: const TextStyle(fontWeight: FontWeight.w700),
@@ -197,7 +198,7 @@ class _CreateExamViewState extends State<CreateExamView> {
       await widget.api.createExam(
         examPeriodId: periodId,
         subjectId: subjectId,
-        groupIds: [groupId],
+        groupIds: groupIds,
         maxScore: maxScore,
       );
       if (!mounted) {
@@ -224,13 +225,15 @@ class _CreateExamViewState extends State<CreateExamView> {
     }
   }
 
-  Future<void> _delete(Exam exam) async {
+  Future<void> _delete(List<Exam> exams) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete exam'),
-        content: const Text(
-          'This removes the exam and every score recorded against it.',
+        content: Text(
+          exams.length == 1
+              ? 'This removes the exam and every score recorded against it.'
+              : 'This removes ${exams.length} parallel class exams and every score recorded against them.',
         ),
         actions: [
           TextButton(
@@ -251,7 +254,9 @@ class _CreateExamViewState extends State<CreateExamView> {
     }
 
     try {
-      await widget.api.deleteExam(exam.id);
+      await Future.wait([
+        for (final exam in exams) widget.api.deleteExam(exam.id),
+      ]);
       _showMessage('Exam deleted', ToastKind.success);
       _reloadExams();
     } catch (error) {
@@ -259,6 +264,7 @@ class _CreateExamViewState extends State<CreateExamView> {
         examErrorMessage(error, 'Failed to delete exam'),
         ToastKind.error,
       );
+      _reloadExams();
     }
   }
 
@@ -365,7 +371,10 @@ class _CreateExamViewState extends State<CreateExamView> {
             ],
             onChanged: data.mySubjects.isEmpty
                 ? null
-                : (value) => setState(() => _subjectId = value),
+                : (value) => setState(() {
+                    _subjectId = value;
+                    _groupId = null;
+                  }),
           ),
           if (data.mySubjects.isEmpty) ...[
             const SizedBox(height: 6),
@@ -388,15 +397,22 @@ class _CreateExamViewState extends State<CreateExamView> {
                   ),
                 ),
               ),
-              if (_groupId != null)
+              if (_groupId != null && _subjectId != null)
                 ExamPill(
                   icon: Icons.groups_rounded,
-                  label: data.groupNames[_groupId] ?? 'Group $_groupId',
+                  label: data.groupLabelFor(_subjectId!, _groupId!),
                 ),
             ],
           ),
           const SizedBox(height: 8),
-          if (data.myGroups.isEmpty)
+          if (_subjectId == null)
+            Text(
+              'Choose a subject to see its classes.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.mutedText,
+              ),
+            )
+          else if (data.groupsForSubject(_subjectId).isEmpty)
             Text(
               'No groups found in your timetable assignments.',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -415,10 +431,7 @@ class _CreateExamViewState extends State<CreateExamView> {
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 children: [
-                  for (final group in data.myGroups)
-                    // One class per exam: picking a second would have to
-                    // replace the first, so the others read as unavailable
-                    // once a choice is made — the web dims them the same way.
+                  for (final group in data.groupsForSubject(_subjectId))
                     CheckboxListTile(
                       dense: true,
                       controlAffinity: ListTileControlAffinity.leading,
@@ -485,14 +498,29 @@ class _CreateExamViewState extends State<CreateExamView> {
             snapshot.connectionState != ConnectionState.done;
         final rows = <_ExamRow>[];
         if (!loading && !snapshot.hasError) {
+          final grouped = <String, List<(Exam, int)>>{};
           for (final exam in snapshot.data ?? const <Exam>[]) {
             if (exam.groupIds.isEmpty) {
-              rows.add(_ExamRow(exam: exam, groupId: null));
+              rows.add(_ExamRow(exams: [exam], groupIds: const []));
             } else {
               for (final groupId in exam.groupIds) {
-                rows.add(_ExamRow(exam: exam, groupId: groupId));
+                final choice = data.choiceKeyFor(exam.subjectId, groupId);
+                final key = choice == null
+                    ? 'exam:${exam.id}:$groupId'
+                    : '$choice:${exam.examPeriodId}:${exam.maxScore}';
+                grouped.putIfAbsent(key, () => []).add((exam, groupId));
               }
             }
+          }
+          for (final members in grouped.values) {
+            final exams = {
+              for (final member in members) member.$1.id: member.$1,
+            }.values.toList();
+            final groupIds = members
+                .map((member) => member.$2)
+                .toSet()
+                .toList();
+            rows.add(_ExamRow(exams: exams, groupIds: groupIds));
           }
         }
 
@@ -585,7 +613,7 @@ class _CreateExamViewState extends State<CreateExamView> {
                   itemBuilder: (context, index) => _ExamListTile(
                     row: rows[index],
                     data: data,
-                    onDelete: () => _delete(rows[index].exam),
+                    onDelete: () => _delete(rows[index].exams),
                   ),
                 ),
             ],
@@ -596,13 +624,14 @@ class _CreateExamViewState extends State<CreateExamView> {
   }
 }
 
-/// One exam paired with one of its classes. An exam covering two classes shows
-/// as two rows, matching the web's `examRows` flatMap.
+/// Choice classes that share one exam scale appear on one row.
 class _ExamRow {
-  const _ExamRow({required this.exam, required this.groupId});
+  const _ExamRow({required this.exams, required this.groupIds});
 
-  final Exam exam;
-  final int? groupId;
+  final List<Exam> exams;
+  final List<int> groupIds;
+
+  Exam get exam => exams.first;
 }
 
 class _ExamListTile extends StatelessWidget {
@@ -625,9 +654,11 @@ class _ExamListTile extends StatelessWidget {
     final subject = data.subjectNames[exam.subjectId] ?? 'Unknown subject';
     final period =
         data.periodNames[exam.examPeriodId] ?? 'Period #${exam.examPeriodId}';
-    final group = row.groupId == null
+    final group = row.groupIds.isEmpty
         ? '—'
-        : data.groupNames[row.groupId] ?? 'Unknown';
+        : row.groupIds
+              .map((id) => data.groupNames[id] ?? 'Unknown')
+              .join(' + ');
     final author =
         data.userNames[exam.createdBy] ?? 'User #${exam.createdBy ?? '-'}';
 
@@ -716,6 +747,26 @@ class _ExamListTile extends StatelessWidget {
   }
 }
 
+class ExamGroupOption {
+  const ExamGroupOption({
+    required this.id,
+    required this.groupIds,
+    required this.name,
+  });
+
+  /// Stable selection id: the first class id in [groupIds].
+  final int id;
+  final List<int> groupIds;
+  final String name;
+}
+
+int _compareClassNames(String a, String b) {
+  final gradeA = int.tryParse(RegExp(r'^\d+').stringMatch(a) ?? '') ?? 999;
+  final gradeB = int.tryParse(RegExp(r'^\d+').stringMatch(b) ?? '') ?? 999;
+  final grade = gradeA.compareTo(gradeB);
+  return grade == 0 ? a.compareTo(b) : grade;
+}
+
 /// Everything the create screen needs, resolved together so the form never
 /// renders half-populated.
 class CreateExamData {
@@ -723,6 +774,8 @@ class CreateExamData {
     required this.periods,
     required this.mySubjects,
     required this.myGroups,
+    required this.subjectGroups,
+    required this.subjectChoiceKeys,
     required this.periodNames,
     required this.subjectNames,
     required this.groupNames,
@@ -737,11 +790,32 @@ class CreateExamData {
 
   /// Classes the signed-in teacher is timetabled for.
   final List<ExamOption> myGroups;
+  final Map<int, List<ExamGroupOption>> subjectGroups;
+  final Map<int, Map<int, String>> subjectChoiceKeys;
 
   final Map<int, String> periodNames;
   final Map<int, String> subjectNames;
   final Map<int, String> groupNames;
   final Map<int, String> userNames;
+
+  List<ExamGroupOption> groupsForSubject(int? subjectId) =>
+      subjectGroups[subjectId] ?? const [];
+
+  List<int> groupIdsFor(int subjectId, int groupId) =>
+      groupsForSubject(
+        subjectId,
+      ).where((option) => option.id == groupId).firstOrNull?.groupIds ??
+      [groupId];
+
+  String groupLabelFor(int subjectId, int groupId) =>
+      groupsForSubject(
+        subjectId,
+      ).where((option) => option.id == groupId).firstOrNull?.name ??
+      groupNames[groupId] ??
+      'Group $groupId';
+
+  String? choiceKeyFor(int subjectId, int groupId) =>
+      subjectChoiceKeys[subjectId]?[groupId];
 
   /// Derives the pickers and the lookup maps the list rows read.
   ///
@@ -760,7 +834,7 @@ class CreateExamData {
     final myName = normalize(profile.fullName);
 
     final mine = timetable.where((lesson) {
-      if (lesson.teacherId != null && lesson.teacherId == profile.id) {
+      if (lesson.isTaughtBy(profile.id)) {
         return true;
       }
       // Falls back to the label only when the row carries no teacher id.
@@ -771,6 +845,8 @@ class CreateExamData {
 
     final mySubjects = <int, ExamOption>{};
     final myGroups = <int, ExamOption>{};
+    final assignmentChoiceKeys = <int, Map<int, String>>{};
+    final assignmentGroupIds = <int, Set<int>>{};
     for (final lesson in mine) {
       final subjectId = lesson.subjectId;
       if (subjectId != null && !mySubjects.containsKey(subjectId)) {
@@ -783,6 +859,15 @@ class CreateExamData {
           id: groupId,
           name: lesson.groupLabel ?? 'Group \$groupId',
         );
+      }
+      if (subjectId != null && groupId != null) {
+        assignmentGroupIds.putIfAbsent(subjectId, () => {}).add(groupId);
+        final choiceKey = lesson.choiceExamKey;
+        if (choiceKey != null) {
+          assignmentChoiceKeys
+              .putIfAbsent(subjectId, () => {})
+              .putIfAbsent(groupId, () => choiceKey);
+        }
       }
     }
 
@@ -800,11 +885,41 @@ class CreateExamData {
           ..sort((a, b) => a.name.compareTo(b.name));
     final selectableGroups = myGroups.values.toList()
       ..sort((a, b) => a.name.compareTo(b.name));
+    final groupOptionsBySubject = <int, List<ExamGroupOption>>{};
+    for (final subject in selectableSubjects) {
+      final choiceKeys = assignmentChoiceKeys[subject.id] ?? const {};
+      final groupIds = assignmentGroupIds[subject.id] ?? const <int>{};
+      final buckets = <String, List<int>>{};
+      for (final groupId in groupIds) {
+        final choiceKey = choiceKeys[groupId];
+        buckets
+            .putIfAbsent(choiceKey ?? 'group:$groupId', () => [])
+            .add(groupId);
+      }
+      final options = <ExamGroupOption>[];
+      for (final bucket in buckets.values) {
+        bucket.sort(
+          (a, b) =>
+              _compareClassNames(groupNames[a] ?? '', groupNames[b] ?? ''),
+        );
+        options.add(
+          ExamGroupOption(
+            id: bucket.first,
+            groupIds: bucket,
+            name: bucket.map((id) => groupNames[id] ?? 'Group $id').join(' + '),
+          ),
+        );
+      }
+      options.sort((a, b) => _compareClassNames(a.name, b.name));
+      groupOptionsBySubject[subject.id] = options;
+    }
 
     return CreateExamData(
       periods: periods,
       mySubjects: selectableSubjects,
       myGroups: selectableGroups,
+      subjectGroups: groupOptionsBySubject,
+      subjectChoiceKeys: assignmentChoiceKeys,
       periodNames: {for (final period in periods) period.id: period.name},
       subjectNames: subjectNames,
       groupNames: groupNames,

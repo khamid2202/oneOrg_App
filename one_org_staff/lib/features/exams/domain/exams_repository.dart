@@ -133,29 +133,30 @@ class SubjectEntry {
 class ExamResult {
   const ExamResult({
     required this.id,
-    required this.studentId,
+    required this.personId,
     required this.examId,
     required this.score,
   });
 
   final int id;
 
-  /// The *enrollment* id — `/students` calls the same value `student_id`.
-  final int studentId;
+  /// The student's *person* id. `/exam-results` keys results by person, not
+  /// by enrollment (`/students` row `person_id`, not its `id`).
+  final int personId;
 
   final int examId;
   final double score;
 
   factory ExamResult.fromJson(Map<String, dynamic> json) {
     final id = _asInt(json['id']);
-    final studentId = _asInt(json['student_id'] ?? json['studentId']);
+    final personId = _asInt(json['person_id'] ?? json['personId']);
     final examId = _asInt(json['exam_id'] ?? json['examId']);
-    if (id == null || studentId == null || examId == null) {
+    if (id == null || personId == null || examId == null) {
       throw const FormatException('Exam result is missing required fields.');
     }
     return ExamResult(
       id: id,
-      studentId: studentId,
+      personId: personId,
       examId: examId,
       score: _asDouble(json['score']) ?? 0,
     );
@@ -165,12 +166,13 @@ class ExamResult {
 /// A score the grading screen wants created.
 class ExamResultDraft {
   const ExamResultDraft({
-    required this.studentId,
+    required this.personId,
     required this.examId,
     required this.score,
   });
 
-  final int studentId;
+  /// See [ExamResult.personId].
+  final int personId;
   final int examId;
   final double score;
 }

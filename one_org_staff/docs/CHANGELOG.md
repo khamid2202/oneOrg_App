@@ -12,6 +12,27 @@ Newest first. Every notable change to **this Flutter app** gets an entry here
 
 ---
 
+## 2026-11-24 — Reset Grades and current-term lesson analysis
+
+- Released as **1.0.9 (build 13)**.
+- **Reset grades on mobile** for users with `lesson_grades.delete` and `lesson_instances.read`. Choose a date, search and filter classes, show only graded lessons or all lessons, select by period or individually, then review the affected lessons before resetting. Attendance stays; each reset is logged by the backend.
+- **Lesson analysis follows the current academic term** on the overview and each teacher's timeline, with earlier started terms, this month and all-time filters. New observations can select a term and a lesson from that term.
+- **KPI observation form** scores each weighted criterion from 1–5, tracks checklist items and notes, calculates the weighted score out of 50, and includes observation type, communication, recommendations and an action plan. Existing hand-scored analyses keep their old edit form.
+- **Attendance board** shows absence and late counts on completed lesson cells, matching the web.
+- **Choice exams** combine the same choice subject across parallel classes during creation and scoring. Existing per-class exams with the same score scale share one tile, while each student's result is saved to the exam for their class.
+- All new labels are in English, Uzbek and Russian.
+
+---
+
+## 2026-11-23 — Exam scoring fix and web updates since 1.0.7
+
+- **Exam results saved by person**: the backend keys exam results by `person_id` and rejects `student_id`, so saving scores failed and the results already saved came back empty. `ExamResult` / `ExamResultDraft` now carry `personId`, and the grading view keys every row by the student's person id.
+- **Shared and subgroup exams in Score the exam**, as in the web's `ExamsOfClasses`: you see an exam for each class the timetable has you teaching its subject to, as teacher or co-teacher (`additional_teachers`), whoever created it. One tile per class; the heading reads "Your Exams". For a subgroup lesson only that subgroup's students (from `/group-divisions/:id`) can be scored; the rest show "Not in your group". `examTargets()` in `score_exam_view.dart`; `TimetableLesson` gains `subgroupId`, `divisionId`, `additionalTeacherIds` and `isTaughtBy`.
+- **Graded N times this week** on Schedule lesson cards, from `graded_lessons_this_week` on `/my-lessons`, for graded lessons that aren't cancelled, lunch duty or a substitution you're covering. The day is drawn at 1.9 px a minute when any card shows it, so the extra line fits. Ungraded lessons (`is_graded: false`) lose the grades icon.
+- **Delete a behaviour mark** from the student's history, for people with `behavior.delete` (the cashier): confirm, then `DELETE /behavior/marks/:id`; the toast says how many points came off.
+- **Point Report opens on a single day** instead of the week; a mode you picked before is still remembered.
+- All new labels in English, Uzbek and Russian.
+
 ## 2026-11-19 — Home and schedule polish from the web
 
 - Released as **1.0.7 (build 9)**, together with the web pages entry below.

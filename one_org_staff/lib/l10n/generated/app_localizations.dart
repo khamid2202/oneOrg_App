@@ -3519,6 +3519,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Passkeys aren\'t available on this phone yet.'**
   String get passkeyUnavailable;
+
+  /// No description provided for @gradedTimesThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Graded 1 time this week} other{Graded {count} times this week}}'**
+  String gradedTimesThisWeek(int count);
+
+  /// No description provided for @behaviorDeleteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry and linked Dombit points'**
+  String get behaviorDeleteTooltip;
+
+  /// No description provided for @behaviorDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete behavior entry?'**
+  String get behaviorDeleteTitle;
+
+  /// No description provided for @behaviorDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes {name}\'s behavior comment and any Dombit points linked to it. This can\'t be undone.'**
+  String behaviorDeleteBody(String name);
+
+  /// No description provided for @behaviorDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry'**
+  String get behaviorDeleteConfirm;
+
+  /// No description provided for @behaviorDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Behavior entry deleted.'**
+  String get behaviorDeleted;
+
+  /// No description provided for @behaviorDeletedWithPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Behavior entry and 1 linked point record deleted.} other{Behavior entry and {count} linked point records deleted.}}'**
+  String behaviorDeletedWithPoints(int count);
+
+  /// No description provided for @behaviorDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete this behavior entry.'**
+  String get behaviorDeleteFailed;
+
+  /// No description provided for @resetGradesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset grades'**
+  String get resetGradesTitle;
+
+  /// No description provided for @resetGradesNoActiveYear.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no active academic year.'**
+  String get resetGradesNoActiveYear;
+
+  /// No description provided for @resetGradesSelectClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'Select classes'**
+  String get resetGradesSelectClasses;
+
+  /// No description provided for @resetGradesSearchClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'Search classes'**
+  String get resetGradesSearchClasses;
+
+  /// No description provided for @resetGradesAllClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'All classes'**
+  String get resetGradesAllClasses;
+
+  /// No description provided for @resetGradesClassesSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 class} other{{count} classes}}'**
+  String resetGradesClassesSelected(int count);
+
+  /// No description provided for @resetGradesGraded.
+  ///
+  /// In en, this message translates to:
+  /// **'Graded'**
+  String get resetGradesGraded;
+
+  /// No description provided for @resetGradesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get resetGradesAll;
+
+  /// No description provided for @resetGradesSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all lessons'**
+  String get resetGradesSelectAll;
+
+  /// No description provided for @resetGradesSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total} selected'**
+  String resetGradesSelectedCount(int selected, int total);
+
+  /// No description provided for @resetGradesNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No lessons to reset on this day.'**
+  String get resetGradesNothing;
+
+  /// No description provided for @resetGradesNothingGraded.
+  ///
+  /// In en, this message translates to:
+  /// **'No lessons have grades yet.'**
+  String get resetGradesNothingGraded;
+
+  /// No description provided for @resetGradesGradedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} graded'**
+  String resetGradesGradedCount(int count);
+
+  /// No description provided for @resetGradesConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Reset 1 lesson · {date}?} other{Reset {count} lessons · {date}?}}'**
+  String resetGradesConfirmTitle(int count, String date);
+
+  /// No description provided for @resetGradesConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Scores and comments will be cleared. Attendance stays. The reset is logged.'**
+  String get resetGradesConfirmBody;
+
+  /// No description provided for @resetGradesCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} grade records cleared.'**
+  String resetGradesCleared(int count);
+
+  /// No description provided for @resetGradesFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reset grades.'**
+  String get resetGradesFailed;
+
+  /// No description provided for @resetGradesClearSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get resetGradesClearSelection;
+
+  /// No description provided for @resetGradesPreviousDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous day'**
+  String get resetGradesPreviousDay;
+
+  /// No description provided for @resetGradesNextDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Next day'**
+  String get resetGradesNextDay;
+
+  /// No description provided for @laCurrentTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Current term'**
+  String get laCurrentTerm;
+
+  /// No description provided for @laTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Term'**
+  String get laTerm;
+
+  /// No description provided for @laObservationType.
+  ///
+  /// In en, this message translates to:
+  /// **'Observation type'**
+  String get laObservationType;
+
+  /// No description provided for @laRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'Routine'**
+  String get laRoutine;
+
+  /// No description provided for @laFormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Formal'**
+  String get laFormal;
+
+  /// No description provided for @laFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up'**
+  String get laFollowUp;
+
+  /// No description provided for @laCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'Communication'**
+  String get laCommunication;
+
+  /// No description provided for @laRecommendations.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommendations'**
+  String get laRecommendations;
+
+  /// No description provided for @laAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Action plan'**
+  String get laAction;
+
+  /// No description provided for @laKpiPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'KPI score'**
+  String get laKpiPoints;
+
+  /// No description provided for @laScoreMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Score {count} more KPIs before saving.'**
+  String laScoreMissing(int count);
+
+  /// No description provided for @laTeacherToStudent.
+  ///
+  /// In en, this message translates to:
+  /// **'Teacher → student'**
+  String get laTeacherToStudent;
+
+  /// No description provided for @laStudentToTeacher.
+  ///
+  /// In en, this message translates to:
+  /// **'Student → teacher'**
+  String get laStudentToTeacher;
+
+  /// No description provided for @laStudentToStudent.
+  ///
+  /// In en, this message translates to:
+  /// **'Student ↔ student'**
+  String get laStudentToStudent;
+
+  /// No description provided for @laRecCoverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach students at the back and corners'**
+  String get laRecCoverage;
+
+  /// No description provided for @laRecBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance teacher and student communication'**
+  String get laRecBalance;
+
+  /// No description provided for @laRecMovement.
+  ///
+  /// In en, this message translates to:
+  /// **'Move around the classroom'**
+  String get laRecMovement;
+
+  /// No description provided for @laRecQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Question beyond frequent volunteers'**
+  String get laRecQuestions;
+
+  /// No description provided for @laRecQuietStudents.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite quieter students to contribute'**
+  String get laRecQuietStudents;
+
+  /// No description provided for @laRecPeerTalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Use pair or group discussion'**
+  String get laRecPeerTalk;
+
+  /// No description provided for @laRecSeating.
+  ///
+  /// In en, this message translates to:
+  /// **'Review seating and grouping'**
+  String get laRecSeating;
+
+  /// No description provided for @laRecRecheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Recheck less-involved areas next time'**
+  String get laRecRecheck;
 }
 
 class _AppLocalizationsDelegate

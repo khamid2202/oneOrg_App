@@ -52,6 +52,9 @@ class TeacherLesson {
     this.gradesEntered = 0,
     this.tags = const [],
     this.isLunchDuty = false,
+    this.isGraded = true,
+    this.substitutionType,
+    this.gradedThisWeek,
   });
 
   /// The timetable entry id.
@@ -83,7 +86,26 @@ class TeacherLesson {
   /// A lunch duty slot: shown on the schedule, nothing to mark or grade.
   final bool isLunchDuty;
 
+  /// False for a subject that takes attendance but no scores.
+  final bool isGraded;
+
+  /// Set on your own lesson that someone covers, merges or cancels.
+  final String? substitutionType;
+
+  /// How many of this class's lessons in the subject were graded this week.
+  final int? gradedThisWeek;
+
   bool get isCancelled => status == 'cancelled';
+
+  /// The web's `showsWeeklyCount`: "Graded N times this week" shows on a
+  /// gradable lesson that is yours to teach today.
+  bool get showsWeeklyCount =>
+      instanceId != null &&
+      isGraded &&
+      !isLunchDuty &&
+      !isCancelled &&
+      (substitutionType == null || isSubstitution) &&
+      gradedThisWeek != null;
 
   factory TeacherLesson.fromJson(Map<String, dynamic> json) {
     final grade = _asString(json['grade']);
@@ -113,6 +135,9 @@ class TeacherLesson {
             ]
           : const [],
       isLunchDuty: json['is_lunch_duty'] == true,
+      isGraded: json['is_graded'] != false,
+      substitutionType: _asString(json['substitution_type']),
+      gradedThisWeek: _asInt(json['graded_lessons_this_week']),
     );
   }
 }

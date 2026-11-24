@@ -31,6 +31,7 @@ import 'package:one_org_staff/features/landing/domain/app_items.dart';
 import 'package:one_org_staff/features/landing/presentation/teacher_home.dart';
 import 'package:one_org_staff/features/landing/presentation/updates_card.dart';
 import 'package:one_org_staff/features/MyClass/dombit_pdf.dart';
+import 'package:one_org_staff/shared/api_client.dart';
 import 'package:one_org_staff/features/lessons/domain/lessons_repository.dart';
 import 'package:one_org_staff/features/lessons/presentation/lessons_page.dart';
 import 'package:one_org_staff/features/lessons/presentation/uploads_sheet.dart';
@@ -46,6 +47,7 @@ import 'package:one_org_staff/features/notifications/presentation/notification_b
 import 'package:one_org_staff/features/notifications/presentation/notification_permission_sheet.dart';
 import 'package:one_org_staff/features/notifications/presentation/notifications_page.dart';
 import 'package:one_org_staff/features/point_report/presentation/point_report_page.dart';
+import 'package:one_org_staff/features/reset_grades/reset_grades_page.dart';
 import 'package:one_org_staff/features/rewards/presentation/rewards_page.dart';
 import 'package:one_org_staff/features/attendance_check/attendance_check_page.dart';
 import 'package:one_org_staff/features/calendar/calendar_page.dart';
@@ -553,6 +555,11 @@ class _LandingPageState extends State<LandingPage> {
               createExamResultsBulk: widget.controller.createExamResultsBulk,
               updateExamResult: widget.controller.updateExamResult,
               deleteExamResult: widget.controller.deleteExamResult,
+              loadDivision: widget.controller.api == null
+                  ? null
+                  : (id) async => ApiClient.one(
+                      await widget.controller.api!.get('/group-divisions/$id'),
+                    ),
             ),
           )
         : _selectedIndex == _rewardsTab
@@ -744,7 +751,8 @@ class _LandingPageState extends State<LandingPage> {
     AppItem.attendanceCheck ||
     AppItem.cashier ||
     AppItem.staffPoints ||
-    AppItem.fundings => _homeTab,
+    AppItem.fundings ||
+    AppItem.resetGrades => _homeTab,
   };
 
   /// Shared by the pages that came over from the web without a tab.
@@ -794,6 +802,7 @@ class _LandingPageState extends State<LandingPage> {
       AppItem.cashier => CashierPage(ctx: ctx),
       AppItem.staffPoints => StaffPointsPage(ctx: ctx, me: me),
       AppItem.fundings => FundingsPage(ctx: ctx, me: me),
+      AppItem.resetGrades => ResetGradesPage(ctx: ctx),
       _ => null,
     };
     if (page != null) SubPage.push(context, page);
@@ -840,6 +849,14 @@ class _LandingPageState extends State<LandingPage> {
       outbox: outbox,
       // Keeps the action bar above the docked phone bar.
       bottomInset: 60 + MediaQuery.paddingOf(context).bottom,
+      deleteMark: _staffContext?.can('behavior.delete') == true
+          ? (id) async {
+              final body = await widget.controller.api!.delete(
+                '/behavior/marks/${Uri.encodeComponent(id)}',
+              );
+              return body is Map ? asInt(body['deletedPoints']) ?? 0 : 0;
+            }
+          : null,
     );
   }
 

@@ -9,6 +9,13 @@ import 'exam_common.dart';
 import 'exams_page.dart';
 import 'package:one_org_staff/shared/app_toast.dart';
 
+class ExamScoringTarget {
+  const ExamScoringTarget({required this.exam, required this.groupId});
+
+  final Exam exam;
+  final int groupId;
+}
+
 /// The score sheet for one class sitting one exam — a port of the web's
 /// `ExamGradingView`.
 ///
@@ -27,6 +34,8 @@ class ExamGradingView extends StatefulWidget {
     required this.subjectName,
     required this.onBack,
     required this.onDirtyChanged,
+    this.allowedStudentIds,
+    this.additionalTargets = const [],
   });
 
   final ExamsApi api;
@@ -40,6 +49,18 @@ class ExamGradingView extends StatefulWidget {
   /// warn before a back swipe throws them away.
   final ValueChanged<bool> onDirtyChanged;
 
+  /// Enrollment ids the teacher may score — their timetable subgroup. Null is
+  /// the whole class. The others stay listed, greyed, as on the web.
+  final Set<int>? allowedStudentIds;
+
+  /// Other parallel choice classes in the same score sheet.
+  final List<ExamScoringTarget> additionalTargets;
+
+  List<ExamScoringTarget> get scoringTargets => [
+    ExamScoringTarget(exam: exam, groupId: groupId),
+    ...additionalTargets,
+  ];
+
   @override
   State<ExamGradingView> createState() => ExamGradingViewState();
 }
@@ -47,13 +68,15 @@ class ExamGradingView extends StatefulWidget {
 class ExamGradingViewState extends State<ExamGradingView> {
   late Future<List<StudentEntry>> _loadFuture;
 
-  /// Scores already in the database, keyed by enrollment id.
+  /// Scores already in the database, keyed by person id (`/exam-results`
+  /// keys results by person).
   Map<int, ExamResult> _saved = const {};
 
   /// The edited values. A `null` entry is a score the teacher cleared.
   Map<int, double?> _drafts = {};
 
   List<StudentEntry> _students = const [];
+  Map<int, int> _personExamIds = const {};
   bool _saving = false;
   bool _dirty = false;
 
@@ -72,35 +95,61 @@ class ExamGradingViewState extends State<ExamGradingView> {
   }
 
   Future<List<StudentEntry>> _load() async {
-    final results = await Future.wait([
-      widget.api.loadStudentsForGroup(widget.groupId),
-      widget.api.loadExamResults(widget.exam.id),
+    final targets = widget.scoringTargets;
+    final examIds = targets.map((target) => target.exam.id).toSet().toList();
+    final results = await Future.wait<Object>([
+      Future.wait([
+        for (final target in targets)
+          widget.api.loadStudentsForGroup(target.groupId),
+      ]),
+      Future.wait([
+        for (final examId in examIds) widget.api.loadExamResults(examId),
+      ]),
     ]);
+    final studentLists = results[0] as List<List<StudentEntry>>;
+    final resultLists = results[1] as List<List<ExamResult>>;
 
     final students =
-        (results[0] as List<StudentEntry>).where(_isEnrolled).toList()..sort(
+        studentLists.expand((list) => list).where(_isEnrolled).toList()..sort(
           (a, b) =>
               a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()),
         );
+    _personExamIds = {
+      for (var index = 0; index < studentLists.length; index++)
+        for (final student in studentLists[index])
+          student.personId: targets[index].exam.id,
+    };
 
-    _applyResults(students, results[1] as List<ExamResult>);
+    _applyResults(students, resultLists.expand((list) => list).toList());
     return students;
   }
+
+  bool _scoreable(StudentEntry student) =>
+      widget.allowedStudentIds?.contains(student.id) ?? true;
+
+  /// The students this teacher may score.
+  Iterable<StudentEntry> get _scoreableStudents => _students.where(_scoreable);
 
   /// Rebuilds the saved map and the drafts from a fresh read of the results.
   void _applyResults(List<StudentEntry> students, List<ExamResult> results) {
     final saved = <int, ExamResult>{};
     final drafts = <int, double?>{};
+    final allowedPersons = {
+      for (final student in students)
+        if (_scoreable(student)) student.personId,
+    };
 
     for (final result in results) {
-      saved[result.studentId] = result;
-      drafts[result.studentId] = result.score;
+      if (!allowedPersons.contains(result.personId)) continue;
+      if (_personExamIds[result.personId] != result.examId) continue;
+      saved[result.personId] = result;
+      drafts[result.personId] = result.score;
     }
 
     // Default the rest to 0 so an untouched student is saved as a zero rather
     // than silently skipped — the same default the web writes.
-    for (final student in students) {
-      drafts.putIfAbsent(student.id, () => 0);
+    for (final personId in allowedPersons) {
+      drafts.putIfAbsent(personId, () => 0);
     }
 
     _students = students;
@@ -128,9 +177,9 @@ class ExamGradingViewState extends State<ExamGradingView> {
   /// True when any draft differs from what the database holds.
   void _recomputeDirty() {
     var dirty = false;
-    for (final student in _students) {
-      final saved = _saved[student.id]?.score;
-      final draft = _drafts[student.id];
+    for (final student in _scoreableStudents) {
+      final saved = _saved[student.personId]?.score;
+      final draft = _drafts[student.personId];
       if (draft != saved) {
         dirty = true;
         break;
@@ -139,8 +188,8 @@ class ExamGradingViewState extends State<ExamGradingView> {
     _setDirty(dirty);
   }
 
-  void _onScoreChanged(int studentId, double? score) {
-    setState(() => _drafts[studentId] = score);
+  void _onScoreChanged(int personId, double? score) {
+    setState(() => _drafts[personId] = score);
     _recomputeDirty();
   }
 
@@ -197,16 +246,16 @@ class ExamGradingViewState extends State<ExamGradingView> {
     final toUpdate = <MapEntry<int, double>>[];
     final toDelete = <int>[];
 
-    for (final student in _students) {
-      final saved = _saved[student.id];
-      final draft = _drafts[student.id];
+    for (final student in _scoreableStudents) {
+      final saved = _saved[student.personId];
+      final draft = _drafts[student.personId];
 
       if (saved == null) {
         if (draft != null) {
           toCreate.add(
             ExamResultDraft(
-              studentId: student.id,
-              examId: widget.exam.id,
+              personId: student.personId,
+              examId: _personExamIds[student.personId] ?? widget.exam.id,
               score: draft,
             ),
           );
@@ -234,7 +283,13 @@ class ExamGradingViewState extends State<ExamGradingView> {
 
       // Re-read so the rows carry their real database ids and a second save in
       // a row patches instead of trying to create duplicates.
-      final refreshed = await widget.api.loadExamResults(widget.exam.id);
+      final examIds = widget.scoringTargets
+          .map((target) => target.exam.id)
+          .toSet();
+      final refreshedLists = await Future.wait([
+        for (final examId in examIds) widget.api.loadExamResults(examId),
+      ]);
+      final refreshed = refreshedLists.expand((list) => list).toList();
       if (!mounted) {
         return;
       }
@@ -252,8 +307,9 @@ class ExamGradingViewState extends State<ExamGradingView> {
     }
   }
 
-  int get _gradedCount =>
-      _students.where((student) => _drafts[student.id] != null).length;
+  int get _gradedCount => _scoreableStudents
+      .where((student) => _drafts[student.personId] != null)
+      .length;
 
   @override
   Widget build(BuildContext context) {
@@ -364,7 +420,8 @@ class ExamGradingViewState extends State<ExamGradingView> {
                     ExamPill(
                       icon: Icons.groups_rounded,
                       muted: true,
-                      label: '$_gradedCount/${_students.length} graded',
+                      label:
+                          '$_gradedCount/${_scoreableStudents.length} graded',
                     ),
                   ],
                 ),
@@ -389,15 +446,21 @@ class ExamGradingViewState extends State<ExamGradingView> {
             Divider(height: 1, thickness: 1, color: colors.line),
         itemBuilder: (context, index) {
           final student = _students[index];
+          final scoreable = _scoreable(student);
           return _ScoreRow(
             // Keyed by student so a rebuild keeps each field's own text.
             key: ValueKey(student.id),
             position: index + 1,
             name: student.fullName,
-            value: _drafts[student.id],
+            note: !scoreable
+                ? 'Not in your group'
+                : widget.scoringTargets.length > 1
+                ? student.classPair
+                : null,
+            value: scoreable ? _drafts[student.personId] : null,
             maxScore: widget.exam.maxScore,
-            enabled: !_saving,
-            onChanged: (score) => _onScoreChanged(student.id, score),
+            enabled: scoreable && !_saving,
+            onChanged: (score) => _onScoreChanged(student.personId, score),
             onOutOfRange: () => _showMessage(
               'Score must be between 0 and ${widget.exam.maxScore}',
               ToastKind.warning,
@@ -420,10 +483,14 @@ class _ScoreRow extends StatefulWidget {
     required this.enabled,
     required this.onChanged,
     required this.onOutOfRange,
+    this.note,
   });
 
   final int position;
   final String name;
+
+  /// Why the row can't be scored, shown greyed after the name.
+  final String? note;
   final double? value;
   final int maxScore;
   final bool enabled;
@@ -549,13 +616,26 @@ class _ScoreRowState extends State<_ScoreRow> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              widget.name,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: widget.note == null ? null : colors.mutedText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (widget.note != null)
+                  Text(
+                    widget.note!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.mutedText,
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(width: 12),

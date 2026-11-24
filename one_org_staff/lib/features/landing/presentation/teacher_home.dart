@@ -38,6 +38,7 @@ IconData appIcon(AppItem item) => switch (item) {
   AppItem.cashier => Icons.point_of_sale_rounded,
   AppItem.staffPoints => Icons.auto_awesome_rounded,
   AppItem.fundings => Icons.savings_rounded,
+  AppItem.resetGrades => Icons.restart_alt_rounded,
 };
 
 String appLabel(AppLocalizations l, AppItem item, {bool short = false}) =>
@@ -65,6 +66,7 @@ String appLabel(AppLocalizations l, AppItem item, {bool short = false}) =>
       AppItem.cashier => l.cashier,
       AppItem.staffPoints => l.staffPoints,
       AppItem.fundings => l.fundings,
+      AppItem.resetGrades => l.resetGradesTitle,
     };
 
 /// One colour per app wherever its icon shows, so teachers learn "the green
@@ -100,6 +102,7 @@ AppHue appHue(BuildContext context, AppItem item) {
     AppItem.cashier => (0xFF059669, 0xFF34D399, 0xFFECFDF5),
     AppItem.staffPoints => (0xFFD97706, 0xFFFBBF24, 0xFFFFFBEB),
     AppItem.fundings => (0xFF059669, 0xFF34D399, 0xFFECFDF5),
+    AppItem.resetGrades => (0xFFDC2626, 0xFFF87171, 0xFFFEF2F2),
   };
   if (Theme.of(context).brightness == Brightness.dark) {
     return AppHue(Color(dark).withValues(alpha: 0.16), Color(dark));

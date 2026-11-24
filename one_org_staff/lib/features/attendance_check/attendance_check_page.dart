@@ -295,36 +295,66 @@ class _AttendanceCheckPageState extends State<AttendanceCheckPage> {
     final states = list.map((x) => _stateOf(x, _date, today, now)).toList()
       ..sort((a, b) => _rank[b]! - _rank[a]!);
     final tone = _tone(states.first);
+    final absent = list.fold<int>(
+      0,
+      (sum, lesson) => sum + (asInt(lesson['attendance_absent']) ?? 0),
+    );
+    final late = list.fold<int>(
+      0,
+      (sum, lesson) => sum + (asInt(lesson['attendance_late']) ?? 0),
+    );
     return InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: () => _details(list, today, now),
       child: Container(
-        width: 38,
-        height: 34,
+        width: 46,
+        height: 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: tone.withValues(alpha: 0.12),
           border: Border.all(color: tone.withValues(alpha: 0.5)),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '$period',
+              '$period${list.length > 1 ? '×${list.length}' : ''}',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 color: tone,
                 fontSize: 12,
               ),
             ),
-            if (states.first == _State.done)
+            if (states.first == _State.done && (absent > 0 || late > 0))
+              Text.rich(
+                TextSpan(
+                  children: [
+                    if (absent > 0)
+                      TextSpan(
+                        text: '${absent}A',
+                        style: const TextStyle(color: Color(0xFFDC2626)),
+                      ),
+                    if (absent > 0 && late > 0)
+                      const TextSpan(
+                        text: '/',
+                        style: TextStyle(color: Colors.black45),
+                      ),
+                    if (late > 0)
+                      TextSpan(
+                        text: '${late}L',
+                        style: const TextStyle(color: Color(0xFFD97706)),
+                      ),
+                  ],
+                ),
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
+              )
+            else if (states.first == _State.done)
               Icon(Icons.check_rounded, size: 12, color: tone),
-            if (list.length > 1)
-              Text(
-                '×${list.length}',
-                style: TextStyle(fontSize: 9, color: tone),
-              ),
           ],
         ),
       ),
