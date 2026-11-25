@@ -209,7 +209,7 @@ class _TimetablePageState extends State<TimetablePage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
               SegmentedButton<TimetableView>(
                 segments: const [
@@ -233,7 +233,7 @@ class _TimetablePageState extends State<TimetablePage> {
                 onSelectionChanged: (selection) =>
                     setState(() => _view = selection.first),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
               // Only the day needs choosing: the teacher is always the signed-in
               // user, so there is nothing to pick in the personal week.
@@ -243,7 +243,7 @@ class _TimetablePageState extends State<TimetablePage> {
                   selected: _day,
                   onSelected: (value) => setState(() => _day = value),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
               ],
 
               // No Expanded: the landing shell already scrolls this page
@@ -302,11 +302,9 @@ class _TimetablePageState extends State<TimetablePage> {
 
     // The two views transpose each other, so each supplies its own axes.
     final (rows, columns, rowHeaderLabel) = switch (_view) {
+      // Periods down the side, weekdays across the top — the grid still
+      // stores its cells day-first, hence `transposed` below.
       TimetableView.byTeacher => (
-        [
-          for (final day in kWeekdayIndexes)
-            TimetableHeader(key: day, primary: kWeekdayLabels[day]!),
-        ],
         [
           for (final slot in grid.slots)
             TimetableHeader(
@@ -315,7 +313,11 @@ class _TimetablePageState extends State<TimetablePage> {
               secondary: slot.secondaryLabel,
             ),
         ],
-        'Weekday',
+        [
+          for (final day in kWeekdayIndexes)
+            TimetableHeader(key: day, primary: kWeekdayLabels[day]!),
+        ],
+        '#',
       ),
       TimetableView.byClass => (
         [
@@ -330,7 +332,7 @@ class _TimetablePageState extends State<TimetablePage> {
           for (final group in data.classes)
             TimetableHeader(key: group.id, primary: group.label),
         ],
-        'Period',
+        '#',
       ),
     };
 
@@ -341,6 +343,8 @@ class _TimetablePageState extends State<TimetablePage> {
       rows: rows,
       columns: columns,
       rowHeaderLabel: rowHeaderLabel,
+      showClass: _view == TimetableView.byTeacher,
+      transposed: _view == TimetableView.byTeacher,
     );
   }
 }
@@ -403,30 +407,36 @@ class _DayStepper extends StatelessWidget {
     final hasPrevious = index > 0;
     final hasNext = index >= 0 && index < days.length - 1;
 
+    const compact = VisualDensity(horizontal: -4, vertical: -4);
+
     return Container(
+      height: 36,
       decoration: BoxDecoration(
         color: colors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: colors.line),
       ),
       child: Row(
         children: [
           IconButton(
             onPressed: hasPrevious ? () => onSelected(days[index - 1]) : null,
-            icon: const Icon(Icons.chevron_left_rounded),
+            icon: const Icon(Icons.chevron_left_rounded, size: 20),
+            visualDensity: compact,
             tooltip: 'Previous day',
           ),
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            // Day and "Today" on one line, so the stepper stays one row high.
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   selected == null ? '—' : (kWeekdayLabels[selected!] ?? '—'),
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                if (selected != null && selected == DateTime.now().weekday)
+                if (selected != null && selected == DateTime.now().weekday) ...[
+                  const SizedBox(width: 6),
                   Text(
                     'Today',
                     style: theme.textTheme.labelSmall?.copyWith(
@@ -434,12 +444,14 @@ class _DayStepper extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                ],
               ],
             ),
           ),
           IconButton(
             onPressed: hasNext ? () => onSelected(days[index + 1]) : null,
-            icon: const Icon(Icons.chevron_right_rounded),
+            icon: const Icon(Icons.chevron_right_rounded, size: 20),
+            visualDensity: compact,
             tooltip: 'Next day',
           ),
         ],

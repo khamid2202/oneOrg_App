@@ -152,6 +152,20 @@ String? teacherKey(TimetableLesson lesson) {
 }
 
 /// The class label shown on a lesson card, e.g. `10-A`.
+/// A cell-sized subject name, the same rule as the web timetable grid:
+/// "Computer Science" → "CS", "Russian" → "Rus". The details sheet a card
+/// opens keeps the full name.
+String shortSubjectName(String name) {
+  final words = name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+  if (words.isEmpty) return name;
+  if (words.length > 1) {
+    final initials = words.map((w) => w[0].toUpperCase()).join();
+    return initials.length > 4 ? initials.substring(0, 4) : initials;
+  }
+  final word = words.first;
+  return word.length > 3 ? word.substring(0, 3) : word;
+}
+
 String classLabel(TimetableLesson lesson) {
   final label = lesson.groupLabel?.trim();
   if (label != null && label.isNotEmpty) {
@@ -243,6 +257,9 @@ List<TimetableSlot> _slotsFrom(List<TimetableLesson> lessons) {
 /// Lessons that put one teacher in two places at once.
 Set<String> findClashes(List<TimetableLesson> lessons) {
   final bySlot = <String, List<String>>{};
+  // Where each teacher-slot's lessons are taught. Several classes sharing one
+  // subject in one room are a joint lesson (10-A+10-B), not a double booking.
+  final places = <String, Set<String>>{};
 
   for (final lesson in lessons) {
     final key = lessonKey(lesson);
@@ -254,14 +271,17 @@ Set<String> findClashes(List<TimetableLesson> lessons) {
       continue;
     }
 
-    bySlot
-        .putIfAbsent('${lesson.dayIndex}_${lesson.timeId}_$teacher', () => [])
-        .add(key);
+    final slot = '${lesson.dayIndex}_${lesson.timeId}_$teacher';
+    bySlot.putIfAbsent(slot, () => []).add(key);
+    places
+        .putIfAbsent(slot, () => {})
+        .add('${lesson.title.trim().toLowerCase()}|${lesson.room?.trim()}');
   }
 
   return {
-    for (final keys in bySlot.values)
-      if (keys.length > 1) ...keys,
+    for (final entry in bySlot.entries)
+      if (entry.value.length > 1 && places[entry.key]!.length > 1)
+        ...entry.value,
   };
 }
 

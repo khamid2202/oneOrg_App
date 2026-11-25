@@ -19,6 +19,9 @@ TimetableLesson _lesson({
   String? start = '08:30:00',
   String? end = '09:15:00',
   bool isText = false,
+  String? room,
+  int? divisionId,
+  String? divisionName,
 }) {
   return TimetableLesson(
     id: id,
@@ -33,6 +36,10 @@ TimetableLesson _lesson({
     startTime: start,
     endTime: end,
     isTextLesson: isText,
+    room: room,
+    divisionId: divisionId,
+    divisionName: divisionName,
+    isChoice: divisionId != null,
   );
 }
 
@@ -218,9 +225,30 @@ void main() {
 
   group('clash detection', () {
     test('flags a teacher booked twice in one period', () {
-      final lessons = [_lesson(id: 1, groupId: 5), _lesson(id: 2, groupId: 6)];
+      final lessons = [
+        _lesson(id: 1, groupId: 5),
+        _lesson(id: 2, groupId: 6, title: 'Physics'),
+      ];
 
       final clashes = findClashes(lessons);
+
+      expect(clashes, {'id:1', 'id:2'});
+    });
+
+    test('two classes in one subject and room are a joint lesson', () {
+      final clashes = findClashes([
+        _lesson(id: 1, groupId: 5, room: 'Lab 2'),
+        _lesson(id: 2, groupId: 6, groupLabel: '10-B', room: 'Lab 2'),
+      ]);
+
+      expect(clashes, isEmpty);
+    });
+
+    test('the same subject in two rooms is still a clash', () {
+      final clashes = findClashes([
+        _lesson(id: 1, groupId: 5, room: 'Lab 1'),
+        _lesson(id: 2, groupId: 6, room: 'Lab 2'),
+      ]);
 
       expect(clashes, {'id:1', 'id:2'});
     });
@@ -247,7 +275,10 @@ void main() {
       // The other half of the double-booking belongs to a different class, so
       // filtering first would hide it.
       final grid = buildTimetableGrid(
-        all: [_lesson(id: 1, groupId: 5), _lesson(id: 2, groupId: 6)],
+        all: [
+          _lesson(id: 1, groupId: 5),
+          _lesson(id: 2, groupId: 6, title: 'Physics'),
+        ],
         view: TimetableView.byTeacher,
         teacher: 'id:12',
       );
@@ -301,9 +332,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Maths'), findsOneWidget);
+      expect(find.text(shortSubjectName('Maths')), findsOneWidget);
       // Another teacher's lesson stays out of your week.
-      expect(find.text('Biology'), findsNothing);
+      expect(find.text(shortSubjectName('Biology')), findsNothing);
     });
 
     testWidgets('there is no way to look at another teacher’s week', (
@@ -349,7 +380,7 @@ void main() {
           find.text('You have no lessons in this timetable.'),
           findsOneWidget,
         );
-        expect(find.text('Maths'), findsNothing);
+        expect(find.text(shortSubjectName('Maths')), findsNothing);
       },
     );
 
@@ -370,8 +401,42 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.text(shortSubjectName('Maths')), findsOneWidget);
+      expect(find.text(shortSubjectName('Biology')), findsNothing);
+    });
+
+    testWidgets('by class, a choice block is one card listing its options', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap([
+          _lesson(
+            id: 1,
+            title: 'Maths',
+            divisionId: 7,
+            divisionName: 'Choice 1',
+          ),
+          _lesson(
+            id: 2,
+            title: 'Biology',
+            teacherId: 99,
+            teacherLabel: 'Other',
+            divisionId: 7,
+            divisionName: 'Choice 1',
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('By class'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Choice 1'), findsOneWidget);
+      expect(find.text(shortSubjectName('Biology')), findsNothing);
+
+      await tester.tap(find.text('Choice 1'));
+      await tester.pumpAndSettle();
       expect(find.text('Maths'), findsOneWidget);
-      expect(find.text('Biology'), findsNothing);
+      expect(find.text('Biology'), findsOneWidget);
     });
 
     testWidgets('switching to by class shows one day across the classes', (
@@ -393,33 +458,48 @@ void main() {
       await tester.pumpAndSettle();
 
       // By teacher, the other teacher's class is not shown.
-      expect(find.text('Biology'), findsNothing);
+      expect(find.text(shortSubjectName('Biology')), findsNothing);
 
       await tester.tap(find.text('By class'));
       await tester.pumpAndSettle();
 
       // Both classes now appear, and the axes have swapped: classes head the
       // columns, periods label the rows.
-      expect(find.text('Maths'), findsOneWidget);
-      expect(find.text('Biology'), findsOneWidget);
-      expect(find.text('Period'), findsOneWidget);
-      expect(find.text('Weekday'), findsNothing);
+      expect(find.text(shortSubjectName('Maths')), findsOneWidget);
+      expect(find.text(shortSubjectName('Biology')), findsOneWidget);
+      expect(find.text('#'), findsOneWidget);
+      expect(find.text('Day'), findsNothing);
       expect(find.text('2nd lesson'), findsWidgets);
       expect(find.text('10-A'), findsWidgets);
       expect(find.text('10-B'), findsWidgets);
     });
 
-    testWidgets('the by-teacher view keeps days down and periods across', (
+    testWidgets('my week lists periods down and weekdays across', (
       tester,
     ) async {
       await tester.pumpWidget(_wrap([_lesson(id: 1)]));
       await tester.pumpAndSettle();
 
-      expect(find.text('Weekday'), findsOneWidget);
-      expect(find.text('Period'), findsNothing);
-      // Days label the rows.
+      // Periods label the rows; the days head the columns.
+      expect(find.text('#'), findsOneWidget);
       expect(find.text('Mon'), findsOneWidget);
       expect(find.text('Fri'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Fri')).dy,
+        tester.getTopLeft(find.text('Mon')).dy,
+      );
+    });
+
+    testWidgets('a card shows a short name and opens the full details', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap([_lesson(id: 1)]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Maths'), findsNothing);
+      await tester.tap(find.text(shortSubjectName('Maths')));
+      await tester.pumpAndSettle();
+      expect(find.text('Maths'), findsOneWidget);
     });
 
     testWidgets('by class opens on today', (tester) async {
@@ -438,7 +518,7 @@ void main() {
       if (kWeekdayIndexes.contains(today)) {
         expect(find.text(kWeekdayLabels[today]!), findsWidgets);
         expect(find.text('Today'), findsOneWidget);
-        expect(find.text('Lesson $today'), findsOneWidget);
+        expect(find.text(shortSubjectName('Lesson $today')), findsOneWidget);
       } else {
         // At the weekend there is no "today" to show, so it falls back.
         expect(find.text('Today'), findsNothing);
@@ -458,7 +538,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Wed'), findsWidgets);
-      expect(find.text('Wednesday lesson'), findsOneWidget);
+      expect(find.text(shortSubjectName('Wednesday lesson')), findsOneWidget);
     });
 
     testWidgets('the arrows step through the days and stop at each end', (
@@ -490,7 +570,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      expect(find.text('Monday lesson'), findsOneWidget);
+      expect(find.text(shortSubjectName('Monday lesson')), findsOneWidget);
       // Nowhere further back to go.
       expect(back().onPressed, isNull);
 
@@ -498,14 +578,14 @@ void main() {
         find.widgetWithIcon(IconButton, Icons.chevron_right_rounded),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Tuesday lesson'), findsOneWidget);
-      expect(find.text('Monday lesson'), findsNothing);
+      expect(find.text(shortSubjectName('Tuesday lesson')), findsOneWidget);
+      expect(find.text(shortSubjectName('Monday lesson')), findsNothing);
 
       await tester.tap(
         find.widgetWithIcon(IconButton, Icons.chevron_right_rounded),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Wednesday lesson'), findsOneWidget);
+      expect(find.text(shortSubjectName('Wednesday lesson')), findsOneWidget);
       // Last taught day, so forward is spent.
       expect(forward().onPressed, isNull);
     });
@@ -516,7 +596,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('NOTE'), findsOneWidget);
+      expect(find.text('NOTE'), findsNothing);
       expect(find.text('Class meeting'), findsOneWidget);
     });
 
@@ -621,7 +701,7 @@ void main() {
       await tester.tap(find.widgetWithText(OutlinedButton, 'Try again'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Maths'), findsOneWidget);
+      expect(find.text(shortSubjectName('Maths')), findsOneWidget);
     });
 
     testWidgets('a profile failure says so, and by class still works', (
@@ -654,7 +734,7 @@ void main() {
       await tester.tap(find.text('By class'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Maths'), findsOneWidget);
+      expect(find.text(shortSubjectName('Maths')), findsOneWidget);
     });
   });
 }

@@ -23,6 +23,10 @@ class TimetableLesson {
     this.startTime,
     this.endTime,
     this.isTextLesson = false,
+    this.divisionId,
+    this.divisionName,
+    this.isChoice = false,
+    this.optionName,
   });
 
   final int? id;
@@ -45,6 +49,17 @@ class TimetableLesson {
   final String? startTime;
   final String? endTime;
   final bool isTextLesson;
+
+  /// A choice (elective) lesson: one row per option, class and period, all
+  /// sharing [divisionId]. A class sees the choice by [divisionName] ("Choice
+  /// 1"); its teacher sees the real subject in [title].
+  final int? divisionId;
+  final String? divisionName;
+  final bool isChoice;
+
+  /// The choice option this row belongs to (the API's `subgroup`), which
+  /// tells apart two options in one subject.
+  final String? optionName;
 
   factory TimetableLesson.fromJson(Map<String, dynamic> json) {
     final parsedDayLabel = _firstString(json, const [
@@ -113,6 +128,13 @@ class TimetableLesson {
       startTime: startTime,
       endTime: endTime,
       isTextLesson: lessonType == 'text',
+      divisionId: _asInt(json['division_id'] ?? json['divisionId']),
+      divisionName: _firstString(json, const ['division_name', 'divisionName']),
+      isChoice:
+          (_firstString(json, const ['division_kind', 'divisionKind']) ?? '')
+              .toLowerCase() ==
+          'choice',
+      optionName: _firstString(json, const ['subgroup', 'subgroup_name']),
     );
   }
 
