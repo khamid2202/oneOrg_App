@@ -1863,4 +1863,179 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passkeyUnavailable => 'Bu telefonda passkey hozircha ishlamaydi.';
+
+  @override
+  String gradedTimesThisWeek(int count) {
+    return 'Bu hafta $count marta baholangan';
+  }
+
+  @override
+  String get behaviorDeleteTooltip =>
+      'Yozuv va unga bog‘liq Dombit ballarini o‘chirish';
+
+  @override
+  String get behaviorDeleteTitle => 'Xulq yozuvi o‘chirilsinmi?';
+
+  @override
+  String behaviorDeleteBody(String name) {
+    return 'Bu $name xulq yozuvini va unga bog‘liq Dombit ballarini o‘chiradi. Qaytarib bo‘lmaydi.';
+  }
+
+  @override
+  String get behaviorDeleteConfirm => 'O‘chirish';
+
+  @override
+  String get behaviorDeleted => 'Xulq yozuvi o‘chirildi.';
+
+  @override
+  String behaviorDeletedWithPoints(int count) {
+    return 'Xulq yozuvi va $count ta bog‘liq ball o‘chirildi.';
+  }
+
+  @override
+  String get behaviorDeleteFailed => 'Bu yozuvni o‘chirib bo‘lmadi.';
+
+  @override
+  String get resetGradesTitle => 'Baholarni tiklash';
+
+  @override
+  String get resetGradesNoActiveYear => 'Faol o‘quv yili mavjud emas.';
+
+  @override
+  String get resetGradesSelectClasses => 'Sinflarni tanlang';
+
+  @override
+  String get resetGradesSearchClasses => 'Sinflarni qidirish';
+
+  @override
+  String get resetGradesAllClasses => 'Barcha sinflar';
+
+  @override
+  String resetGradesClassesSelected(int count) {
+    return '$count ta sinf';
+  }
+
+  @override
+  String get resetGradesGraded => 'Baholangan';
+
+  @override
+  String get resetGradesAll => 'Barchasi';
+
+  @override
+  String get resetGradesSelectAll => 'Barcha darslarni tanlash';
+
+  @override
+  String resetGradesSelectedCount(int selected, int total) {
+    return '$total tadan $selected tasi tanlandi';
+  }
+
+  @override
+  String get resetGradesNothing =>
+      'Bu kunda baholarni tiklash uchun dars yo‘q.';
+
+  @override
+  String get resetGradesNothingGraded => 'Hali baholangan darslar yo‘q.';
+
+  @override
+  String resetGradesGradedCount(int count) {
+    return '$count ta baholangan';
+  }
+
+  @override
+  String resetGradesConfirmTitle(int count, String date) {
+    return '$date kuni $count ta dars bahosi tiklansinmi?';
+  }
+
+  @override
+  String get resetGradesConfirmBody =>
+      'Baholar va izohlar tozalanadi. Davomat saqlanadi. Amal qayd etiladi.';
+
+  @override
+  String resetGradesCleared(int count) {
+    return '$count ta baho yozuvi tozalandi.';
+  }
+
+  @override
+  String get resetGradesFailed => 'Baholarni tiklab bo‘lmadi.';
+
+  @override
+  String get resetGradesClearSelection => 'Tanlovni tozalash';
+
+  @override
+  String get resetGradesPreviousDay => 'Oldingi kun';
+
+  @override
+  String get resetGradesNextDay => 'Keyingi kun';
+
+  @override
+  String get laCurrentTerm => 'Joriy chorak';
+
+  @override
+  String get laTerm => 'Chorak';
+
+  @override
+  String get laObservationType => 'Kuzatuv turi';
+
+  @override
+  String get laRoutine => 'Oddiy';
+
+  @override
+  String get laFormal => 'Rasmiy';
+
+  @override
+  String get laFollowUp => 'Qayta kuzatuv';
+
+  @override
+  String get laCommunication => 'Muloqot';
+
+  @override
+  String get laRecommendations => 'Tavsiyalar';
+
+  @override
+  String get laAction => 'Amaliy reja';
+
+  @override
+  String get laKpiPoints => 'KPI natijasi';
+
+  @override
+  String laScoreMissing(int count) {
+    return 'Saqlashdan oldin yana $count ta KPIga baho bering.';
+  }
+
+  @override
+  String get laTeacherToStudent => 'O‘qituvchidan o‘quvchiga';
+
+  @override
+  String get laStudentToTeacher => 'O‘quvchidan o‘qituvchiga';
+
+  @override
+  String get laStudentToStudent => 'O‘quvchilar o‘rtasida';
+
+  @override
+  String get laRecCoverage =>
+      'Orqa va chetdagi o‘quvchilarga ham e’tibor bering';
+
+  @override
+  String get laRecBalance => 'O‘qituvchi va o‘quvchi muloqotini muvozanatlang';
+
+  @override
+  String get laRecMovement => 'Sinf bo‘ylab harakatlaning';
+
+  @override
+  String get laRecQuestions =>
+      'Faqat faol o‘quvchilarga emas, boshqalarga ham savol bering';
+
+  @override
+  String get laRecQuietStudents =>
+      'Kam gapiradigan o‘quvchilarni ham jalb qiling';
+
+  @override
+  String get laRecPeerTalk => 'Juftlik yoki guruh muhokamasidan foydalaning';
+
+  @override
+  String get laRecSeating => 'O‘tirish tartibi va guruhlarni ko‘rib chiqing';
+
+  @override
+  String get laRecRecheck =>
+      'Keyingi kuzatuvda kam qatnashganlarni qayta tekshiring';
 }

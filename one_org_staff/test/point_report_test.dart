@@ -475,6 +475,10 @@ void main() {
     ) async {
       DateTime? fetchedStart;
       DateTime? fetchedEnd;
+      // A single day is the default now; this is the Weekly view.
+      SharedPreferences.setMockInitialValues({
+        'point_report_date_mode': 'weekly',
+      });
 
       await tester.pumpWidget(
         _wrap(

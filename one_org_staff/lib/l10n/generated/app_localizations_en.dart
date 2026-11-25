@@ -1876,4 +1876,197 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get passkeyUnavailable =>
       'Passkeys aren\'t available on this phone yet.';
+
+  @override
+  String gradedTimesThisWeek(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Graded $count times this week',
+      one: 'Graded 1 time this week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get behaviorDeleteTooltip => 'Delete entry and linked Dombit points';
+
+  @override
+  String get behaviorDeleteTitle => 'Delete behavior entry?';
+
+  @override
+  String behaviorDeleteBody(String name) {
+    return 'This removes $name\'s behavior comment and any Dombit points linked to it. This can\'t be undone.';
+  }
+
+  @override
+  String get behaviorDeleteConfirm => 'Delete entry';
+
+  @override
+  String get behaviorDeleted => 'Behavior entry deleted.';
+
+  @override
+  String behaviorDeletedWithPoints(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Behavior entry and $count linked point records deleted.',
+      one: 'Behavior entry and 1 linked point record deleted.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get behaviorDeleteFailed => 'Couldn\'t delete this behavior entry.';
+
+  @override
+  String get resetGradesTitle => 'Reset grades';
+
+  @override
+  String get resetGradesNoActiveYear => 'There is no active academic year.';
+
+  @override
+  String get resetGradesSelectClasses => 'Select classes';
+
+  @override
+  String get resetGradesSearchClasses => 'Search classes';
+
+  @override
+  String get resetGradesAllClasses => 'All classes';
+
+  @override
+  String resetGradesClassesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count classes',
+      one: '1 class',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get resetGradesGraded => 'Graded';
+
+  @override
+  String get resetGradesAll => 'All';
+
+  @override
+  String get resetGradesSelectAll => 'Select all lessons';
+
+  @override
+  String resetGradesSelectedCount(int selected, int total) {
+    return '$selected of $total selected';
+  }
+
+  @override
+  String get resetGradesNothing => 'No lessons to reset on this day.';
+
+  @override
+  String get resetGradesNothingGraded => 'No lessons have grades yet.';
+
+  @override
+  String resetGradesGradedCount(int count) {
+    return '$count graded';
+  }
+
+  @override
+  String resetGradesConfirmTitle(int count, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Reset $count lessons · $date?',
+      one: 'Reset 1 lesson · $date?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get resetGradesConfirmBody =>
+      'Scores and comments will be cleared. Attendance stays. The reset is logged.';
+
+  @override
+  String resetGradesCleared(int count) {
+    return '$count grade records cleared.';
+  }
+
+  @override
+  String get resetGradesFailed => 'Couldn\'t reset grades.';
+
+  @override
+  String get resetGradesClearSelection => 'Clear selection';
+
+  @override
+  String get resetGradesPreviousDay => 'Previous day';
+
+  @override
+  String get resetGradesNextDay => 'Next day';
+
+  @override
+  String get laCurrentTerm => 'Current term';
+
+  @override
+  String get laTerm => 'Term';
+
+  @override
+  String get laObservationType => 'Observation type';
+
+  @override
+  String get laRoutine => 'Routine';
+
+  @override
+  String get laFormal => 'Formal';
+
+  @override
+  String get laFollowUp => 'Follow-up';
+
+  @override
+  String get laCommunication => 'Communication';
+
+  @override
+  String get laRecommendations => 'Recommendations';
+
+  @override
+  String get laAction => 'Action plan';
+
+  @override
+  String get laKpiPoints => 'KPI score';
+
+  @override
+  String laScoreMissing(int count) {
+    return 'Score $count more KPIs before saving.';
+  }
+
+  @override
+  String get laTeacherToStudent => 'Teacher → student';
+
+  @override
+  String get laStudentToTeacher => 'Student → teacher';
+
+  @override
+  String get laStudentToStudent => 'Student ↔ student';
+
+  @override
+  String get laRecCoverage => 'Reach students at the back and corners';
+
+  @override
+  String get laRecBalance => 'Balance teacher and student communication';
+
+  @override
+  String get laRecMovement => 'Move around the classroom';
+
+  @override
+  String get laRecQuestions => 'Question beyond frequent volunteers';
+
+  @override
+  String get laRecQuietStudents => 'Invite quieter students to contribute';
+
+  @override
+  String get laRecPeerTalk => 'Use pair or group discussion';
+
+  @override
+  String get laRecSeating => 'Review seating and grouping';
+
+  @override
+  String get laRecRecheck => 'Recheck less-involved areas next time';
 }

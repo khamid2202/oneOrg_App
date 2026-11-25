@@ -127,6 +127,39 @@ void main() {
     });
   });
 
+  group('weekly graded count', () {
+    TeacherLesson lesson(Map<String, dynamic> extra) => TeacherLesson.fromJson({
+      'id': 1,
+      'lesson_instance_id': 9,
+      'subject': 'Math',
+      'graded_lessons_this_week': 2,
+      ...extra,
+    });
+
+    test('shows on your own gradable lesson', () {
+      expect(lesson({}).showsWeeklyCount, isTrue);
+      expect(lesson({}).gradedThisWeek, 2);
+    });
+
+    test('not on ungraded, cancelled, handed-over or unrecorded lessons', () {
+      expect(lesson({'is_graded': false}).showsWeeklyCount, isFalse);
+      expect(lesson({'status': 'cancelled'}).showsWeeklyCount, isFalse);
+      expect(lesson({'substitution_type': 'cover'}).showsWeeklyCount, isFalse);
+      expect(
+        lesson({
+          'substitution_type': 'cover',
+          'is_substitution': true,
+        }).showsWeeklyCount,
+        isTrue,
+      );
+      expect(lesson({'lesson_instance_id': null}).showsWeeklyCount, isFalse);
+      expect(
+        lesson({'graded_lessons_this_week': null}).showsWeeklyCount,
+        isFalse,
+      );
+    });
+  });
+
   group('day layout', () {
     test('every bell period is kept and lessons sit on the time scale', () {
       final layout = layoutDay(const [

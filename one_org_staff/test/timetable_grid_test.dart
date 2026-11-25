@@ -39,7 +39,7 @@ TimetableLesson _lesson({
     room: room,
     divisionId: divisionId,
     divisionName: divisionName,
-    isChoice: divisionId != null,
+    divisionKind: divisionId != null ? 'choice' : null,
   );
 }
 

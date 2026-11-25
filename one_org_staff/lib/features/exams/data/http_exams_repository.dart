@@ -138,7 +138,7 @@ class HttpExamsRepository implements ExamsRepository {
       body: jsonEncode([
         for (final draft in drafts)
           {
-            'student_id': draft.studentId,
+            'person_id': draft.personId,
             'exam_id': draft.examId,
             'score': draft.score,
           },

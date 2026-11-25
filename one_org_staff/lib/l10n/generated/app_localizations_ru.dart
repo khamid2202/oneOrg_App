@@ -1872,4 +1872,205 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get passkeyUnavailable =>
       'Ключи доступа пока недоступны на этом телефоне.';
+
+  @override
+  String gradedTimesThisWeek(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Оценено $count раз на этой неделе',
+      few: 'Оценено $count раза на этой неделе',
+      one: 'Оценено $count раз на этой неделе',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get behaviorDeleteTooltip => 'Удалить запись и связанные баллы Dombit';
+
+  @override
+  String get behaviorDeleteTitle => 'Удалить запись о поведении?';
+
+  @override
+  String behaviorDeleteBody(String name) {
+    return 'Это удалит запись о поведении ($name) и связанные с ней баллы Dombit. Отменить нельзя.';
+  }
+
+  @override
+  String get behaviorDeleteConfirm => 'Удалить';
+
+  @override
+  String get behaviorDeleted => 'Запись о поведении удалена.';
+
+  @override
+  String behaviorDeletedWithPoints(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Запись и $count связанных записей баллов удалены.',
+      few: 'Запись и $count связанные записи баллов удалены.',
+      one: 'Запись и $count связанная запись баллов удалены.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get behaviorDeleteFailed => 'Не удалось удалить запись.';
+
+  @override
+  String get resetGradesTitle => 'Сброс оценок';
+
+  @override
+  String get resetGradesNoActiveYear => 'Нет активного учебного года.';
+
+  @override
+  String get resetGradesSelectClasses => 'Выбрать классы';
+
+  @override
+  String get resetGradesSearchClasses => 'Поиск классов';
+
+  @override
+  String get resetGradesAllClasses => 'Все классы';
+
+  @override
+  String resetGradesClassesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count класса',
+      many: '$count классов',
+      few: '$count класса',
+      one: '1 класс',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get resetGradesGraded => 'С оценками';
+
+  @override
+  String get resetGradesAll => 'Все';
+
+  @override
+  String get resetGradesSelectAll => 'Выбрать все уроки';
+
+  @override
+  String resetGradesSelectedCount(int selected, int total) {
+    return 'Выбрано: $selected из $total';
+  }
+
+  @override
+  String get resetGradesNothing => 'В этот день нет уроков для сброса оценок.';
+
+  @override
+  String get resetGradesNothingGraded => 'Пока нет оценённых уроков.';
+
+  @override
+  String resetGradesGradedCount(int count) {
+    return 'Оценок: $count';
+  }
+
+  @override
+  String resetGradesConfirmTitle(int count, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Сбросить оценки за $count урока · $date?',
+      many: 'Сбросить оценки за $count уроков · $date?',
+      few: 'Сбросить оценки за $count урока · $date?',
+      one: 'Сбросить оценки за 1 урок · $date?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get resetGradesConfirmBody =>
+      'Оценки и комментарии будут удалены. Посещаемость сохранится. Действие будет записано.';
+
+  @override
+  String resetGradesCleared(int count) {
+    return 'Записей с оценками очищено: $count.';
+  }
+
+  @override
+  String get resetGradesFailed => 'Не удалось сбросить оценки.';
+
+  @override
+  String get resetGradesClearSelection => 'Снять выбор';
+
+  @override
+  String get resetGradesPreviousDay => 'Предыдущий день';
+
+  @override
+  String get resetGradesNextDay => 'Следующий день';
+
+  @override
+  String get laCurrentTerm => 'Текущий триместр';
+
+  @override
+  String get laTerm => 'Триместр';
+
+  @override
+  String get laObservationType => 'Тип наблюдения';
+
+  @override
+  String get laRoutine => 'Обычное';
+
+  @override
+  String get laFormal => 'Формальное';
+
+  @override
+  String get laFollowUp => 'Повторное';
+
+  @override
+  String get laCommunication => 'Коммуникация';
+
+  @override
+  String get laRecommendations => 'Рекомендации';
+
+  @override
+  String get laAction => 'План действий';
+
+  @override
+  String get laKpiPoints => 'Оценка KPI';
+
+  @override
+  String laScoreMissing(int count) {
+    return 'Оцените ещё $count KPI перед сохранением.';
+  }
+
+  @override
+  String get laTeacherToStudent => 'Учитель → ученик';
+
+  @override
+  String get laStudentToTeacher => 'Ученик → учитель';
+
+  @override
+  String get laStudentToStudent => 'Ученик ↔ ученик';
+
+  @override
+  String get laRecCoverage =>
+      'Уделять внимание ученикам в глубине и по краям класса';
+
+  @override
+  String get laRecBalance => 'Сбалансировать общение учителя и учеников';
+
+  @override
+  String get laRecMovement => 'Перемещаться по классу';
+
+  @override
+  String get laRecQuestions => 'Задавать вопросы не только активным ученикам';
+
+  @override
+  String get laRecQuietStudents =>
+      'Привлекать к ответам менее активных учеников';
+
+  @override
+  String get laRecPeerTalk => 'Использовать обсуждения в парах и группах';
+
+  @override
+  String get laRecSeating => 'Пересмотреть рассадку и состав групп';
+
+  @override
+  String get laRecRecheck => 'Повторно проверить менее вовлечённых учеников';
 }

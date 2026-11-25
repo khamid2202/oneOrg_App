@@ -48,7 +48,8 @@ class PointReportPreferences {
         return mode;
       }
     }
-    return PointReportDateMode.weekly;
+    // A single day first, as on the web; a saved choice still wins.
+    return PointReportDateMode.single;
   }
 
   Future<void> saveDateMode(PointReportDateMode mode) async {

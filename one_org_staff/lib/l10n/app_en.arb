@@ -1007,5 +1007,124 @@
   "passkeyNotNow": "Not now",
   "passkeyAdded": "Passkey added",
   "passkeyAddFailed": "Couldn't add the passkey. Try again later.",
-  "passkeyUnavailable": "Passkeys aren't available on this phone yet."
+  "passkeyUnavailable": "Passkeys aren't available on this phone yet.",
+  "gradedTimesThisWeek": "{count, plural, =1{Graded 1 time this week} other{Graded {count} times this week}}",
+  "@gradedTimesThisWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "behaviorDeleteTooltip": "Delete entry and linked Dombit points",
+  "behaviorDeleteTitle": "Delete behavior entry?",
+  "behaviorDeleteBody": "This removes {name}'s behavior comment and any Dombit points linked to it. This can't be undone.",
+  "@behaviorDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "behaviorDeleteConfirm": "Delete entry",
+  "behaviorDeleted": "Behavior entry deleted.",
+  "behaviorDeletedWithPoints": "{count, plural, =1{Behavior entry and 1 linked point record deleted.} other{Behavior entry and {count} linked point records deleted.}}",
+  "@behaviorDeletedWithPoints": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "behaviorDeleteFailed": "Couldn't delete this behavior entry.",
+"resetGradesTitle": "Reset grades",
+  "resetGradesNoActiveYear": "There is no active academic year.",
+  "resetGradesSelectClasses": "Select classes",
+  "resetGradesSearchClasses": "Search classes",
+  "resetGradesAllClasses": "All classes",
+  "resetGradesClassesSelected": "{count, plural, =1{1 class} other{{count} classes}}",
+  "resetGradesGraded": "Graded",
+  "resetGradesAll": "All",
+  "resetGradesSelectAll": "Select all lessons",
+  "resetGradesSelectedCount": "{selected} of {total} selected",
+  "resetGradesNothing": "No lessons to reset on this day.",
+  "resetGradesNothingGraded": "No lessons have grades yet.",
+  "resetGradesGradedCount": "{count} graded",
+  "resetGradesConfirmTitle": "{count, plural, =1{Reset 1 lesson · {date}?} other{Reset {count} lessons · {date}?}}",
+  "resetGradesConfirmBody": "Scores and comments will be cleared. Attendance stays. The reset is logged.",
+  "resetGradesCleared": "{count} grade records cleared.",
+  "resetGradesFailed": "Couldn't reset grades.",
+  "resetGradesClearSelection": "Clear selection",
+  "resetGradesPreviousDay": "Previous day",
+  "resetGradesNextDay": "Next day",
+  "laCurrentTerm": "Current term",
+  "laTerm": "Term",
+  "laObservationType": "Observation type",
+  "laRoutine": "Routine",
+  "laFormal": "Formal",
+  "laFollowUp": "Follow-up",
+  "laCommunication": "Communication",
+  "laRecommendations": "Recommendations",
+  "laAction": "Action plan",
+  "laKpiPoints": "KPI score",
+  "laScoreMissing": "Score {count} more KPIs before saving.",
+  "laTeacherToStudent": "Teacher → student",
+  "laStudentToTeacher": "Student → teacher",
+  "laStudentToStudent": "Student ↔ student",
+  "laRecCoverage": "Reach students at the back and corners",
+  "laRecBalance": "Balance teacher and student communication",
+  "laRecMovement": "Move around the classroom",
+  "laRecQuestions": "Question beyond frequent volunteers",
+  "laRecQuietStudents": "Invite quieter students to contribute",
+  "laRecPeerTalk": "Use pair or group discussion",
+  "laRecSeating": "Review seating and grouping",
+  "laRecRecheck": "Recheck less-involved areas next time",
+  "@resetGradesClassesSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@resetGradesSelectedCount": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@resetGradesGradedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@resetGradesConfirmTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "@resetGradesCleared": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@laScoreMissing": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

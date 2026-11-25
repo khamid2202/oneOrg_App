@@ -73,7 +73,7 @@ class _PointReportPageState extends State<PointReportPage> {
   int? _academicYearId;
 
   GroupEntry? _selectedGroup;
-  PointReportDateMode _dateMode = PointReportDateMode.weekly;
+  PointReportDateMode _dateMode = PointReportDateMode.single;
   DateTime _anchor = DateTime.now();
   DateTime? _rangeStart;
   DateTime? _rangeEnd;

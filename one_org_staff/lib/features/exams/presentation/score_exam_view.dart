@@ -5,6 +5,7 @@ import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 import 'package:one_org_staff/features/auth/domain/auth_repository.dart';
 import 'package:one_org_staff/features/exams/domain/exams_repository.dart';
+import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 
 import 'exam_common.dart';
 import 'exam_grading_view.dart';
@@ -12,9 +13,10 @@ import 'exams_page.dart';
 
 /// "Score the exam" — a port of the web's `ExamsOfClasses`.
 ///
-/// Three steps, same as the web: pick an exam period, pick one of *your own*
-/// exams in it (the list is filtered to `created_by == me`), then grade the
-/// class on [ExamGradingView].
+/// Three steps, same as the web: pick an exam period, pick an exam for a class
+/// you're timetabled to teach its subject to (whoever created it — co-teachers
+/// share exams), then grade that class on [ExamGradingView]. A subgroup
+/// teacher can only score their subgroup.
 class ScoreExamView extends StatefulWidget {
   const ScoreExamView({
     super.key,
@@ -67,12 +69,49 @@ class _ScoreExamViewState extends State<ScoreExamView> {
       api.loadProfile(),
       optional(api.loadSubjects()),
       optional(api.loadGroups(academicYearId: academicYearId)),
+      optional(api.loadTimetable(academicYearId: academicYearId)),
     ]);
+
+    final myUserId = (results[2] as AppUserProfile).id;
+    final timetable = results[5] as List<TimetableLesson>;
+
+    // Who is in each of the teacher's subgroups, by division.
+    final subgroupStudents = <String, Set<int>>{};
+    final loadDivision = api.loadDivision;
+    if (loadDivision != null) {
+      final divisionIds = {
+        for (final lesson in timetable)
+          if (lesson.isTaughtBy(myUserId) &&
+              lesson.subgroupId != null &&
+              lesson.divisionId != null)
+            lesson.divisionId!,
+      };
+      final divisions = await Future.wait([
+        for (final id in divisionIds)
+          loadDivision(id).catchError((Object _) => <String, dynamic>{}),
+      ]);
+      for (final division in divisions) {
+        for (final subgroup in division['subgroups'] as List? ?? const []) {
+          if (subgroup is! Map) continue;
+          for (final student in subgroup['students'] as List? ?? const []) {
+            if (student is! Map) continue;
+            final studentId = student['student_id'];
+            final groupId = student['group_id'];
+            if (studentId is! num || groupId is! num) continue;
+            subgroupStudents
+                .putIfAbsent('${subgroup['id']}:${groupId.toInt()}', () => {})
+                .add(studentId.toInt());
+          }
+        }
+      }
+    }
 
     final data = ScoreExamData(
       exams: results[0] as List<Exam>,
       periods: results[1] as List<ExamPeriod>,
-      myUserId: (results[2] as AppUserProfile).id,
+      myUserId: myUserId,
+      timetable: timetable,
+      subgroupStudents: subgroupStudents,
       subjectNames: {
         for (final subject in results[3] as List<SubjectEntry>)
           subject.id: subject.name,
@@ -197,6 +236,11 @@ class _ScoreExamViewState extends State<ScoreExamView> {
           data.subjectNames[target.exam.subjectId] ?? 'Unknown subject',
       onBack: _closeGrading,
       onDirtyChanged: _onGradingDirtyChanged,
+      allowedStudentIds: target.allowedStudentIds,
+      additionalTargets: [
+        for (final member in target.members.skip(1))
+          ExamScoringTarget(exam: member.exam, groupId: member.groupId),
+      ],
     );
   }
 
@@ -238,7 +282,7 @@ class _ScoreExamViewState extends State<ScoreExamView> {
         final period = data.periods[index];
         return _PeriodTile(
           period: period,
-          examCount: data.examsFor(period).length,
+          examCount: data.targetsFor(period).length,
           onTap: () => setState(() => _selectedPeriod = period),
         );
       },
@@ -248,14 +292,14 @@ class _ScoreExamViewState extends State<ScoreExamView> {
   Widget _buildExams(ScoreExamData data, ExamPeriod period) {
     final theme = Theme.of(context);
     final colors = appColorsOf(context);
-    final exams = data.examsFor(period);
+    final exams = data.targetsFor(period);
 
     return ExamCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Created Exams',
+            'Your Exams',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
             ),
@@ -278,28 +322,26 @@ class _ScoreExamViewState extends State<ScoreExamView> {
               itemCount: exams.length,
               separatorBuilder: (context, index) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
-                final exam = exams[index];
-                final groupId = exam.groupIds.isEmpty
-                    ? null
-                    : exam.groupIds.first;
-                final className = groupId == null
-                    ? 'No Group'
-                    : data.groupNames[groupId] ?? 'Class $groupId';
+                final target = exams[index];
+                final groupId = target.groupId;
+                final className =
+                    target.className ??
+                    data.groupNames[groupId] ??
+                    'Class $groupId';
 
                 return _ExamTile(
-                  exam: exam,
+                  exam: target.exam,
+                  className: className,
                   data: data,
-                  // Without a class there is no roster to grade, so the card
-                  // stays inert rather than opening an empty sheet.
-                  onTap: groupId == null
-                      ? null
-                      : () => setState(
-                          () => _target = _GradingTarget(
-                            exam: exam,
-                            groupId: groupId,
-                            className: className,
-                          ),
-                        ),
+                  onTap: () => setState(
+                    () => _target = _GradingTarget(
+                      exam: target.exam,
+                      groupId: groupId,
+                      className: className,
+                      allowedStudentIds: target.allowedStudentIds,
+                      members: target.scoringTargets,
+                    ),
+                  ),
                 );
               },
             ),
@@ -315,11 +357,15 @@ class _GradingTarget {
     required this.exam,
     required this.groupId,
     required this.className,
+    this.allowedStudentIds,
+    this.members = const [],
   });
 
   final Exam exam;
   final int groupId;
   final String className;
+  final Set<int>? allowedStudentIds;
+  final List<ExamTargetMember> members;
 }
 
 class _PeriodTile extends StatelessWidget {
@@ -403,11 +449,13 @@ class _PeriodTile extends StatelessWidget {
 class _ExamTile extends StatelessWidget {
   const _ExamTile({
     required this.exam,
+    required this.className,
     required this.data,
     required this.onTap,
   });
 
   final Exam exam;
+  final String className;
   final ScoreExamData data;
   final VoidCallback? onTap;
 
@@ -438,21 +486,7 @@ class _ExamTile extends StatelessWidget {
                     child: Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: [
-                        if (exam.groupIds.isEmpty)
-                          Text(
-                            'No Group',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.mutedText,
-                            ),
-                          )
-                        else
-                          for (final groupId in exam.groupIds)
-                            ExamPill(
-                              label:
-                                  data.groupNames[groupId] ?? 'Class $groupId',
-                            ),
-                      ],
+                      children: [ExamPill(label: className)],
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -510,6 +544,174 @@ class _ExamTile extends StatelessWidget {
   }
 }
 
+/// One exam-class member in a teacher's score target.
+class ExamTargetMember {
+  const ExamTargetMember({
+    required this.exam,
+    required this.groupId,
+    required this.className,
+    this.allowedStudentIds,
+  });
+
+  final Exam exam;
+  final int groupId;
+  final String className;
+  final Set<int>? allowedStudentIds;
+}
+
+/// A class exam, or parallel choice-class exams grouped into one score sheet.
+class ExamTarget {
+  const ExamTarget({
+    required this.exam,
+    required this.groupId,
+    this.allowedStudentIds,
+    this.className,
+    this.choiceKey,
+    this.members = const [],
+  });
+
+  final Exam exam;
+  final int groupId;
+
+  /// Enrollment ids of the teacher's subgroup; null for the whole class.
+  final Set<int>? allowedStudentIds;
+  final String? className;
+  final String? choiceKey;
+  final List<ExamTargetMember> members;
+
+  List<ExamTargetMember> get scoringTargets => members.isNotEmpty
+      ? members
+      : [
+          ExamTargetMember(
+            exam: exam,
+            groupId: groupId,
+            className: className ?? 'Class $groupId',
+            allowedStudentIds: allowedStudentIds,
+          ),
+        ];
+}
+
+/// The web's `ExamsOfClasses` rule: an exam is yours to score for each of its
+/// classes where the timetable has you (or you as a co-teacher) teaching its
+/// subject, whoever created it. Teaching only subgroups of that class limits
+/// the sheet to those subgroups' students ([subgroupStudents] is keyed
+/// `"subgroupId:groupId"`).
+List<ExamTarget> examTargets({
+  required List<Exam> exams,
+  required int periodId,
+  required List<TimetableLesson> timetable,
+  required int myUserId,
+  required Map<String, Set<int>> subgroupStudents,
+  Map<int, String> groupNames = const {},
+}) {
+  final wholeGroup = <String>{};
+  final subgroups = <String, Set<int>>{};
+  final choiceKeys = <String, String>{};
+  for (final lesson in timetable) {
+    final subjectId = lesson.subjectId;
+    final groupId = lesson.groupId;
+    if (subjectId == null || groupId == null || !lesson.isTaughtBy(myUserId)) {
+      continue;
+    }
+    final key = '$subjectId:$groupId';
+    final subgroupId = lesson.subgroupId;
+    if (subgroupId == null) {
+      wholeGroup.add(key);
+    } else {
+      subgroups.putIfAbsent(key, () => {}).add(subgroupId);
+      final choiceKey = lesson.choiceExamKey;
+      if (choiceKey != null) choiceKeys.putIfAbsent(key, () => choiceKey);
+    }
+  }
+
+  final rows = <ExamTarget>[];
+  for (final exam in exams.where((e) => e.examPeriodId == periodId)) {
+    for (final groupId in exam.groupIds) {
+      final key = '${exam.subjectId}:$groupId';
+      final groupName = groupNames[groupId] ?? 'Class $groupId';
+      if (wholeGroup.contains(key)) {
+        rows.add(
+          ExamTarget(
+            exam: exam,
+            groupId: groupId,
+            className: groupName,
+            members: [
+              ExamTargetMember(
+                exam: exam,
+                groupId: groupId,
+                className: groupName,
+              ),
+            ],
+          ),
+        );
+      } else if (subgroups[key] case final ids?) {
+        rows.add(
+          ExamTarget(
+            exam: exam,
+            groupId: groupId,
+            className: groupName,
+            choiceKey: choiceKeys[key],
+            allowedStudentIds: {
+              for (final subgroupId in ids)
+                ...?subgroupStudents['$subgroupId:$groupId'],
+            },
+            members: [
+              ExamTargetMember(
+                exam: exam,
+                groupId: groupId,
+                className: groupName,
+                allowedStudentIds: {
+                  for (final subgroupId in ids)
+                    ...?subgroupStudents['$subgroupId:$groupId'],
+                },
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  final merged = <String, List<ExamTarget>>{};
+  for (final row in rows) {
+    final key = row.choiceKey == null
+        ? 'exam:${row.exam.id}:group:${row.groupId}'
+        : '${row.choiceKey}:${row.exam.maxScore}';
+    merged.putIfAbsent(key, () => []).add(row);
+  }
+  return [
+    for (final group in merged.values)
+      if (group.length == 1)
+        group.single
+      else
+        ExamTarget(
+          exam: group.first.exam,
+          groupId: group.first.groupId,
+          choiceKey: group.first.choiceKey,
+          className: _combinedClassNames(group.expand((row) => row.members)),
+          allowedStudentIds: {
+            for (final row in group) ...?row.allowedStudentIds,
+          },
+          members: [for (final row in group) ...row.members],
+        ),
+  ];
+}
+
+String _combinedClassNames(Iterable<ExamTargetMember> members) {
+  final unique =
+      {
+        for (final member in members) member.groupId: member.className,
+      }.entries.toList()..sort((a, b) {
+        final gradeA =
+            int.tryParse(RegExp(r'^\d+').stringMatch(a.value) ?? '') ?? 999;
+        final gradeB =
+            int.tryParse(RegExp(r'^\d+').stringMatch(b.value) ?? '') ?? 999;
+        final grade = gradeA.compareTo(gradeB);
+        return grade == 0 ? a.value.compareTo(b.value) : grade;
+      });
+  return unique.map((entry) => entry.value).join(' + ');
+}
+
 /// Everything the scoring flow reads, resolved in one pass.
 class ScoreExamData {
   const ScoreExamData({
@@ -518,24 +720,25 @@ class ScoreExamData {
     required this.myUserId,
     required this.subjectNames,
     required this.groupNames,
+    this.timetable = const [],
+    this.subgroupStudents = const {},
   });
 
   final List<Exam> exams;
   final List<ExamPeriod> periods;
   final int myUserId;
+  final List<TimetableLesson> timetable;
+  final Map<String, Set<int>> subgroupStudents;
   final Map<int, String> subjectNames;
   final Map<int, String> groupNames;
 
-  /// The signed-in teacher's own exams inside [period]. Someone else's exam is
-  /// theirs to grade, so it never appears here — same filter as the web.
-  List<Exam> examsFor(ExamPeriod period) {
-    return exams
-        .where(
-          (exam) =>
-              exam.createdBy != null &&
-              exam.createdBy == myUserId &&
-              exam.examPeriodId == period.id,
-        )
-        .toList();
-  }
+  /// The classes of exams in [period] this teacher can score.
+  List<ExamTarget> targetsFor(ExamPeriod period) => examTargets(
+    exams: exams,
+    periodId: period.id,
+    timetable: timetable,
+    myUserId: myUserId,
+    subgroupStudents: subgroupStudents,
+    groupNames: groupNames,
+  );
 }

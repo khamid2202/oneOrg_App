@@ -9,6 +9,8 @@ import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../lessons/application/lessons_outbox.dart';
 import '../../lessons/domain/lessons_repository.dart';
+import '../../../shared/app_toast.dart';
+import '../../../shared/sub_page.dart' show confirmDialog, errorText;
 
 const _emerald = Color(0xFF10B981);
 const _rose = Color(0xFFF43F5E);
@@ -56,11 +58,16 @@ class BehaviorPage extends StatefulWidget {
     required this.repository,
     required this.outbox,
     this.bottomInset = 0,
+    this.deleteMark,
   });
 
   final LessonsRepository repository;
   final LessonsOutbox outbox;
   final double bottomInset;
+
+  /// Deletes a mark and its linked Dombit points; answers how many point
+  /// records went with it. Null (no `behavior.delete`) hides the bin.
+  final Future<int> Function(String markId)? deleteMark;
 
   @override
   State<BehaviorPage> createState() => _BehaviorPageState();
@@ -129,6 +136,44 @@ class _BehaviorPageState extends State<BehaviorPage> {
       if (mounted) setState(() => _history = history);
     } catch (_) {
       if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  /// The web's history bin: asks, deletes, then drops the row and refreshes
+  /// the statistics the mark counted in.
+  Future<void> _deleteMark(BehaviorHistoryEntry mark) async {
+    final l = AppLocalizations.of(context);
+    final ok = await confirmDialog(
+      context,
+      title: l.behaviorDeleteTitle,
+      message: l.behaviorDeleteBody(mark.studentName),
+      confirmLabel: l.behaviorDeleteConfirm,
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    try {
+      final points = await widget.deleteMark!(mark.id);
+      if (!mounted) return;
+      setState(
+        () => _history = [
+          for (final entry in _history ?? const <BehaviorHistoryEntry>[])
+            if (entry.id != mark.id) entry,
+        ],
+      );
+      _loadStatistics();
+      showToast(
+        context,
+        points > 0 ? l.behaviorDeletedWithPoints(points) : l.behaviorDeleted,
+        kind: ToastKind.success,
+      );
+    } catch (error) {
+      if (mounted) {
+        showToast(
+          context,
+          errorText(error, l.behaviorDeleteFailed),
+          kind: ToastKind.error,
+        );
+      }
     }
   }
 
@@ -227,6 +272,7 @@ class _BehaviorPageState extends State<BehaviorPage> {
               _HistorySection(
                 history: _history,
                 bottomInset: widget.bottomInset,
+                onDelete: widget.deleteMark == null ? null : _deleteMark,
               ),
               _StatisticsSection(
                 statistics: _statistics,
@@ -1108,11 +1154,18 @@ class _ClassChip extends StatelessWidget {
 }
 
 class _HistorySection extends StatefulWidget {
-  const _HistorySection({required this.history, required this.bottomInset});
+  const _HistorySection({
+    required this.history,
+    required this.bottomInset,
+    this.onDelete,
+  });
 
   /// Null while loading.
   final List<BehaviorHistoryEntry>? history;
   final double bottomInset;
+
+  /// Null for people without `behavior.delete`.
+  final ValueChanged<BehaviorHistoryEntry>? onDelete;
 
   @override
   State<_HistorySection> createState() => _HistorySectionState();
@@ -1290,6 +1343,17 @@ class _HistorySectionState extends State<_HistorySection> {
                               ],
                             ),
                           ),
+                          if (widget.onDelete != null)
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              tooltip: l.behaviorDeleteTooltip,
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 18,
+                                color: colors.mutedText,
+                              ),
+                              onPressed: () => widget.onDelete!(mark),
+                            ),
                         ],
                       ),
                     );

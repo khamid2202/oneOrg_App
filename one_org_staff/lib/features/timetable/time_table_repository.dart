@@ -23,9 +23,11 @@ class TimetableLesson {
     this.startTime,
     this.endTime,
     this.isTextLesson = false,
+    this.subgroupId,
     this.divisionId,
+    this.divisionKind,
+    this.additionalTeacherIds = const [],
     this.divisionName,
-    this.isChoice = false,
     this.optionName,
   });
 
@@ -50,12 +52,32 @@ class TimetableLesson {
   final String? endTime;
   final bool isTextLesson;
 
+  /// Set when the lesson is for one subgroup of the class, not all of it.
+  final int? subgroupId;
+
+  /// The class division that [subgroupId] belongs to.
+  final int? divisionId;
+
+  /// `choice` identifies the same optional subject across parallel classes.
+  final String? divisionKind;
+
+  /// Co-teachers on the same lesson, who share its exams.
+  final List<int> additionalTeacherIds;
+
+  /// Whether [userId] teaches this lesson, as its teacher or a co-teacher.
+  bool isTaughtBy(int userId) =>
+      teacherId == userId || additionalTeacherIds.contains(userId);
+
+  String? get choiceExamKey =>
+      divisionKind == 'choice' && subgroupId != null && subjectId != null
+      ? 'choice:$subgroupId:$subjectId'
+      : null;
+
   /// A choice (elective) lesson: one row per option, class and period, all
   /// sharing [divisionId]. A class sees the choice by [divisionName] ("Choice
   /// 1"); its teacher sees the real subject in [title].
-  final int? divisionId;
+  bool get isChoice => divisionKind?.toLowerCase() == 'choice';
   final String? divisionName;
-  final bool isChoice;
 
   /// The choice option this row belongs to (the API's `subgroup`), which
   /// tells apart two options in one subject.
@@ -128,12 +150,19 @@ class TimetableLesson {
       startTime: startTime,
       endTime: endTime,
       isTextLesson: lessonType == 'text',
+      subgroupId: _asInt(json['subgroup_id'] ?? json['subgroupId']),
       divisionId: _asInt(json['division_id'] ?? json['divisionId']),
+      divisionKind: _firstString(json, const ['division_kind', 'divisionKind']),
+      additionalTeacherIds: [
+        for (final teacher in [
+          ...(json['additional_teachers'] as List? ?? const []),
+          ...(json['additional_teacher_ids'] as List? ?? const []),
+        ])
+          ?_asInt(
+            teacher is Map ? teacher['id'] ?? teacher['user_id'] : teacher,
+          ),
+      ],
       divisionName: _firstString(json, const ['division_name', 'divisionName']),
-      isChoice:
-          (_firstString(json, const ['division_kind', 'divisionKind']) ?? '')
-              .toLowerCase() ==
-          'choice',
       optionName: _firstString(json, const ['subgroup', 'subgroup_name']),
     );
   }

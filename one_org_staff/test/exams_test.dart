@@ -10,6 +10,7 @@ import 'package:one_org_staff/features/colleagues/domain/colleagues_repository.d
 import 'package:one_org_staff/features/exams/data/http_exams_repository.dart';
 import 'package:one_org_staff/features/exams/domain/exams_repository.dart';
 import 'package:one_org_staff/features/exams/presentation/exams_page.dart';
+import 'package:one_org_staff/features/exams/presentation/score_exam_view.dart';
 import 'package:one_org_staff/features/timetable/time_table_repository.dart';
 
 const _profile = AppUserProfile(
@@ -185,7 +186,7 @@ ExamsApi _api(
         for (final draft in drafts)
           ExamResult(
             id: nextId++,
-            studentId: draft.studentId,
+            personId: draft.personId,
             examId: draft.examId,
             score: draft.score,
           ),
@@ -198,7 +199,7 @@ ExamsApi _api(
           if (result.id == resultId)
             ExamResult(
               id: result.id,
-              studentId: result.studentId,
+              personId: result.personId,
               examId: result.examId,
               score: score,
             )
@@ -341,6 +342,46 @@ void main() {
       expect(requested.path, '/exam-results/55');
     });
 
+    test('creates results by person id, which the API requires', () async {
+      late Object? sent;
+      final repository = HttpExamsRepository(
+        baseUrl: 'https://api.test',
+        client: MockClient((request) async {
+          sent = jsonDecode(request.body);
+          return http.Response(jsonEncode({'ok': true}), 201);
+        }),
+      );
+
+      await repository.createExamResultsBulk('token', const [
+        ExamResultDraft(personId: 201, examId: 12, score: 86),
+      ]);
+
+      expect(sent, [
+        {'person_id': 201, 'exam_id': 12, 'score': 86.0},
+      ]);
+    });
+
+    test('reads results keyed by person id', () async {
+      final repository = HttpExamsRepository(
+        baseUrl: 'https://api.test',
+        client: MockClient(
+          (request) async => http.Response(
+            jsonEncode({
+              'result': [
+                {'id': 55, 'person_id': 201, 'exam_id': 12, 'score': 60},
+              ],
+            }),
+            200,
+          ),
+        ),
+      );
+
+      final results = await repository.getExamResults('token', examId: 12);
+
+      expect(results.single.personId, 201);
+      expect(results.single.score, 60);
+    });
+
     test('surfaces the API message on failure', () async {
       final repository = HttpExamsRepository(
         baseUrl: 'https://api.test',
@@ -423,6 +464,11 @@ void main() {
       await tester.pumpWidget(
         _wrap(_api(_ExamsRecorder()), section: ExamsSection.create),
       );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mathematics').last);
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(CheckboxListTile, '5-B'), findsOneWidget);
@@ -609,9 +655,9 @@ void main() {
 
       expect(
         recorder.createdResults
-            .map((draft) => '${draft.studentId}:${draft.score}')
+            .map((draft) => '${draft.personId}:${draft.score}')
             .toList(),
-        ['101:86.0', '102:0.0'],
+        ['201:86.0', '202:0.0'],
       );
       expect(recorder.updatedResults, isEmpty);
     });
@@ -623,8 +669,8 @@ void main() {
         _api(
           recorder,
           results: const [
-            ExamResult(id: 55, studentId: 101, examId: 12, score: 60),
-            ExamResult(id: 56, studentId: 102, examId: 12, score: 70),
+            ExamResult(id: 55, personId: 201, examId: 12, score: 60),
+            ExamResult(id: 56, personId: 202, examId: 12, score: 70),
           ],
         ),
       );
@@ -646,8 +692,8 @@ void main() {
         _api(
           recorder,
           results: const [
-            ExamResult(id: 55, studentId: 101, examId: 12, score: 60),
-            ExamResult(id: 56, studentId: 102, examId: 12, score: 70),
+            ExamResult(id: 55, personId: 201, examId: 12, score: 60),
+            ExamResult(id: 56, personId: 202, examId: 12, score: 70),
           ],
         ),
       );
@@ -700,7 +746,83 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Discard changes?'), findsNothing);
-      expect(find.text('Created Exams'), findsOneWidget);
+      expect(find.text('Your Exams'), findsOneWidget);
+    });
+  });
+
+  group('which exams a teacher scores', () {
+    const coTeacher = 42;
+    const shared = Exam(
+      id: 20,
+      examPeriodId: 3,
+      subjectId: 7,
+      maxScore: 100,
+      groupIds: [5, 6],
+      createdBy: 99,
+    );
+
+    List<ExamTarget> targets(List<TimetableLesson> timetable, {int me = 11}) =>
+        examTargets(
+          exams: const [shared, _someoneElsesExam],
+          periodId: 3,
+          timetable: timetable,
+          myUserId: me,
+          subgroupStudents: const {
+            '70:5': {101},
+          },
+        );
+
+    test('an exam someone else created, for a class you teach it to', () {
+      final found = targets(_timetable);
+      expect(found.map((t) => '${t.exam.id}:${t.groupId}'), ['20:5']);
+      expect(found.single.allowedStudentIds, isNull);
+    });
+
+    test('co-teachers on the lesson share it', () {
+      final found = targets(const [
+        TimetableLesson(
+          title: 'Mathematics',
+          timeLabel: '08:30',
+          subjectId: 7,
+          groupId: 6,
+          teacherId: 11,
+          additionalTeacherIds: [coTeacher],
+        ),
+      ], me: coTeacher);
+      expect(found.map((t) => '${t.exam.id}:${t.groupId}'), ['20:6']);
+    });
+
+    test('a subgroup teacher scores only their subgroup', () {
+      final found = targets(const [
+        TimetableLesson(
+          title: 'Mathematics',
+          timeLabel: '08:30',
+          subjectId: 7,
+          groupId: 5,
+          teacherId: 11,
+          subgroupId: 70,
+          divisionId: 9,
+        ),
+      ]);
+      expect(found.single.allowedStudentIds, {101});
+    });
+
+    test('reads subgroup and co-teachers off the timetable row', () {
+      final lesson = TimetableLesson.fromJson({
+        'subject': 'Maths',
+        'subgroup_id': 70,
+        'division_id': 9,
+        'teacher_id': 11,
+        'additional_teachers': [
+          {'id': 42, 'full_name': 'B'},
+          43,
+        ],
+      });
+      expect(lesson.subgroupId, 70);
+      expect(lesson.divisionId, 9);
+      expect(lesson.isTaughtBy(42), isTrue);
+      expect(lesson.isTaughtBy(43), isTrue);
+      expect(lesson.isTaughtBy(44), isFalse);
     });
   });
 }
