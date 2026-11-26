@@ -9,7 +9,7 @@ class OfflineCache {
 
   static const prefix = 'offline:get:';
   static const _indexKey = 'offline:index';
-  static const maxEntries = 60;
+  static const maxEntries = 200;
 
   SharedPreferences? _preferences;
 

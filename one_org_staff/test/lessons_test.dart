@@ -542,6 +542,119 @@ void main() {
       expect(periods.map((p) => p.start), [480, 530]);
     });
 
+    test('offline preparation caches today and the next lesson day', () async {
+      String dayKey(DateTime day) =>
+          '${day.year.toString().padLeft(4, '0')}-'
+          '${day.month.toString().padLeft(2, '0')}-'
+          '${day.day.toString().padLeft(2, '0')}';
+
+      final today = DateTime.now();
+      final tomorrow = today.add(const Duration(days: 1));
+      var online = true;
+      final repository = HttpLessonsRepository(
+        client: MockClient((request) async {
+          if (!online) throw const SocketException('offline');
+          final path = request.url.path;
+          if (path == '/users/me') return json({'user': {}});
+          if (path == '/bell-schedules') {
+            return json({
+              'result': [
+                {
+                  'is_default': true,
+                  'periods': [
+                    {
+                      'period_number': 1,
+                      'start_time': '08:30:00',
+                      'end_time': '09:15:00',
+                    },
+                  ],
+                },
+              ],
+            });
+          }
+          if (path == '/behavior/reasons') {
+            return json({
+              'reasons': {'positive': [], 'negative': []},
+            });
+          }
+          if (path == '/my-lessons' || path == '/timetable/my-lessons') {
+            final isToday =
+                request.url.queryParameters['date'] == dayKey(today);
+            final lessonId = isToday ? 11 : 12;
+            return json({
+              'lessons': [
+                {
+                  'id': isToday ? 1 : 2,
+                  'lesson_instance_id': lessonId,
+                  'group_id': 5,
+                  'subject': 'Math',
+                  'class_pair_compact': '5B',
+                  'start_time': '08:30:00',
+                  'end_time': '09:15:00',
+                },
+              ],
+            });
+          }
+          final lessonMatch = RegExp(
+            r'^/lesson-instances/(\d+)$',
+          ).firstMatch(path);
+          if (lessonMatch != null) {
+            final id = int.parse(lessonMatch.group(1)!);
+            return json({
+              'result': {
+                'id': id,
+                'group_id': 5,
+                'date': dayKey(id == 11 ? today : tomorrow),
+              },
+            });
+          }
+          final gradesMatch = RegExp(
+            r'^/lesson-instances/(\d+)/grades$',
+          ).firstMatch(path);
+          if (gradesMatch != null) {
+            return json({
+              'result': {
+                'students': [
+                  {'student_id': 101, 'full_name': 'Student One'},
+                ],
+              },
+            });
+          }
+          if (path == '/students') return json({'result': []});
+          fail('Unexpected request: ${request.url}');
+        }),
+        baseUrl: 'https://api.test',
+        readToken: () async => 'token',
+        branchId: () => 4,
+        cache: OfflineCache(),
+      );
+
+      final pack = await repository.prepareOffline(
+        academicYearId: 3,
+        force: true,
+      );
+      expect(pack, isNotNull);
+      expect(pack!.lessonCount, 2);
+      expect(dayKey(pack.through), dayKey(tomorrow));
+      final cachedPack = await repository.readOfflinePack();
+      expect(cachedPack?.lessonCount, 2);
+      expect(cachedPack?.through, pack.through);
+      expect(
+        (await repository.getPeriods(
+          academicYearId: 3,
+          date: today,
+        )).single.number,
+        1,
+      );
+
+      online = false;
+      expect((await repository.getDay(today)).lessons.single.instanceId, 11);
+      expect(
+        (await repository.getSheet(11)).students.single.fullName,
+        'Student One',
+      );
+    });
+
     test('students marked as left drop off the sheet', () async {
       final repository = repositoryWith((request) async {
         switch (request.url.path) {

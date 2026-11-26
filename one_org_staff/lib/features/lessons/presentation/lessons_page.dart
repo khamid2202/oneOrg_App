@@ -41,6 +41,9 @@ class _LessonsPageState extends State<LessonsPage> {
   late DateTime _date = _dayOf(widget.initialDate ?? DateTime.now());
   late Future<LessonDay> _day = widget.repository.getDay(_date);
   List<BellPeriod> _periods = const [];
+  int? _academicYearId;
+  OfflinePackInfo? _offlinePack;
+  bool _preparingOffline = false;
   Timer? _clock;
   late final StreamSubscription<int> _uploaded;
 
@@ -56,6 +59,7 @@ class _LessonsPageState extends State<LessonsPage> {
   @override
   void initState() {
     super.initState();
+    unawaited(_loadOfflinePack());
     _loadPeriods();
     // Keeps the "Now" highlight moving while the page stays open.
     _clock = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -98,9 +102,44 @@ class _LessonsPageState extends State<LessonsPage> {
         academicYearId: yearId,
         date: date,
       );
-      if (mounted && date == _date) setState(() => _periods = periods);
+      if (mounted && date == _date) {
+        setState(() {
+          _periods = periods;
+          _academicYearId = yearId;
+        });
+      }
     } catch (_) {
       // The standard school day stands in for an unreadable bell schedule.
+    }
+    unawaited(_prepareOfflinePack(academicYearId: yearId));
+  }
+
+  Future<void> _loadOfflinePack() async {
+    final repository = widget.repository;
+    if (repository is! OfflineLessonsPreparer) return;
+    final preparer = repository as OfflineLessonsPreparer;
+    final info = await preparer.readOfflinePack();
+    if (mounted && !_preparingOffline) setState(() => _offlinePack = info);
+  }
+
+  Future<void> _prepareOfflinePack({
+    int? academicYearId,
+    bool force = false,
+  }) async {
+    final repository = widget.repository;
+    if (repository is! OfflineLessonsPreparer) return;
+    final preparer = repository as OfflineLessonsPreparer;
+    if (mounted) setState(() => _preparingOffline = true);
+    try {
+      final info = await preparer.prepareOffline(
+        academicYearId: academicYearId ?? _academicYearId,
+        force: force,
+      );
+      if (mounted) setState(() => _offlinePack = info);
+    } catch (_) {
+      // Offline preparation must never block the lesson list.
+    } finally {
+      if (mounted) setState(() => _preparingOffline = false);
     }
   }
 
@@ -218,7 +257,41 @@ class _LessonsPageState extends State<LessonsPage> {
                 onPressed: () =>
                     _goTo(DateTime(_date.year, _date.month, _date.day + 1)),
               ),
+              IconButton(
+                tooltip: l.offlinePrepareLessons,
+                visualDensity: VisualDensity.compact,
+                onPressed: _preparingOffline
+                    ? null
+                    : () => _prepareOfflinePack(
+                        academicYearId: _academicYearId,
+                        force: true,
+                      ),
+                icon: _preparingOffline
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download_for_offline_outlined),
+              ),
             ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+          child: Text(
+            _preparingOffline
+                ? l.offlinePreparingLessons
+                : _offlinePack == null
+                ? l.offlinePackMissing
+                : l.offlinePackReady(
+                    _offlinePack!.lessonCount,
+                    DateFormat.MMMd(locale).format(_offlinePack!.through),
+                    DateFormat.Hm(locale).format(_offlinePack!.preparedAt),
+                  ),
+            style: TextStyle(
+              fontSize: 11,
+              color: appColorsOf(context).mutedText,
+            ),
           ),
         ),
         Expanded(

@@ -214,6 +214,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploads => 'Uploads';
 
   @override
+  String get offlinePrepareLessons => 'Prepare lessons for offline use';
+
+  @override
+  String get offlinePreparingLessons => 'Preparing lessons for offline use…';
+
+  @override
+  String get offlinePackMissing =>
+      'Download today and the next school day before going offline.';
+
+  @override
+  String offlinePackReady(int count, String date, String time) {
+    return 'Offline copy: $count lessons through $date, synced at $time.';
+  }
+
+  @override
   String get tryNow => 'Try now';
 
   @override

@@ -59,6 +59,17 @@
   "foldAll": "Свернуть всё",
   "unfoldAll": "Развернуть всё",
   "uploads": "Загрузки",
+  "offlinePrepareLessons": "Подготовить уроки для работы офлайн",
+  "offlinePreparingLessons": "Подготовка уроков для работы офлайн…",
+  "offlinePackMissing": "Загрузите сегодняшний и следующий учебный день до отключения интернета.",
+  "offlinePackReady": "Офлайн-копия: {count} уроков до {date}, синхронизировано в {time}.",
+  "@offlinePackReady": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
   "tryNow": "Повторить сейчас",
   "notAccepted": "Не принято: {reason}",
   "waitingForConnection": "Ожидание связи (попыток: {tries})",

@@ -82,6 +82,7 @@ class _OneOrgStaffAppState extends State<OneOrgStaffApp> {
         client: _client!,
         baseUrl: ApiConfig.baseUrl,
         readToken: tokenStorage.readToken,
+        branchId: () => _branchController?.activeBranchId,
         cache: offlineCache,
       );
       _outbox = LessonsOutbox(upload: lessons.upload);

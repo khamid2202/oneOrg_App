@@ -146,6 +146,17 @@
   "foldAll": "Fold all",
   "unfoldAll": "Unfold all",
   "uploads": "Uploads",
+  "offlinePrepareLessons": "Prepare lessons for offline use",
+  "offlinePreparingLessons": "Preparing lessons for offline use…",
+  "offlinePackMissing": "Download today and the next school day before going offline.",
+  "offlinePackReady": "Offline copy: {count} lessons through {date}, synced at {time}.",
+  "@offlinePackReady": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
   "tryNow": "Try now",
   "notAccepted": "Not accepted: {reason}",
   "@notAccepted": {

@@ -171,6 +171,48 @@ class LessonDay {
   final List<TeacherMeeting> meetings;
 }
 
+class OfflinePackInfo {
+  const OfflinePackInfo({
+    required this.preparedAt,
+    required this.from,
+    required this.through,
+    required this.lessonCount,
+  });
+
+  final DateTime preparedAt;
+  final DateTime from;
+  final DateTime through;
+  final int lessonCount;
+
+  Map<String, dynamic> toJson() => {
+    'preparedAt': preparedAt.toIso8601String(),
+    'from': _dayKey(from),
+    'through': _dayKey(through),
+    'lessonCount': lessonCount,
+  };
+
+  factory OfflinePackInfo.fromJson(Map<String, dynamic> json) =>
+      OfflinePackInfo(
+        preparedAt: DateTime.parse(json['preparedAt'] as String),
+        from: DateTime.parse(json['from'] as String),
+        through: DateTime.parse(json['through'] as String),
+        lessonCount: _asInt(json['lessonCount']) ?? 0,
+      );
+
+  static String _dayKey(DateTime day) =>
+      '${day.year.toString().padLeft(4, '0')}-'
+      '${day.month.toString().padLeft(2, '0')}-'
+      '${day.day.toString().padLeft(2, '0')}';
+}
+
+abstract interface class OfflineLessonsPreparer {
+  Future<OfflinePackInfo?> prepareOffline({
+    int? academicYearId,
+    bool force = false,
+  });
+  Future<OfflinePackInfo?> readOfflinePack();
+}
+
 /// A lesson the teacher graded recently, with its class average.
 class RecentGrade {
   const RecentGrade({

@@ -12,6 +12,16 @@ Newest first. Every notable change to **this Flutter app** gets an entry here
 
 ---
 
+## 2026-11-24 — Offline-ready lesson packs
+
+- Released as **1.0.10 (build 15)**.
+- On sign-in, the app prepares today and the next day with lessons for offline use: schedule, bell periods, student rosters, current attendance and grades, student photos, and behavior reasons. The pack is saved for the selected branch and cleared on sign-out with the rest of the offline data.
+- Schedule shows the pack's lesson count and last sync time, and has a button to refresh it before entering an area without internet. The local GET cache keeps 200 responses so the prepared lessons survive normal app use.
+- Attendance and grade changes continue to save to the on-device outbox and sync in order when the connection returns.
+- New labels are in English, Uzbek and Russian.
+
+---
+
 ## 2026-11-24 — Reset Grades and current-term lesson analysis
 
 - Released as **1.0.9 (build 13)**.

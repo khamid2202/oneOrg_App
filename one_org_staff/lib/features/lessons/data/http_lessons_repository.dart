@@ -12,14 +12,17 @@ import 'offline_cache.dart';
 /// The teaching day. Everything except the bell schedule goes across branches:
 /// a teacher can open a lesson at any campus they work at, whichever is
 /// selected on the dashboard.
-class HttpLessonsRepository implements LessonsRepository {
+class HttpLessonsRepository
+    implements LessonsRepository, OfflineLessonsPreparer {
   HttpLessonsRepository({
     required http.Client client,
     required String baseUrl,
     required Future<String?> Function() readToken,
+    int? Function()? branchId,
     OfflineCache? cache,
   }) : _client = client,
        _cache = cache ?? OfflineCache(),
+       _branchId = branchId,
        _baseUrl = baseUrl.endsWith('/')
            ? baseUrl.substring(0, baseUrl.length - 1)
            : baseUrl,
@@ -29,6 +32,8 @@ class HttpLessonsRepository implements LessonsRepository {
   final String _baseUrl;
   final Future<String?> Function() _readToken;
   final OfflineCache _cache;
+  final int? Function()? _branchId;
+  final Map<int, Future<OfflinePackInfo?>> _preparingOffline = {};
 
   static const _readTimeout = Duration(seconds: 12);
   static const _uploadTimeout = Duration(seconds: 30);
@@ -104,6 +109,11 @@ class HttpLessonsRepository implements LessonsRepository {
       '${date.month.toString().padLeft(2, '0')}-'
       '${date.day.toString().padLeft(2, '0')}';
 
+  String get _bellCacheKey {
+    final branchId = _branchId?.call();
+    return branchId == null ? '/bell-schedules' : '/bell-schedules:$branchId';
+  }
+
   static List<Map<String, dynamic>> _maps(dynamic value) => value is List
       ? value.whereType<Map>().map(Map<String, dynamic>.from).toList()
       : const [];
@@ -173,7 +183,7 @@ class HttpLessonsRepository implements LessonsRepository {
     int? academicYearId,
     required DateTime date,
   }) async {
-    const cacheKey = '/bell-schedules';
+    final cacheKey = _bellCacheKey;
     final dynamic body;
     if (academicYearId == null) {
       final remembered = await _cache.recall(cacheKey);
@@ -228,6 +238,125 @@ class HttpLessonsRepository implements LessonsRepository {
       }
       return GradingSheet(lesson: lesson, students: students);
     });
+  }
+
+  @override
+  Future<OfflinePackInfo?> readOfflinePack() =>
+      _readOfflinePackFor(_branchId?.call() ?? 0);
+
+  Future<OfflinePackInfo?> _readOfflinePackFor(int branchId) async {
+    try {
+      final raw = await _cache.recall('lesson-pack:$branchId');
+      if (raw == null) return null;
+      return OfflinePackInfo.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<OfflinePackInfo?> prepareOffline({
+    int? academicYearId,
+    bool force = false,
+  }) async {
+    final branchId = _branchId?.call() ?? 0;
+    final running = _preparingOffline[branchId];
+    if (running != null) return running;
+    final future = _prepareOffline(
+      academicYearId,
+      branchId: branchId,
+      force: force,
+    );
+    _preparingOffline[branchId] = future;
+    try {
+      return await future;
+    } finally {
+      if (identical(_preparingOffline[branchId], future)) {
+        _preparingOffline.remove(branchId);
+      }
+    }
+  }
+
+  Future<OfflinePackInfo?> _prepareOffline(
+    int? academicYearId, {
+    required int branchId,
+    required bool force,
+  }) async {
+    final existing = await _readOfflinePackFor(branchId);
+    final today = DateTime.now();
+    if (!force &&
+        existing != null &&
+        existing.from.year == today.year &&
+        existing.from.month == today.month &&
+        existing.from.day == today.day &&
+        today.difference(existing.preparedAt) < const Duration(minutes: 30)) {
+      return existing;
+    }
+    if (!await _serverIsReachable()) return existing;
+
+    final dayStart = DateTime(today.year, today.month, today.day);
+    final days = <(DateTime, LessonDay)>[];
+    try {
+      days.add((dayStart, await getDay(dayStart)));
+      for (var offset = 1; offset <= 7; offset += 1) {
+        final date = dayStart.add(Duration(days: offset));
+        final day = await getDay(date);
+        if (day.lessons.any(_canOpenOffline)) {
+          days.add((date, day));
+          break;
+        }
+      }
+    } catch (_) {
+      return existing;
+    }
+
+    try {
+      await getPeriods(academicYearId: academicYearId, date: dayStart);
+    } catch (_) {}
+    try {
+      await getBehaviorReasons();
+    } catch (_) {}
+
+    final lessonIds = {
+      for (final (_, day) in days)
+        for (final lesson in day.lessons)
+          if (_canOpenOffline(lesson)) lesson.instanceId!,
+    };
+    final loaded = await Future.wait(
+      lessonIds.map((id) async {
+        try {
+          await getSheet(id);
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }),
+    );
+    final info = OfflinePackInfo(
+      preparedAt: DateTime.now(),
+      from: dayStart,
+      through: days.last.$1,
+      lessonCount: loaded.where((ok) => ok).length,
+    );
+    if ((_branchId?.call() ?? 0) != branchId) return existing;
+    await _cache.remember('lesson-pack:$branchId', jsonEncode(info.toJson()));
+    return info;
+  }
+
+  static bool _canOpenOffline(TeacherLesson lesson) =>
+      lesson.instanceId != null && !lesson.isCancelled && !lesson.isLunchDuty;
+
+  Future<bool> _serverIsReachable() async {
+    try {
+      final response = await _client
+          .get(_uri('/users/me'), headers: await _headers())
+          .timeout(const Duration(seconds: 3));
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
   }
 
   List<SheetStudent> _students(dynamic body, Set<int> left) {

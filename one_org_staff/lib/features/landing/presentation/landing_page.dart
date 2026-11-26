@@ -341,6 +341,9 @@ class _LandingPageState extends State<LandingPage> {
       if (!mounted) return;
       setState(() => _profile = profile);
       unawaited(_maybeStartTour(profile.id));
+      if (_access.allows(AppItem.lessons)) {
+        unawaited(_prepareLessonsOffline());
+      }
     } catch (_) {
       // Home falls back to what a regular teacher sees.
     }
@@ -358,6 +361,26 @@ class _LandingPageState extends State<LandingPage> {
       _recentGrades = null;
     });
     unawaited(_loadBranchData());
+    if (_access.allows(AppItem.lessons)) {
+      unawaited(_prepareLessonsOffline());
+    }
+  }
+
+  Future<void> _prepareLessonsOffline() async {
+    final lessons = widget.controller.lessons;
+    if (lessons is! OfflineLessonsPreparer) return;
+    final preparer = lessons as OfflineLessonsPreparer;
+    int? academicYearId;
+    try {
+      final years = await widget.controller.loadAcademicYears();
+      academicYearId =
+          (years.where((year) => year.isActive).firstOrNull ??
+                  years.firstOrNull)
+              ?.id;
+    } catch (_) {}
+    try {
+      await preparer.prepareOffline(academicYearId: academicYearId);
+    } catch (_) {}
   }
 
   Future<void> _loadBranchData() async {
@@ -502,6 +525,7 @@ class _LandingPageState extends State<LandingPage> {
         ? (widget.controller.lessons == null || widget.controller.outbox == null
               ? const SizedBox.shrink()
               : LessonsPage(
+                  key: ValueKey('lessons-$_branchId'),
                   repository: widget.controller.lessons!,
                   outbox: widget.controller.outbox!,
                   loadAcademicYears: widget.controller.loadAcademicYears,

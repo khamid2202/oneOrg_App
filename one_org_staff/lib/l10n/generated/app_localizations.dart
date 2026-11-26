@@ -454,6 +454,30 @@ abstract class AppLocalizations {
   /// **'Uploads'**
   String get uploads;
 
+  /// No description provided for @offlinePrepareLessons.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare lessons for offline use'**
+  String get offlinePrepareLessons;
+
+  /// No description provided for @offlinePreparingLessons.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing lessons for offline use…'**
+  String get offlinePreparingLessons;
+
+  /// No description provided for @offlinePackMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Download today and the next school day before going offline.'**
+  String get offlinePackMissing;
+
+  /// No description provided for @offlinePackReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline copy: {count} lessons through {date}, synced at {time}.'**
+  String offlinePackReady(int count, String date, String time);
+
   /// No description provided for @tryNow.
   ///
   /// In en, this message translates to:

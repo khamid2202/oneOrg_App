@@ -214,6 +214,21 @@ class AppLocalizationsRu extends AppLocalizations {
   String get uploads => 'Загрузки';
 
   @override
+  String get offlinePrepareLessons => 'Подготовить уроки для работы офлайн';
+
+  @override
+  String get offlinePreparingLessons => 'Подготовка уроков для работы офлайн…';
+
+  @override
+  String get offlinePackMissing =>
+      'Загрузите сегодняшний и следующий учебный день до отключения интернета.';
+
+  @override
+  String offlinePackReady(int count, String date, String time) {
+    return 'Офлайн-копия: $count уроков до $date, синхронизировано в $time.';
+  }
+
+  @override
   String get tryNow => 'Повторить сейчас';
 
   @override

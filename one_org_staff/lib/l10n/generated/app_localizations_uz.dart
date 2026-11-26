@@ -214,6 +214,23 @@ class AppLocalizationsUz extends AppLocalizations {
   String get uploads => 'Yuklashlar';
 
   @override
+  String get offlinePrepareLessons =>
+      'Darslarni oflayn ishlatish uchun yuklab olish';
+
+  @override
+  String get offlinePreparingLessons =>
+      'Darslar oflayn foydalanish uchun tayyorlanmoqda…';
+
+  @override
+  String get offlinePackMissing =>
+      'Internet yo‘q joyga borishdan oldin bugungi va keyingi o‘quv kunini yuklab oling.';
+
+  @override
+  String offlinePackReady(int count, String date, String time) {
+    return 'Oflayn nusxa: $date gacha $count ta dars, oxirgi sinxronlash $time.';
+  }
+
+  @override
   String get tryNow => 'Hozir urinish';
 
   @override

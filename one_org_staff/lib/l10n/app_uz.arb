@@ -59,6 +59,17 @@
   "foldAll": "Hammasini yig‘ish",
   "unfoldAll": "Hammasini ochish",
   "uploads": "Yuklashlar",
+  "offlinePrepareLessons": "Darslarni oflayn ishlatish uchun yuklab olish",
+  "offlinePreparingLessons": "Darslar oflayn foydalanish uchun tayyorlanmoqda…",
+  "offlinePackMissing": "Internet yo‘q joyga borishdan oldin bugungi va keyingi o‘quv kunini yuklab oling.",
+  "offlinePackReady": "Oflayn nusxa: {date} gacha {count} ta dars, oxirgi sinxronlash {time}.",
+  "@offlinePackReady": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
   "tryNow": "Hozir urinish",
   "notAccepted": "Qabul qilinmadi: {reason}",
   "waitingForConnection": "Aloqa kutilmoqda ({tries} urinish)",
