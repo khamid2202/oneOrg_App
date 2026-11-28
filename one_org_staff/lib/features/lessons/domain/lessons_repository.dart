@@ -33,6 +33,29 @@ int? minutesOfDay(String? time) {
   return int.parse(match[1]!) * 60 + int.parse(match[2]!);
 }
 
+/// The lesson plan week a lesson's date falls in: "W6 · Adding fractions".
+class PlanWeek {
+  const PlanWeek({required this.weekNo, this.planId, this.unit, this.topic});
+
+  final int? planId;
+  final int weekNo;
+  final String? unit;
+  final String? topic;
+
+  /// Null without a plan week, or one with no week number.
+  static PlanWeek? fromJson(dynamic json) {
+    if (json is! Map) return null;
+    final weekNo = _asInt(json['week_no']);
+    if (weekNo == null) return null;
+    return PlanWeek(
+      planId: _asInt(json['plan_id']),
+      weekNo: weekNo,
+      unit: _asString(json['unit']),
+      topic: _asString(json['topic']),
+    );
+  }
+}
+
 /// One of the teacher's lessons on a day.
 class TeacherLesson {
   const TeacherLesson({
@@ -55,6 +78,7 @@ class TeacherLesson {
     this.isGraded = true,
     this.substitutionType,
     this.gradedThisWeek,
+    this.planWeek,
   });
 
   /// The timetable entry id.
@@ -94,6 +118,9 @@ class TeacherLesson {
 
   /// How many of this class's lessons in the subject were graded this week.
   final int? gradedThisWeek;
+
+  /// This week of the teacher's lesson plan for the class, if they have one.
+  final PlanWeek? planWeek;
 
   bool get isCancelled => status == 'cancelled';
 
@@ -138,6 +165,7 @@ class TeacherLesson {
       isGraded: json['is_graded'] != false,
       substitutionType: _asString(json['substitution_type']),
       gradedThisWeek: _asInt(json['graded_lessons_this_week']),
+      planWeek: PlanWeek.fromJson(json['plan_week']),
     );
   }
 }
@@ -332,6 +360,7 @@ class LessonDetail {
     this.status,
     this.cancelReason,
     this.groupIds = const [],
+    this.planWeek,
   });
 
   final int id;
@@ -344,6 +373,7 @@ class LessonDetail {
   final String? status;
   final String? cancelReason;
   final List<int> groupIds;
+  final PlanWeek? planWeek;
 
   bool get isCancelled => status == 'cancelled';
 
@@ -360,6 +390,7 @@ class LessonDetail {
       room: _asString(json['room']),
       status: _asString(json['status']),
       cancelReason: _asString(json['cancel_reason']),
+      planWeek: PlanWeek.fromJson(json['plan_week']),
       groupIds: many is List && many.isNotEmpty
           ? many.map(_asInt).whereType<int>().toList()
           : [?single],
@@ -623,4 +654,25 @@ abstract class LessonsRepository {
 
   /// Forgets what's kept for offline use. Sign-out calls this.
   Future<void> clearOffline();
+}
+
+/// The lesson running at [now] among [lessons], if any; cancelled ones and
+/// lunch duty don't count. Times are "HH:mm…".
+TeacherLesson? currentLesson(List<TeacherLesson> lessons, DateTime now) {
+  int? minutes(String? time) {
+    final match = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(time ?? '');
+    return match == null
+        ? null
+        : int.parse(match[1]!) * 60 + int.parse(match[2]!);
+  }
+
+  final current = now.hour * 60 + now.minute;
+  for (final lesson in lessons) {
+    if (lesson.isCancelled || lesson.isLunchDuty) continue;
+    final start = minutes(lesson.startTime), end = minutes(lesson.endTime);
+    if (start != null && end != null && start <= current && current < end) {
+      return lesson;
+    }
+  }
+  return null;
 }

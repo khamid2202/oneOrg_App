@@ -11,6 +11,7 @@ import '../application/lessons_outbox.dart';
 import '../domain/day_rows.dart';
 import '../domain/lessons_repository.dart';
 import 'grading_sheet_page.dart';
+import 'plan_week_badge.dart';
 import 'package:one_org_staff/shared/app_toast.dart';
 
 const _emerald = Color(0xFF059669);
@@ -754,18 +755,33 @@ class _LessonCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 7),
                                 Expanded(
-                                  child: Text(
-                                    lesson.isLunchDuty
-                                        ? l.lunchDuty
-                                        : lesson.subject.isEmpty
-                                        ? l.untitled
-                                        : lesson.subject,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          lesson.isLunchDuty
+                                              ? l.lunchDuty
+                                              : lesson.subject.isEmpty
+                                              ? l.untitled
+                                              : lesson.subject,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      if (lesson.planWeek case final week?
+                                          when (week.topic ?? '')
+                                              .isNotEmpty) ...[
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          flex: 2,
+                                          child: PlanWeekBadge(week: week),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                                 if (isNow)

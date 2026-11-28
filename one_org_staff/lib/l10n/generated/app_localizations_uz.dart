@@ -977,15 +977,110 @@ class AppLocalizationsUz extends AppLocalizations {
   String get classNeedsAttention => 'E’tibor kerak';
 
   @override
-  String get classMark => 'Belgilash';
-
-  @override
   String get classNoMarks => 'Hali belgilar yo‘q';
 
   @override
-  String classAllMarks(int count) {
-    return 'Hammasi: $count';
+  String get classFilterAll => 'Hammasi';
+
+  @override
+  String classReports(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta yozuv',
+    );
+    return '$_temp0';
   }
+
+  @override
+  String get classNoMatchingReports => 'Bu filtrga mos yozuv yo‘q.';
+
+  @override
+  String get trendWeek => 'Hafta';
+
+  @override
+  String get trendMonth => 'Oy';
+
+  @override
+  String get trendAllSubjects => 'Barcha fanlar';
+
+  @override
+  String get trendStudents => 'O‘quvchilar';
+
+  @override
+  String get trendSubjects => 'Fanlar';
+
+  @override
+  String get trendFailed => 'Dinamikani yuklab bo‘lmadi';
+
+  @override
+  String get trendFallingFirst => 'Avval pasayganlar';
+
+  @override
+  String get trendRisingFirst => 'Avval o‘sganlar';
+
+  @override
+  String gradeWithTeams(String className) {
+    return '$className sinfini shu jamoalar bilan baholash';
+  }
+
+  @override
+  String get annualPlan => 'Yillik reja';
+
+  @override
+  String get planGoals => 'Maqsadlar';
+
+  @override
+  String get annualPlansFailed => 'Rejalarni yuklab bo‘lmadi.';
+
+  @override
+  String get annualPlansNone =>
+      'Hali yillik reja yo‘q. Rejalar veb-saytda, Mening rejalarim bo‘limida tuziladi.';
+
+  @override
+  String get annualPlanNoWeeks => 'Bu rejada hali haftalar yo‘q.';
+
+  @override
+  String annualPlanGrades(String grades) {
+    return '$grades-sinflar';
+  }
+
+  @override
+  String annualPlanClasses(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta sinf',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String annualPlanWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hafta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String annualPlanSharedBy(String name) {
+    return '$name ulashgan';
+  }
+
+  @override
+  String get annualPlanShared => 'Kafedrangiz bilan ulashilgan';
+
+  @override
+  String get annualPlanThisWeek => 'Shu hafta';
+
+  @override
+  String get annualPlanObjectives => 'Maqsadlar';
+
+  @override
+  String get annualPlanHomework => 'Uy vazifasi';
 
   @override
   String notMarkedCount(int count) {

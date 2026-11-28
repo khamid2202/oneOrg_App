@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'class_insights.dart';
 import 'class_tabs.dart';
+import 'grade_trend_panel.dart';
 import 'homeroom.dart';
 
 import 'package:one_org_staff/app/theme.dart';
@@ -43,7 +44,6 @@ class MyClassPage extends StatefulWidget {
     required this.documents,
     required this.peopleSync,
     this.insights,
-    this.onMark,
     this.launchDial,
     this.shareDombit,
   });
@@ -71,9 +71,6 @@ class MyClassPage extends StatefulWidget {
 
   /// Grades and behavior for the class. Without it only Students shows.
   final ClassInsightsRepository? insights;
-
-  /// Opens the Behavior screen, for the Mark button.
-  final VoidCallback? onMark;
 
   /// Hands a `tel:` link to the phone. Tests replace it.
   final Future<bool> Function(String uri)? launchDial;
@@ -503,10 +500,25 @@ class _MyClassPageState extends State<MyClassPage> {
                         _section == ClassSection.grades)
                       Padding(
                         padding: const EdgeInsets.all(10),
-                        child: ClassGradesView(
-                          key: ValueKey('grades-${group.id}'),
-                          loadGrades: () => insights.grades(group.id),
-                          students: present,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            GradeTrendPanel(
+                              key: ValueKey('trend-${group.id}'),
+                              className: compactClassName(group.classPair),
+                              loadTrend: (bucket, subjectId) => insights.trend(
+                                groupId: group.id,
+                                academicYearId: group.academicYearId,
+                                bucket: bucket,
+                                subjectId: subjectId,
+                              ),
+                            ),
+                            ClassGradesView(
+                              key: ValueKey('grades-${group.id}'),
+                              loadGrades: () => insights.grades(group.id),
+                              students: present,
+                            ),
+                          ],
                         ),
                       )
                     else if (insights != null &&
@@ -518,7 +530,6 @@ class _MyClassPageState extends State<MyClassPage> {
                           loadMarks: () =>
                               insights.marks(compactClassName(group.classPair)),
                           students: present,
-                          onMark: widget.onMark,
                         ),
                       )
                     else if (students.isEmpty)

@@ -152,9 +152,15 @@
   "offlinePackReady": "Offline copy: {count} lessons through {date}, synced at {time}.",
   "@offlinePackReady": {
     "placeholders": {
-      "count": { "type": "int" },
-      "date": { "type": "String" },
-      "time": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "tryNow": "Try now",
@@ -558,17 +564,75 @@
   "classBehaviorFailed": "Couldn't load behavior.",
   "classPositive": "Positive",
   "classNeedsAttention": "Needs attention",
-  "classMark": "Mark",
   "classNoMarks": "No marks yet",
-  "classAllMarks": "All {count}",
-  "@classStudentCount": {
+  "classFilterAll": "All",
+  "classReports": "{count, plural, =1{1 report} other{{count} reports}}",
+  "@classReports": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "@classAllMarks": {
+  "classNoMatchingReports": "No reports match this filter.",
+  "trendWeek": "Week",
+  "trendMonth": "Month",
+  "trendAllSubjects": "All subjects",
+  "trendStudents": "Students",
+  "trendSubjects": "Subjects",
+  "trendFailed": "Couldn't load the trend",
+  "trendFallingFirst": "Falling first",
+  "trendRisingFirst": "Rising first",
+  "gradeWithTeams": "Grade {className} with these teams",
+  "@gradeWithTeams": {
+    "placeholders": {
+      "className": {
+        "type": "String"
+      }
+    }
+  },
+  "annualPlan": "Annual Plan",
+  "planGoals": "Goals",
+  "annualPlansFailed": "Couldn't load the plans.",
+  "annualPlansNone": "No annual plans yet. Plans are made on the web, under My Plans.",
+  "annualPlanNoWeeks": "This plan has no weeks yet.",
+  "annualPlanGrades": "Grades {grades}",
+  "@annualPlanGrades": {
+    "placeholders": {
+      "grades": {
+        "type": "String"
+      }
+    }
+  },
+  "annualPlanClasses": "{count, plural, =1{1 class} other{{count} classes}}",
+  "@annualPlanClasses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "annualPlanWeeks": "{count, plural, =1{1 week} other{{count} weeks}}",
+  "@annualPlanWeeks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "annualPlanSharedBy": "Shared by {name}",
+  "@annualPlanSharedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "annualPlanShared": "Shared with your department",
+  "annualPlanThisWeek": "This week",
+  "annualPlanObjectives": "Objectives",
+  "annualPlanHomework": "Homework",
+  "@classStudentCount": {
     "placeholders": {
       "count": {
         "type": "int"
@@ -1048,7 +1112,7 @@
     }
   },
   "behaviorDeleteFailed": "Couldn't delete this behavior entry.",
-"resetGradesTitle": "Reset grades",
+  "resetGradesTitle": "Reset grades",
   "resetGradesNoActiveYear": "There is no active academic year.",
   "resetGradesSelectClasses": "Select classes",
   "resetGradesSearchClasses": "Search classes",

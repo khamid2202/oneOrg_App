@@ -802,7 +802,10 @@ void main() {
         await cache.remember('k$i', 'v$i');
       }
       expect(await cache.recall('k0'), isNull);
-      expect(await cache.recall('k${OfflineCache.maxEntries}'), 'v60');
+      expect(
+        await cache.recall('k${OfflineCache.maxEntries}'),
+        'v${OfflineCache.maxEntries}',
+      );
     });
   });
 

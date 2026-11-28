@@ -33,6 +33,7 @@ import 'package:one_org_staff/features/landing/presentation/updates_card.dart';
 import 'package:one_org_staff/features/MyClass/dombit_pdf.dart';
 import 'package:one_org_staff/shared/api_client.dart';
 import 'package:one_org_staff/features/lessons/domain/lessons_repository.dart';
+import 'package:one_org_staff/features/lessons/presentation/grading_sheet_page.dart';
 import 'package:one_org_staff/features/lessons/presentation/lessons_page.dart';
 import 'package:one_org_staff/features/lessons/presentation/uploads_sheet.dart';
 import 'package:one_org_staff/features/teaching_tools/presentation/teaching_tools_page.dart';
@@ -55,6 +56,7 @@ import 'package:one_org_staff/features/cashier/cashier_page.dart';
 import 'package:one_org_staff/features/departments/my_department_page.dart';
 import 'package:one_org_staff/features/fundings/fundings_page.dart';
 import 'package:one_org_staff/features/lesson_analysis/lesson_analysis.dart';
+import 'package:one_org_staff/features/lesson_plans/annual_plans.dart';
 import 'package:one_org_staff/features/staff_points/staff_points_page.dart';
 import 'package:one_org_staff/features/substitutions/substitutions_page.dart';
 import 'package:one_org_staff/shared/staff_context.dart';
@@ -614,9 +616,6 @@ class _LandingPageState extends State<LandingPage> {
             peopleSync: _peopleSync,
             documents: _documentsApi,
             insights: widget.controller.classInsights,
-            onMark: _access.allows(AppItem.behavior)
-                ? () => _openTab(_tabOf(AppItem.behavior))
-                : null,
             shareDombit: widget.controller.api == null
                 ? null
                 : (groupId) => shareDombitPdf(widget.controller.api!, groupId),
@@ -887,10 +886,25 @@ class _LandingPageState extends State<LandingPage> {
   Widget _buildTools() {
     final lessons = widget.controller.lessons;
     if (lessons == null) return const SizedBox.shrink();
+    final outbox = widget.controller.outbox;
     return TeachingToolsPage(
       key: ValueKey('tools-$_branchId'),
       repository: lessons,
       bottomInset: _bottomMenuOverlaySpace,
+      gradeWithTeams: outbox == null
+          ? null
+          : (lesson, teams) => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => GradingSheetPage(
+                  repository: lessons,
+                  outbox: outbox,
+                  lessonId: lesson.instanceId!,
+                  fallbackTitle: lesson.fullClassLabel ?? lesson.classLabel,
+                  fallbackSubject: lesson.subject,
+                  teams: teams,
+                ),
+              ),
+            ),
     );
   }
 
@@ -920,14 +934,31 @@ class _LandingPageState extends State<LandingPage> {
       return const Center(child: CircularProgressIndicator());
     }
     final key = '$_selectedIndex-$_branchId';
+    final api = widget.controller.api;
     return _selectedIndex == _planTab
-        ? MyPlanPage(
-            key: ValueKey(key),
-            repository: me,
-            userId: userId,
-            loadYear: _activeYear,
-            bottomInset: _bottomMenuOverlaySpace,
-          )
+        ? (api != null && _staffContext?.can('lesson_plans.read') == true
+              ? MyPlansTabs(
+                  key: ValueKey(key),
+                  api: LessonPlansApi.http(
+                    api,
+                    () async => (await _activeYear())?.id,
+                  ),
+                  userId: userId,
+                  bottomInset: _bottomMenuOverlaySpace,
+                  goals: MyPlanPage(
+                    repository: me,
+                    userId: userId,
+                    loadYear: _activeYear,
+                    bottomInset: _bottomMenuOverlaySpace,
+                  ),
+                )
+              : MyPlanPage(
+                  key: ValueKey(key),
+                  repository: me,
+                  userId: userId,
+                  loadYear: _activeYear,
+                  bottomInset: _bottomMenuOverlaySpace,
+                ))
         : _selectedIndex == _pointsTab
         ? MyPointsPage(
             key: ValueKey(key),

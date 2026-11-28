@@ -1858,23 +1858,161 @@ abstract class AppLocalizations {
   /// **'Needs attention'**
   String get classNeedsAttention;
 
-  /// No description provided for @classMark.
-  ///
-  /// In en, this message translates to:
-  /// **'Mark'**
-  String get classMark;
-
   /// No description provided for @classNoMarks.
   ///
   /// In en, this message translates to:
   /// **'No marks yet'**
   String get classNoMarks;
 
-  /// No description provided for @classAllMarks.
+  /// No description provided for @classFilterAll.
   ///
   /// In en, this message translates to:
-  /// **'All {count}'**
-  String classAllMarks(int count);
+  /// **'All'**
+  String get classFilterAll;
+
+  /// No description provided for @classReports.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 report} other{{count} reports}}'**
+  String classReports(int count);
+
+  /// No description provided for @classNoMatchingReports.
+  ///
+  /// In en, this message translates to:
+  /// **'No reports match this filter.'**
+  String get classNoMatchingReports;
+
+  /// No description provided for @trendWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get trendWeek;
+
+  /// No description provided for @trendMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get trendMonth;
+
+  /// No description provided for @trendAllSubjects.
+  ///
+  /// In en, this message translates to:
+  /// **'All subjects'**
+  String get trendAllSubjects;
+
+  /// No description provided for @trendStudents.
+  ///
+  /// In en, this message translates to:
+  /// **'Students'**
+  String get trendStudents;
+
+  /// No description provided for @trendSubjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Subjects'**
+  String get trendSubjects;
+
+  /// No description provided for @trendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the trend'**
+  String get trendFailed;
+
+  /// No description provided for @trendFallingFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Falling first'**
+  String get trendFallingFirst;
+
+  /// No description provided for @trendRisingFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Rising first'**
+  String get trendRisingFirst;
+
+  /// No description provided for @gradeWithTeams.
+  ///
+  /// In en, this message translates to:
+  /// **'Grade {className} with these teams'**
+  String gradeWithTeams(String className);
+
+  /// No description provided for @annualPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Annual Plan'**
+  String get annualPlan;
+
+  /// No description provided for @planGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get planGoals;
+
+  /// No description provided for @annualPlansFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the plans.'**
+  String get annualPlansFailed;
+
+  /// No description provided for @annualPlansNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No annual plans yet. Plans are made on the web, under My Plans.'**
+  String get annualPlansNone;
+
+  /// No description provided for @annualPlanNoWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'This plan has no weeks yet.'**
+  String get annualPlanNoWeeks;
+
+  /// No description provided for @annualPlanGrades.
+  ///
+  /// In en, this message translates to:
+  /// **'Grades {grades}'**
+  String annualPlanGrades(String grades);
+
+  /// No description provided for @annualPlanClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 class} other{{count} classes}}'**
+  String annualPlanClasses(int count);
+
+  /// No description provided for @annualPlanWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 week} other{{count} weeks}}'**
+  String annualPlanWeeks(int count);
+
+  /// No description provided for @annualPlanSharedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared by {name}'**
+  String annualPlanSharedBy(String name);
+
+  /// No description provided for @annualPlanShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with your department'**
+  String get annualPlanShared;
+
+  /// No description provided for @annualPlanThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get annualPlanThisWeek;
+
+  /// No description provided for @annualPlanObjectives.
+  ///
+  /// In en, this message translates to:
+  /// **'Objectives'**
+  String get annualPlanObjectives;
+
+  /// No description provided for @annualPlanHomework.
+  ///
+  /// In en, this message translates to:
+  /// **'Homework'**
+  String get annualPlanHomework;
 
   /// No description provided for @notMarkedCount.
   ///

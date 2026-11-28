@@ -985,15 +985,113 @@ class AppLocalizationsEn extends AppLocalizations {
   String get classNeedsAttention => 'Needs attention';
 
   @override
-  String get classMark => 'Mark';
-
-  @override
   String get classNoMarks => 'No marks yet';
 
   @override
-  String classAllMarks(int count) {
-    return 'All $count';
+  String get classFilterAll => 'All';
+
+  @override
+  String classReports(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reports',
+      one: '1 report',
+    );
+    return '$_temp0';
   }
+
+  @override
+  String get classNoMatchingReports => 'No reports match this filter.';
+
+  @override
+  String get trendWeek => 'Week';
+
+  @override
+  String get trendMonth => 'Month';
+
+  @override
+  String get trendAllSubjects => 'All subjects';
+
+  @override
+  String get trendStudents => 'Students';
+
+  @override
+  String get trendSubjects => 'Subjects';
+
+  @override
+  String get trendFailed => 'Couldn\'t load the trend';
+
+  @override
+  String get trendFallingFirst => 'Falling first';
+
+  @override
+  String get trendRisingFirst => 'Rising first';
+
+  @override
+  String gradeWithTeams(String className) {
+    return 'Grade $className with these teams';
+  }
+
+  @override
+  String get annualPlan => 'Annual Plan';
+
+  @override
+  String get planGoals => 'Goals';
+
+  @override
+  String get annualPlansFailed => 'Couldn\'t load the plans.';
+
+  @override
+  String get annualPlansNone =>
+      'No annual plans yet. Plans are made on the web, under My Plans.';
+
+  @override
+  String get annualPlanNoWeeks => 'This plan has no weeks yet.';
+
+  @override
+  String annualPlanGrades(String grades) {
+    return 'Grades $grades';
+  }
+
+  @override
+  String annualPlanClasses(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count classes',
+      one: '1 class',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String annualPlanWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count weeks',
+      one: '1 week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String annualPlanSharedBy(String name) {
+    return 'Shared by $name';
+  }
+
+  @override
+  String get annualPlanShared => 'Shared with your department';
+
+  @override
+  String get annualPlanThisWeek => 'This week';
+
+  @override
+  String get annualPlanObjectives => 'Objectives';
+
+  @override
+  String get annualPlanHomework => 'Homework';
 
   @override
   String notMarkedCount(int count) {

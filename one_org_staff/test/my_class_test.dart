@@ -98,11 +98,29 @@ class _FakeInsights implements ClassInsightsRepository {
     askedClasses.add(className);
     return marksResult;
   }
+
+  GradeTrend? trendResult;
+  final askedTrends = <String>[];
+
+  @override
+  Future<GradeTrend> trend({
+    required int groupId,
+    required int academicYearId,
+    required String bucket,
+    int? subjectId,
+  }) async {
+    askedTrends.add('$groupId/$academicYearId/$bucket/$subjectId');
+    return trendResult ??
+        const GradeTrend(
+          bucket: 'week',
+          buckets: [],
+          overall: TrendSeries(id: 0, name: ''),
+        );
+  }
 }
 
 Widget _wrapPage({
   ClassInsightsRepository? insights,
-  VoidCallback? onMark,
   Future<bool> Function(String uri)? launchDial,
   List<AcademicYearEntry> years = const [
     AcademicYearEntry(id: 4, name: '2026-2027', isActive: true),
@@ -135,7 +153,6 @@ Widget _wrapPage({
       body: SingleChildScrollView(
         child: MyClassPage(
           insights: insights,
-          onMark: onMark,
           launchDial: launchDial,
           loadProfile: () async => _profile,
           loadAcademicYears: () async => years,
@@ -806,10 +823,75 @@ void main() {
       expect(find.text('1/1'), findsOneWidget);
     });
 
-    testWidgets('Behavior counts marks per student and offers Mark', (
+    testWidgets('Grades shows the class trend, falling students first', (
       tester,
     ) async {
-      var marked = 0;
+      final insights = _FakeInsights()
+        ..gradesResult = const ClassGrades(importedAverage: 80)
+        ..trendResult = GradeTrend.fromJson({
+          'bucket': 'week',
+          'buckets': ['2026-11-02', '2026-11-09', '2026-11-16'],
+          'overall': {
+            'values': [null, 80, 78],
+            'average': 79,
+            'grade_count': 40,
+            'change': -2,
+          },
+          'rows': [
+            {
+              'id': 100,
+              'name': 'Rising Student',
+              'values': [null, 70, 80],
+              'average': 75,
+              'change': 10,
+              'subjects': [],
+            },
+            {
+              'id': 101,
+              'name': 'Falling Student',
+              'values': [null, 90, 76],
+              'average': 83,
+              'change': -14,
+              'subjects': [
+                {'id': 7, 'average': 70, 'change': -20},
+              ],
+            },
+          ],
+          'subjects': [
+            {
+              'id': 7,
+              'name': 'Physics',
+              'values': [null, 80, 78],
+              'average': 79,
+              'change': -2,
+            },
+          ],
+        });
+      await tester.pumpWidget(_wrapPage(insights: insights));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Grades'));
+      await tester.pumpAndSettle();
+      expect(insights.askedTrends, ['9/4/week/null']);
+      expect(find.text('-14'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Falling Student')).dy,
+        lessThan(tester.getTopLeft(find.text('Rising Student')).dy),
+      );
+
+      // A student opens their subjects.
+      await tester.tap(find.text('Falling Student'));
+      await tester.pumpAndSettle();
+      expect(find.text('-20'), findsOneWidget);
+
+      await tester.tap(find.text('Month'));
+      await tester.pumpAndSettle();
+      expect(insights.askedTrends.last, '9/4/month/null');
+    });
+
+    testWidgets('Behavior counts marks per student and lists the history', (
+      tester,
+    ) async {
       final insights = _FakeInsights()
         ..marksResult = const [
           ClassMark(
@@ -818,23 +900,31 @@ void main() {
             studentName: 'Yusupova Samira',
             positive: false,
             reason: 'Late',
+            comment: 'Came after the bell',
+            authorName: 'Karimov B.',
           ),
           ClassMark(id: 'b', studentName: 'yusupova samira', positive: true),
         ];
-      await tester.pumpWidget(
-        _wrapPage(insights: insights, onMark: () => marked++),
-      );
+      await tester.pumpWidget(_wrapPage(insights: insights));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Behavior'));
       await tester.pumpAndSettle();
       expect(insights.askedClasses, ['9B']);
-      // One row for both marks, matched by id and by name.
-      expect(find.text('Yusupova Samira'), findsOneWidget);
-      expect(find.text('Late'), findsOneWidget);
+      // One counted row for both marks (matched by id and by name), plus the
+      // first report in the history.
+      expect(find.text('Yusupova Samira'), findsNWidgets(2));
+      // The full history: both reports, with reason, comment and author.
+      expect(find.text('2 reports'), findsOneWidget);
+      expect(find.text('Late · Came after the bell'), findsOneWidget);
+      expect(find.text('Karimov B.'), findsOneWidget);
+      // Marking happens on the Behavior screen, not here.
+      expect(find.text('Mark'), findsNothing);
 
-      await tester.tap(find.text('Mark'));
-      expect(marked, 1);
+      await tester.tap(find.text('Positive').last);
+      await tester.pumpAndSettle();
+      expect(find.text('1 report'), findsOneWidget);
+      expect(find.text('Late · Came after the bell'), findsNothing);
     });
 
     testWidgets('Info: tapping a student opens their personal details', (

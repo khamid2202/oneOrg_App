@@ -5,6 +5,37 @@ import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../application/grading_sheet_controller.dart';
 import '../domain/lesson_grading.dart';
+import '../domain/lessons_repository.dart';
+
+/// A student's team from Team Shuffle: its colour and its place in the list.
+typedef TeamMark = ({Color color, int order});
+
+/// The sheet's students grouped by team (team order, then their sheet order);
+/// anyone without a team goes last.
+List<SheetStudent> orderByTeam(
+  List<SheetStudent> students,
+  Map<int, TeamMark> teams,
+) {
+  if (teams.isEmpty) return students;
+  final indexed = students.indexed.toList()
+    ..sort((a, b) {
+      final byTeam = (teams[a.$2.studentId]?.order ?? 1 << 30).compareTo(
+        teams[b.$2.studentId]?.order ?? 1 << 30,
+      );
+      return byTeam != 0 ? byTeam : a.$1.compareTo(b.$1);
+    });
+  return [for (final (_, student) in indexed) student];
+}
+
+/// The team's colour down a row's left edge.
+Widget teamEdge(TeamMark? team, Widget child) => team == null
+    ? child
+    : DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: team.color, width: 4)),
+        ),
+        child: child,
+      );
 
 const statusColors = {
   statusPresent: Color(0xFF059669),
@@ -159,9 +190,12 @@ class AttendanceHeader extends StatelessWidget {
 }
 
 class AttendanceStep extends StatefulWidget {
-  const AttendanceStep({super.key, required this.sheet});
+  const AttendanceStep({super.key, required this.sheet, this.teams = const {}});
 
   final GradingSheetController sheet;
+
+  /// Student id → team, when the class came from Team Shuffle.
+  final Map<int, TeamMark> teams;
 
   @override
   State<AttendanceStep> createState() => _AttendanceStepState();
@@ -201,14 +235,15 @@ class _AttendanceStepState extends State<AttendanceStep> {
     final readOnly = sheet.readOnly;
     final problems = sheet.problems;
     final width = _buttonWidth(context);
+    final students = orderByTeam(sheet.students, widget.teams);
 
     return ListView.separated(
       padding: EdgeInsets.zero,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      itemCount: sheet.students.length,
+      itemCount: students.length,
       separatorBuilder: (_, _) => Divider(height: 1, color: colors.line),
       itemBuilder: (context, index) {
-        final student = sheet.students[index];
+        final student = students[index];
         final id = student.studentId;
         final draft = sheet.draftOf(id)!;
         final missing = problems[id] == SheetProblem.minutesMissing;
@@ -216,114 +251,117 @@ class _AttendanceStepState extends State<AttendanceStep> {
             draft.status == statusLate &&
             (_lateOpen.contains(id) || draft.minutesLate == null || missing);
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  SizedBox(
-                    width: 22,
-                    child: Text(
-                      '${index + 1}',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(fontSize: 12, color: colors.mutedText),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      student.fullName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        height: 1.15,
+        return teamEdge(
+          widget.teams[id],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 22,
+                      child: Text(
+                        '${index + 1}',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(fontSize: 12, color: colors.mutedText),
                       ),
                     ),
-                  ),
-                  for (final status in _marks)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: _MarkButton(
-                        width: width,
-                        selected: draft.status == status,
-                        color: statusColors[status]!,
-                        semanticLabel: statusLabel(l, status),
-                        label:
-                            status == statusLate &&
-                                draft.status == statusLate &&
-                                draft.minutesLate != null
-                            ? l.minutesShort(draft.minutesLate!)
-                            : statusShort(l, status),
-                        onTap: readOnly
-                            ? null
-                            : () => _tapMark(id, draft, status),
-                      ),
-                    ),
-                ],
-              ),
-              if (showPicker)
-                Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      for (final minutes in _lateShortcuts)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 5),
-                          child: _LateChip(
-                            label: l.minutesShort(minutes),
-                            selected: draft.minutesLate == minutes,
-                            onTap: readOnly
-                                ? null
-                                : () => _setMinutes(id, minutes, close: true),
-                          ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        student.fullName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          height: 1.15,
                         ),
-                      const SizedBox(width: 5),
-                      SizedBox(
-                        width: 64,
-                        height: 32,
-                        child: TextFormField(
-                          key: ValueKey('minutes-$id'),
-                          initialValue: draft.minutesLate?.toString() ?? '',
-                          enabled: !readOnly,
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(3),
-                          ],
-                          style: const TextStyle(fontSize: 13),
-                          decoration: InputDecoration(
-                            hintText: l.minutesHint,
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 8,
+                      ),
+                    ),
+                    for (final status in _marks)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: _MarkButton(
+                          width: width,
+                          selected: draft.status == status,
+                          color: statusColors[status]!,
+                          semanticLabel: statusLabel(l, status),
+                          label:
+                              status == statusLate &&
+                                  draft.status == statusLate &&
+                                  draft.minutesLate != null
+                              ? l.minutesShort(draft.minutesLate!)
+                              : statusShort(l, status),
+                          onTap: readOnly
+                              ? null
+                              : () => _tapMark(id, draft, status),
+                        ),
+                      ),
+                  ],
+                ),
+                if (showPicker)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        for (final minutes in _lateShortcuts)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 5),
+                            child: _LateChip(
+                              label: l.minutesShort(minutes),
+                              selected: draft.minutesLate == minutes,
+                              onTap: readOnly
+                                  ? null
+                                  : () => _setMinutes(id, minutes, close: true),
                             ),
-                            border: const OutlineInputBorder(),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: missing
-                                    ? statusColors[statusAbsent]!
-                                    : colors.line,
+                          ),
+                        const SizedBox(width: 5),
+                        SizedBox(
+                          width: 64,
+                          height: 32,
+                          child: TextFormField(
+                            key: ValueKey('minutes-$id'),
+                            initialValue: draft.minutesLate?.toString() ?? '',
+                            enabled: !readOnly,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(3),
+                            ],
+                            style: const TextStyle(fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: l.minutesHint,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                              ),
+                              border: const OutlineInputBorder(),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: missing
+                                      ? statusColors[statusAbsent]!
+                                      : colors.line,
+                                ),
                               ),
                             ),
+                            onChanged: (text) =>
+                                _setMinutes(id, int.tryParse(text)),
+                            onFieldSubmitted: (text) {
+                              if (int.tryParse(text) != null) {
+                                setState(() => _lateOpen.remove(id));
+                              }
+                            },
                           ),
-                          onChanged: (text) =>
-                              _setMinutes(id, int.tryParse(text)),
-                          onFieldSubmitted: (text) {
-                            if (int.tryParse(text) != null) {
-                              setState(() => _lateOpen.remove(id));
-                            }
-                          },
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },

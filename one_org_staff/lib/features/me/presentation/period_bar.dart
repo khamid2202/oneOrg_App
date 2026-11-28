@@ -15,9 +15,13 @@ class PillChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.soft = false,
+    this.leading,
   });
 
   final String label;
+
+  /// Shown before the label, e.g. the "now" dot on the current class.
+  final Widget? leading;
   final bool selected;
   final VoidCallback onTap;
 
@@ -41,15 +45,21 @@ class PillChip extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: selected
-                    ? Colors.white
-                    : Theme.of(context).colorScheme.onSurface,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (leading != null) ...[leading!, const SizedBox(width: 5)],
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: selected
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

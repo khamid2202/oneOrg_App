@@ -9,6 +9,7 @@ import '../application/lessons_outbox.dart';
 import '../domain/lesson_grading.dart';
 import '../domain/lessons_repository.dart';
 import 'attendance_step.dart';
+import 'plan_week_badge.dart';
 import 'scores_step.dart';
 import 'uploads_sheet.dart';
 import 'package:one_org_staff/shared/app_toast.dart';
@@ -27,6 +28,7 @@ class GradingSheetPage extends StatefulWidget {
     required this.lessonId,
     this.fallbackTitle,
     this.fallbackSubject,
+    this.teams = const {},
   });
 
   final LessonsRepository repository;
@@ -34,6 +36,10 @@ class GradingSheetPage extends StatefulWidget {
   final int lessonId;
   final String? fallbackTitle;
   final String? fallbackSubject;
+
+  /// Student id → team, when opened from Team Shuffle: rows are grouped and
+  /// edged in the team's colour.
+  final Map<int, TeamMark> teams;
 
   @override
   State<GradingSheetPage> createState() => _GradingSheetPageState();
@@ -119,6 +125,19 @@ class _GradingSheetPageState extends State<GradingSheetPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _header(context),
+                  if (_sheet.lesson?.planWeek case final week?
+                      when (week.topic ?? '').isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: PlanWeekBadge(
+                          week: week,
+                          showUnit: true,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
                   _tabs(context),
                   ..._columnHeader(),
                   ..._banners(context),
@@ -318,8 +337,8 @@ class _GradingSheetPageState extends State<GradingSheetPage> {
       return Center(child: Text(l.noStudents, textAlign: TextAlign.center));
     }
     return _step == _Step.attendance
-        ? AttendanceStep(sheet: _sheet)
-        : ScoresStep(sheet: _sheet, expandAll: _expandAll);
+        ? AttendanceStep(sheet: _sheet, teams: widget.teams)
+        : ScoresStep(sheet: _sheet, expandAll: _expandAll, teams: widget.teams);
   }
 
   Widget _bottomBar(BuildContext context) {

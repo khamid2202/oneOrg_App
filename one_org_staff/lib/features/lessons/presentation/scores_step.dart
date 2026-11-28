@@ -6,7 +6,14 @@ import '../../../shared/photo_viewer.dart';
 import '../application/grading_sheet_controller.dart';
 import '../domain/lesson_grading.dart';
 import '../domain/lessons_repository.dart';
-import 'attendance_step.dart' show AllCheckbox, statusColors, statusShort;
+import 'attendance_step.dart'
+    show
+        AllCheckbox,
+        TeamMark,
+        orderByTeam,
+        statusColors,
+        statusShort,
+        teamEdge;
 import 'grading_sheet_page.dart' show scoreColor;
 
 const _categoryIcons = {
@@ -110,10 +117,18 @@ class ScoresLegend extends StatelessWidget {
 }
 
 class ScoresStep extends StatefulWidget {
-  const ScoresStep({super.key, required this.sheet, required this.expandAll});
+  const ScoresStep({
+    super.key,
+    required this.sheet,
+    required this.expandAll,
+    this.teams = const {},
+  });
 
   final GradingSheetController sheet;
   final bool expandAll;
+
+  /// Student id → team, when the class came from Team Shuffle.
+  final Map<int, TeamMark> teams;
 
   @override
   State<ScoresStep> createState() => _ScoresStepState();
@@ -138,34 +153,40 @@ class _ScoresStepState extends State<ScoresStep> {
     final sheet = widget.sheet;
     final colors = appColorsOf(context);
     final problems = sheet.problems;
+    final students = orderByTeam(sheet.students, widget.teams);
 
     return ListView.separated(
       padding: EdgeInsets.zero,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      itemCount: sheet.students.length,
+      itemCount: students.length,
       separatorBuilder: (_, _) => Divider(height: 1, color: colors.line),
       itemBuilder: (context, index) {
-        final student = sheet.students[index];
+        final student = students[index];
         final id = student.studentId;
         final focused = widget.expandAll || _expanded == id;
         final needs = problems[id] == SheetProblem.commentRequired;
         final comment = sheet.draftOf(id)!.comment.trim();
-        return _ScoreRow(
-          key: ValueKey(id),
-          sheet: sheet,
-          student: student,
-          focused: focused,
-          needsComment: needs,
-          showComment: _commentOpen.contains(id) || (needs && comment.isEmpty),
-          openPicker: _openPicker?.startsWith('$id:') == true
-              ? _openPicker!.substring('$id:'.length)
-              : null,
-          onToggle: () => _toggle(id),
-          onPickerChanged: (field) =>
-              setState(() => _openPicker = field == null ? null : '$id:$field'),
-          onCommentChanged: (open) => setState(() {
-            open ? _commentOpen.add(id) : _commentOpen.remove(id);
-          }),
+        return teamEdge(
+          widget.teams[id],
+          _ScoreRow(
+            key: ValueKey(id),
+            sheet: sheet,
+            student: student,
+            focused: focused,
+            needsComment: needs,
+            showComment:
+                _commentOpen.contains(id) || (needs && comment.isEmpty),
+            openPicker: _openPicker?.startsWith('$id:') == true
+                ? _openPicker!.substring('$id:'.length)
+                : null,
+            onToggle: () => _toggle(id),
+            onPickerChanged: (field) => setState(
+              () => _openPicker = field == null ? null : '$id:$field',
+            ),
+            onCommentChanged: (open) => setState(() {
+              open ? _commentOpen.add(id) : _commentOpen.remove(id);
+            }),
+          ),
         );
       },
     );

@@ -443,21 +443,18 @@ class _Grid extends StatelessWidget {
   }
 }
 
-/// The class's behavior on one screen: totals with the Mark button, the
-/// students who have marks, and the last three — the web's class Behavior tab.
+/// The class's behavior: totals, the students who have marks, and the full
+/// history with a positive / needs-attention filter — the web's My Class
+/// Behavior tab.
 class ClassBehaviorView extends StatefulWidget {
   const ClassBehaviorView({
     super.key,
     required this.loadMarks,
     required this.students,
-    this.onMark,
   });
 
   final Future<List<ClassMark>> Function() loadMarks;
   final List<StudentEntry> students;
-
-  /// Opens the Behavior screen. Absent when this person can't mark.
-  final VoidCallback? onMark;
 
   @override
   State<ClassBehaviorView> createState() => _ClassBehaviorViewState();
@@ -465,7 +462,9 @@ class ClassBehaviorView extends StatefulWidget {
 
 class _ClassBehaviorViewState extends State<ClassBehaviorView> {
   late Future<List<ClassMark>> _future = widget.loadMarks();
-  bool _showAll = false;
+
+  /// Null shows every mark; true only positive, false only needs attention.
+  bool? _filter;
 
   static String _normal(String value) => value.trim().toLowerCase();
 
@@ -533,7 +532,10 @@ class _ClassBehaviorViewState extends State<ClassBehaviorView> {
         return byPositive != 0 ? byPositive : a.name.compareTo(b.name);
       });
     final positive = marks.where((m) => m.positive).length;
-    final recent = _showAll ? marks : marks.take(3).toList();
+    final shown = [
+      for (final mark in marks)
+        if (_filter == null || mark.positive == _filter) mark,
+    ];
 
     Widget count(IconData icon, int value, Color color, String label) =>
         Tooltip(
@@ -600,17 +602,6 @@ class _ClassBehaviorViewState extends State<ClassBehaviorView> {
               red,
               l.classNeedsAttention,
             ),
-            const Spacer(),
-            if (widget.onMark != null)
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.accent.solid,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: widget.onMark,
-                icon: const Icon(Icons.edit_rounded, size: 16),
-                label: Text(l.classMark),
-              ),
           ],
         ),
         const SizedBox(height: 10),
@@ -643,91 +634,144 @@ class _ClassBehaviorViewState extends State<ClassBehaviorView> {
               ),
             ),
         if (marks.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: colors.line),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              children: [
-                for (var i = 0; i < recent.length; i++) ...[
-                  if (i > 0)
-                    Divider(
-                      height: 1,
-                      color: colors.line.withValues(alpha: 0.6),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              for (final (value, label) in [
+                (null, l.classFilterAll),
+                (true, l.classPositive),
+                (false, l.classNeedsAttention),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(label),
+                    selected: _filter == value,
+                    showCheckmark: false,
+                    visualDensity: VisualDensity.compact,
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _filter == value ? Colors.white : null,
                     ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 7,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          recent[i].positive
-                              ? Icons.favorite_rounded
-                              : Icons.shield_outlined,
-                          size: 14,
-                          color: recent[i].positive ? green : red,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _shortName(recent[i].studentName),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            recent[i].reason ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colors.mutedText,
-                            ),
-                          ),
-                        ),
-                        if (recent[i].createdAt != null)
-                          Text(
-                            DateFormat(
-                              'd MMM',
-                              locale,
-                            ).format(recent[i].createdAt!),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colors.mutedText,
-                            ),
-                          ),
-                      ],
-                    ),
+                    selectedColor: colors.accent.solid,
+                    onSelected: (_) => setState(() => _filter = value),
                   ),
+                ),
+              const Spacer(),
+              Text(
+                l.classReports(shown.length),
+                style: TextStyle(fontSize: 12, color: colors.mutedText),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (shown.isEmpty)
+            _Message(l.classNoMatchingReports)
+          else
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: colors.line),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                children: [
+                  for (var i = 0; i < shown.length; i++) ...[
+                    if (i > 0)
+                      Divider(
+                        height: 1,
+                        color: colors.line.withValues(alpha: 0.6),
+                      ),
+                    _HistoryRow(
+                      mark: shown[i],
+                      color: shown[i].positive ? green : red,
+                      locale: locale,
+                    ),
+                  ],
                 ],
-                if (!_showAll && marks.length > 3)
-                  InkWell(
-                    onTap: () => setState(() => _showAll = true),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 7),
-                      child: Center(
-                        child: Text(
-                          l.classAllMarks(marks.length),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: colors.accent.solid,
-                          ),
-                        ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+/// One report in the class history: who, when, why, and who reported it.
+class _HistoryRow extends StatelessWidget {
+  const _HistoryRow({
+    required this.mark,
+    required this.color,
+    required this.locale,
+  });
+
+  final ClassMark mark;
+  final Color color;
+  final String locale;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = appColorsOf(context);
+    final muted = TextStyle(fontSize: 11, color: colors.mutedText);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              mark.positive ? Icons.favorite_rounded : Icons.shield_outlined,
+              size: 14,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      mark.studentName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
+                    if (mark.createdAt != null)
+                      Text(
+                        DateFormat(
+                          'd MMM, HH:mm',
+                          locale,
+                        ).format(mark.createdAt!),
+                        style: muted,
+                      ),
+                  ],
+                ),
+                if (mark.detail.isNotEmpty)
+                  Text(mark.detail, style: const TextStyle(fontSize: 13)),
               ],
             ),
           ),
+          if (mark.authorName != null) ...[
+            const SizedBox(width: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 110),
+              child: Text(
+                mark.authorName!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: muted,
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

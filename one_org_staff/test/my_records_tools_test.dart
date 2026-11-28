@@ -11,6 +11,8 @@ import 'package:one_org_staff/app/theme.dart';
 import 'package:one_org_staff/features/MyLessons/lesson_points_repository.dart';
 import 'package:one_org_staff/features/lessons/data/offline_cache.dart';
 import 'package:one_org_staff/features/lessons/domain/lessons_repository.dart';
+import 'package:one_org_staff/features/lessons/presentation/attendance_step.dart'
+    show TeamMark, orderByTeam;
 import 'package:one_org_staff/features/me/data/http_my_repository.dart';
 import 'package:one_org_staff/features/me/domain/my_records.dart';
 import 'package:one_org_staff/features/me/presentation/my_fundings_page.dart';
@@ -767,6 +769,97 @@ void main() {
       await tester.tap(find.text('Shuffle'));
       await tester.pumpAndSettle();
       expect(find.text('H'), findsNothing);
+    });
+
+    testWidgets('the class on now comes first and its teams go to grading', (
+      tester,
+    ) async {
+      _phone(tester);
+      final lessons =
+          FakeLessonsRepository(
+              day: const LessonDay(
+                lessons: [
+                  TeacherLesson(
+                    id: 1,
+                    instanceId: 55,
+                    subject: 'Physics',
+                    classLabel: '10B',
+                    startTime: '10:00:00',
+                    endTime: '10:45:00',
+                  ),
+                ],
+              ),
+            )
+            ..roster = const BehaviorRoster(
+              myClasses: ['7A'],
+              students: [
+                BehaviorStudent(id: '1', fullName: 'A', className: '7A'),
+                BehaviorStudent(id: '11', fullName: 'P', className: '10B'),
+                BehaviorStudent(id: '12', fullName: 'Q', className: '10B'),
+                BehaviorStudent(id: '13', fullName: 'R', className: '10B'),
+                BehaviorStudent(id: '14', fullName: 'S', className: '10B'),
+              ],
+            );
+      TeacherLesson? graded;
+      Map<int, TeamMark>? sent;
+      await tester.pumpWidget(
+        _app(
+          TeachingToolsPage(
+            repository: lessons,
+            random: Random(5),
+            clock: () => DateTime(2026, 11, 27, 10, 15),
+            gradeWithTeams: (lesson, teams) {
+              graded = lesson;
+              sent = teams;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Team Shuffle'));
+      await tester.pumpAndSettle();
+
+      // 10B is on now: listed first and picked over the teacher's own 7A.
+      expect(
+        tester.getTopLeft(find.text('10B')).dx,
+        lessThan(tester.getTopLeft(find.text('7A')).dx),
+      );
+      expect(find.text('4/4'), findsOneWidget);
+      expect(find.textContaining('Grade 10B'), findsNothing);
+
+      await tester.tap(find.text('Shuffle'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.textContaining('Grade 10B'),
+        200,
+        scrollable: find
+            .byWidgetPredicate(
+              (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+            )
+            .first,
+      );
+      await tester.tap(find.textContaining('Grade 10B'));
+      expect(graded?.instanceId, 55);
+      expect(sent!.keys.toSet(), {11, 12, 13, 14});
+      expect(sent!.values.map((t) => t.order).toSet(), {0, 1, 2, 3});
+
+      // Another class has no grading button.
+      await tester.tap(find.text('7A'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Grade 10B'), findsNothing);
+    });
+
+    test('the grading sheet groups students by team, the rest last', () {
+      SheetStudent s(int id) => SheetStudent(studentId: id, fullName: '$id');
+      final ordered = orderByTeam(
+        [s(1), s(2), s(3), s(4)],
+        {
+          3: (color: const Color(0xFFEF4444), order: 0),
+          1: (color: const Color(0xFF3B82F6), order: 1),
+          4: (color: const Color(0xFFEF4444), order: 0),
+        },
+      );
+      expect(ordered.map((e) => e.studentId), [3, 4, 1, 2]);
     });
 
     testWidgets('the picker lands on a name and counts down the round', (

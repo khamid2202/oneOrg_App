@@ -65,9 +65,15 @@
   "offlinePackReady": "Oflayn nusxa: {date} gacha {count} ta dars, oxirgi sinxronlash {time}.",
   "@offlinePackReady": {
     "placeholders": {
-      "count": { "type": "int" },
-      "date": { "type": "String" },
-      "time": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "tryNow": "Hozir urinish",
@@ -300,9 +306,32 @@
   "classBehaviorFailed": "Xulqni yuklab bo‘lmadi.",
   "classPositive": "Ijobiy",
   "classNeedsAttention": "E’tibor kerak",
-  "classMark": "Belgilash",
   "classNoMarks": "Hali belgilar yo‘q",
-  "classAllMarks": "Hammasi: {count}",
+  "classFilterAll": "Hammasi",
+  "classReports": "{count, plural, other{{count} ta yozuv}}",
+  "classNoMatchingReports": "Bu filtrga mos yozuv yo‘q.",
+  "trendWeek": "Hafta",
+  "trendMonth": "Oy",
+  "trendAllSubjects": "Barcha fanlar",
+  "trendStudents": "O‘quvchilar",
+  "trendSubjects": "Fanlar",
+  "trendFailed": "Dinamikani yuklab bo‘lmadi",
+  "trendFallingFirst": "Avval pasayganlar",
+  "trendRisingFirst": "Avval o‘sganlar",
+  "gradeWithTeams": "{className} sinfini shu jamoalar bilan baholash",
+  "annualPlan": "Yillik reja",
+  "planGoals": "Maqsadlar",
+  "annualPlansFailed": "Rejalarni yuklab bo‘lmadi.",
+  "annualPlansNone": "Hali yillik reja yo‘q. Rejalar veb-saytda, Mening rejalarim bo‘limida tuziladi.",
+  "annualPlanNoWeeks": "Bu rejada hali haftalar yo‘q.",
+  "annualPlanGrades": "{grades}-sinflar",
+  "annualPlanClasses": "{count, plural, other{{count} ta sinf}}",
+  "annualPlanWeeks": "{count, plural, other{{count} hafta}}",
+  "annualPlanSharedBy": "{name} ulashgan",
+  "annualPlanShared": "Kafedrangiz bilan ulashilgan",
+  "annualPlanThisWeek": "Shu hafta",
+  "annualPlanObjectives": "Maqsadlar",
+  "annualPlanHomework": "Uy vazifasi",
   "notMarkedCount": "{count} ta belgilanmagan",
   "allMarked": "Hammasi belgilandi",
   "notMarked": "belgilanmagan",
@@ -589,7 +618,7 @@
   "behaviorDeleted": "Xulq yozuvi o‘chirildi.",
   "behaviorDeletedWithPoints": "Xulq yozuvi va {count} ta bog‘liq ball o‘chirildi.",
   "behaviorDeleteFailed": "Bu yozuvni o‘chirib bo‘lmadi.",
-"resetGradesTitle": "Baholarni tiklash",
+  "resetGradesTitle": "Baholarni tiklash",
   "resetGradesNoActiveYear": "Faol o‘quv yili mavjud emas.",
   "resetGradesSelectClasses": "Sinflarni tanlang",
   "resetGradesSearchClasses": "Sinflarni qidirish",

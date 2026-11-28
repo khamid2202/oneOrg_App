@@ -125,6 +125,8 @@ class ClassMark {
     required this.positive,
     this.studentId,
     this.reason,
+    this.comment,
+    this.authorName,
     this.createdAt,
   });
 
@@ -135,7 +137,14 @@ class ClassMark {
   final String studentName;
   final bool positive;
   final String? reason;
+  final String? comment;
+  final String? authorName;
   final DateTime? createdAt;
+
+  /// The reason and the teacher's comment, as the web's full history shows
+  /// them: "Late · Came after the bell".
+  String get detail =>
+      [?reason, if (comment != null && comment != reason) comment!].join(' · ');
 
   factory ClassMark.fromJson(Map<String, dynamic> json) => ClassMark(
     id: '${json['id']}',
@@ -143,7 +152,79 @@ class ClassMark {
     studentName: _text(json['studentName']) ?? '',
     positive: json['type'] == 'positive',
     reason: _text(json['reasonLabel']) ?? _text(json['comment']),
+    comment: _text(json['comment']),
+    authorName: _text(json['authorName']),
     createdAt: DateTime.tryParse('${json['createdAt'] ?? ''}')?.toLocal(),
+  );
+}
+
+/// One line of a grade trend: the class, a student or a subject. [values] is
+/// the average per bucket (null when there were too few grades); [change] is
+/// the points gained or lost over the window (null under two values).
+class TrendSeries {
+  const TrendSeries({
+    required this.id,
+    required this.name,
+    this.values = const [],
+    this.average,
+    this.change,
+    this.gradeCount = 0,
+    this.subjects = const [],
+  });
+
+  final int id;
+  final String name;
+  final List<double?> values;
+  final double? average;
+  final double? change;
+  final int gradeCount;
+
+  /// A student's subjects: (subject id, average, change).
+  final List<({int id, double? average, double? change})> subjects;
+
+  factory TrendSeries.fromJson(Map<String, dynamic> json) => TrendSeries(
+    id: _int(json['id']) ?? 0,
+    name: _text(json['name']) ?? '',
+    values: [for (final v in json['values'] as List? ?? const []) _number(v)],
+    average: _number(json['average']),
+    change: _number(json['change']),
+    gradeCount: _int(json['grade_count']) ?? 0,
+    subjects: [
+      for (final s in _maps(json['subjects']))
+        (
+          id: _int(s['id']) ?? 0,
+          average: _number(s['average']),
+          change: _number(s['change']),
+        ),
+    ],
+  );
+}
+
+/// `/lesson-grades/statistics/trend` for one class: the class line, each
+/// student's line and each subject's, by week or month.
+class GradeTrend {
+  const GradeTrend({
+    required this.bucket,
+    required this.buckets,
+    required this.overall,
+    this.rows = const [],
+    this.subjects = const [],
+  });
+
+  final String bucket;
+
+  /// Each bucket's first day, "YYYY-MM-DD".
+  final List<String> buckets;
+  final TrendSeries overall;
+  final List<TrendSeries> rows;
+  final List<TrendSeries> subjects;
+
+  factory GradeTrend.fromJson(Map<String, dynamic> json) => GradeTrend(
+    bucket: _text(json['bucket']) ?? 'week',
+    buckets: [for (final b in json['buckets'] as List? ?? const []) '$b'],
+    overall: TrendSeries.fromJson(_map(json['overall'])),
+    rows: _maps(json['rows']).map(TrendSeries.fromJson).toList(),
+    subjects: _maps(json['subjects']).map(TrendSeries.fromJson).toList(),
   );
 }
 
@@ -153,6 +234,14 @@ abstract class ClassInsightsRepository {
 
   /// Newest first. [className] is the compact form the marks use: "9B".
   Future<List<ClassMark>> marks(String className);
+
+  /// The class's daily scores over time; [bucket] is "week" or "month".
+  Future<GradeTrend> trend({
+    required int groupId,
+    required int academicYearId,
+    required String bucket,
+    int? subjectId,
+  });
 }
 
 /// "9-B" → "9B", the form behavior marks are filed under.
@@ -253,5 +342,21 @@ class HttpClassInsightsRepository implements ClassInsightsRepository {
         return bt.compareTo(at);
       });
     return marks;
+  }
+
+  @override
+  Future<GradeTrend> trend({
+    required int groupId,
+    required int academicYearId,
+    required String bucket,
+    int? subjectId,
+  }) async {
+    final body = await _get('/lesson-grades/statistics/trend', {
+      'academic_year_id': '$academicYearId',
+      'bucket': bucket,
+      'group_id': '$groupId',
+      'subject_id': ?subjectId?.toString(),
+    });
+    return GradeTrend.fromJson(_map(_map(body)['result']));
   }
 }

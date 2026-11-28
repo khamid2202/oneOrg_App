@@ -985,15 +985,119 @@ class AppLocalizationsRu extends AppLocalizations {
   String get classNeedsAttention => 'Требует внимания';
 
   @override
-  String get classMark => 'Отметить';
-
-  @override
   String get classNoMarks => 'Отметок пока нет';
 
   @override
-  String classAllMarks(int count) {
-    return 'Все: $count';
+  String get classFilterAll => 'Все';
+
+  @override
+  String classReports(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count записи',
+      many: '$count записей',
+      few: '$count записи',
+      one: '$count запись',
+    );
+    return '$_temp0';
   }
+
+  @override
+  String get classNoMatchingReports => 'Нет записей по этому фильтру.';
+
+  @override
+  String get trendWeek => 'Неделя';
+
+  @override
+  String get trendMonth => 'Месяц';
+
+  @override
+  String get trendAllSubjects => 'Все предметы';
+
+  @override
+  String get trendStudents => 'Ученики';
+
+  @override
+  String get trendSubjects => 'Предметы';
+
+  @override
+  String get trendFailed => 'Не удалось загрузить динамику';
+
+  @override
+  String get trendFallingFirst => 'Сначала снижение';
+
+  @override
+  String get trendRisingFirst => 'Сначала рост';
+
+  @override
+  String gradeWithTeams(String className) {
+    return 'Оценить $className по этим командам';
+  }
+
+  @override
+  String get annualPlan => 'Годовой план';
+
+  @override
+  String get planGoals => 'Цели';
+
+  @override
+  String get annualPlansFailed => 'Не удалось загрузить планы.';
+
+  @override
+  String get annualPlansNone =>
+      'Годовых планов пока нет. Планы составляются на сайте, в разделе «Мои планы».';
+
+  @override
+  String get annualPlanNoWeeks => 'В этом плане пока нет недель.';
+
+  @override
+  String annualPlanGrades(String grades) {
+    return 'Параллели $grades';
+  }
+
+  @override
+  String annualPlanClasses(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count класса',
+      many: '$count классов',
+      few: '$count класса',
+      one: '$count класс',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String annualPlanWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count недели',
+      many: '$count недель',
+      few: '$count недели',
+      one: '$count неделя',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String annualPlanSharedBy(String name) {
+    return 'Поделился(-ась): $name';
+  }
+
+  @override
+  String get annualPlanShared => 'Доступен вашей кафедре';
+
+  @override
+  String get annualPlanThisWeek => 'Эта неделя';
+
+  @override
+  String get annualPlanObjectives => 'Цели';
+
+  @override
+  String get annualPlanHomework => 'Домашнее задание';
 
   @override
   String notMarkedCount(int count) {

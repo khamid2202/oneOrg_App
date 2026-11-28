@@ -12,6 +12,19 @@ Newest first. Every notable change to **this Flutter app** gets an entry here
 
 ---
 
+## 2026-11-28 — Lesson plans, grade trend, team grading and class history
+
+- **Version 1.0.11 (build 16)** in `pubspec.yaml`, for this release.
+- **Week topics on lessons**: `plan_week` from `/my-lessons` and `/lesson-instances/:id` shows as "W6 Adding fractions" next to the subject on Home's today card and the Schedule cards, and with its unit under the grading sheet's header (`PlanWeek`, `plan_week_badge.dart`).
+- **Annual Plan** in My Plan, for people with `lesson_plans.read`: an Annual Plan / Goals tab bar like the web's My Plans. It lists your plans for the active year and colleagues' plans shared with your department ("Shared by …"); one opens week by week (dates, topic, unit, objectives, homework) and scrolls to this week. Plans are made, uploaded and edited on the web; the app reads them (`lesson_plans/annual_plans.dart`).
+- **Grade trend in My Class → Grades**, from `/lesson-grades/statistics/trend`: the class average and its change, Week / Month, a subject filter, a chart of the class (and the student you pick), and each student or subject with a sparkline and change, falling first. Tapping a student shows their subjects; tapping a subject filters by it (`grade_trend_panel.dart`). It hides until the class has daily scores.
+- **Full behaviour history in My Class → Behavior**: every report with time, reason and comment, and who reported it, filtered by All / Positive / Needs attention. The Mark button is gone from there, as on the web; marking stays on the Behavior screen.
+- **Team Shuffle knows the class on now**: today's current lesson's class is listed first with a green dot and picked on open. After shuffling it, "Grade 7B with these teams" opens that lesson's grading sheet with students grouped by team and a team-coloured edge on each row, in both steps.
+- Fixed the offline cache test, which still expected the old 60-entry limit.
+- All new labels in English, Uzbek and Russian.
+
+---
+
 ## 2026-11-24 — Offline-ready lesson packs
 
 - Released as **1.0.10 (build 15)**.

@@ -8,6 +8,7 @@ import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/lesson_tags.dart';
 import '../../lessons/domain/lessons_repository.dart';
+import '../../lessons/presentation/plan_week_badge.dart';
 import '../application/home_tile_order.dart';
 import '../application/next_lesson_day.dart';
 import '../domain/app_items.dart';
@@ -518,13 +519,31 @@ class _TodayCardState extends State<_TodayCard> {
             const SizedBox(width: 8),
           ],
           Expanded(
-            child: Text(
-              item.isLunchDuty
-                  ? AppLocalizations.of(context).lunchDuty
-                  : item.subject,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 13, color: text),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    item.isLunchDuty
+                        ? AppLocalizations.of(context).lunchDuty
+                        : item.subject,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 13, color: text),
+                  ),
+                ),
+                if (item.planWeek case final week?
+                    when (week.topic ?? '').isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Flexible(
+                    flex: 2,
+                    child: PlanWeekBadge(
+                      week: week,
+                      onDark: current,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           LessonTags(tags: item.tags, onDark: current),

@@ -65,9 +65,15 @@
   "offlinePackReady": "Офлайн-копия: {count} уроков до {date}, синхронизировано в {time}.",
   "@offlinePackReady": {
     "placeholders": {
-      "count": { "type": "int" },
-      "date": { "type": "String" },
-      "time": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "tryNow": "Повторить сейчас",
@@ -300,9 +306,32 @@
   "classBehaviorFailed": "Не удалось загрузить поведение.",
   "classPositive": "Положительные",
   "classNeedsAttention": "Требует внимания",
-  "classMark": "Отметить",
   "classNoMarks": "Отметок пока нет",
-  "classAllMarks": "Все: {count}",
+  "classFilterAll": "Все",
+  "classReports": "{count, plural, one{{count} запись} few{{count} записи} many{{count} записей} other{{count} записи}}",
+  "classNoMatchingReports": "Нет записей по этому фильтру.",
+  "trendWeek": "Неделя",
+  "trendMonth": "Месяц",
+  "trendAllSubjects": "Все предметы",
+  "trendStudents": "Ученики",
+  "trendSubjects": "Предметы",
+  "trendFailed": "Не удалось загрузить динамику",
+  "trendFallingFirst": "Сначала снижение",
+  "trendRisingFirst": "Сначала рост",
+  "gradeWithTeams": "Оценить {className} по этим командам",
+  "annualPlan": "Годовой план",
+  "planGoals": "Цели",
+  "annualPlansFailed": "Не удалось загрузить планы.",
+  "annualPlansNone": "Годовых планов пока нет. Планы составляются на сайте, в разделе «Мои планы».",
+  "annualPlanNoWeeks": "В этом плане пока нет недель.",
+  "annualPlanGrades": "Параллели {grades}",
+  "annualPlanClasses": "{count, plural, one{{count} класс} few{{count} класса} many{{count} классов} other{{count} класса}}",
+  "annualPlanWeeks": "{count, plural, one{{count} неделя} few{{count} недели} many{{count} недель} other{{count} недели}}",
+  "annualPlanSharedBy": "Поделился(-ась): {name}",
+  "annualPlanShared": "Доступен вашей кафедре",
+  "annualPlanThisWeek": "Эта неделя",
+  "annualPlanObjectives": "Цели",
+  "annualPlanHomework": "Домашнее задание",
   "notMarkedCount": "Не отмечено: {count}",
   "allMarked": "Все отмечены",
   "notMarked": "не отмечен",
@@ -589,7 +618,7 @@
   "behaviorDeleted": "Запись о поведении удалена.",
   "behaviorDeletedWithPoints": "{count, plural, one{Запись и {count} связанная запись баллов удалены.} few{Запись и {count} связанные записи баллов удалены.} other{Запись и {count} связанных записей баллов удалены.}}",
   "behaviorDeleteFailed": "Не удалось удалить запись.",
-"resetGradesTitle": "Сброс оценок",
+  "resetGradesTitle": "Сброс оценок",
   "resetGradesNoActiveYear": "Нет активного учебного года.",
   "resetGradesSelectClasses": "Выбрать классы",
   "resetGradesSearchClasses": "Поиск классов",

@@ -12,6 +12,7 @@ class TodayItem {
     this.room,
     this.tags = const [],
     this.isLunchDuty = false,
+    this.planWeek,
   });
 
   /// "HH:mm"; these compare correctly as strings.
@@ -22,6 +23,9 @@ class TodayItem {
   final String? room;
   final List<String> tags;
   final bool isLunchDuty;
+
+  /// The lesson plan week, shown with its topic when it has one.
+  final PlanWeek? planWeek;
 }
 
 class NextLessonDay {
@@ -52,6 +56,7 @@ List<TodayItem> _itemsOf(LessonDay day) {
           room: lesson.room,
           tags: lesson.tags,
           isLunchDuty: lesson.isLunchDuty,
+          planWeek: lesson.planWeek,
         ),
     for (final meeting in day.meetings)
       TodayItem(

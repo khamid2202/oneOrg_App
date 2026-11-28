@@ -9,6 +9,7 @@ import '../../../app/tab_back.dart';
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../lessons/domain/lessons_repository.dart';
+import '../../lessons/presentation/attendance_step.dart' show TeamMark;
 import '../../me/presentation/period_bar.dart';
 import '../domain/team_shuffle.dart';
 
@@ -51,7 +52,7 @@ int _byClassName(String a, String b) {
 enum _Tool { teams, picker, timer }
 
 /// Team Shuffle, Name Picker and Timer. Nothing here reaches the server except
-/// reading the class lists.
+/// reading the class lists and today's lessons (for the class on now).
 class TeachingToolsPage extends StatefulWidget {
   const TeachingToolsPage({
     super.key,
@@ -59,9 +60,15 @@ class TeachingToolsPage extends StatefulWidget {
     this.bottomInset = 0,
     this.random,
     this.clock = DateTime.now,
+    this.gradeWithTeams,
   });
 
   final LessonsRepository repository;
+
+  /// Opens [lesson]'s grading sheet with its students grouped and coloured by
+  /// team (student id → team). Absent where grading can't open.
+  final void Function(TeacherLesson lesson, Map<int, TeamMark> teams)?
+  gradeWithTeams;
   final double bottomInset;
   final Random? random;
   final DateTime Function() clock;
@@ -75,10 +82,26 @@ class _TeachingToolsPageState extends State<TeachingToolsPage> {
   BehaviorRoster? _roster;
   bool _failed = false;
 
+  /// The lesson being taught right now, if any: Team Shuffle picks its class
+  /// and can carry the teams into its grading sheet.
+  TeacherLesson? _nowLesson;
+
   @override
   void initState() {
     super.initState();
     _load();
+    _findNowLesson();
+  }
+
+  Future<void> _findNowLesson() async {
+    try {
+      final now = widget.clock();
+      final day = await widget.repository.getDay(now);
+      final lesson = currentLesson(day.lessons, now);
+      if (mounted && lesson != null) setState(() => _nowLesson = lesson);
+    } catch (_) {
+      // No class marked as now.
+    }
   }
 
   Future<void> _load() async {
@@ -149,6 +172,8 @@ class _TeachingToolsPageState extends State<TeachingToolsPage> {
                 roster: _roster!,
                 random: widget.random,
                 bottomInset: widget.bottomInset,
+                nowLesson: _nowLesson,
+                gradeWithTeams: widget.gradeWithTeams,
               ),
               _Tool.picker => _NamePickerTool(
                 roster: _roster!,
@@ -239,6 +264,9 @@ class _TeachingToolsPageState extends State<TeachingToolsPage> {
 mixin _ClassChoice<T extends StatefulWidget> on State<T> {
   BehaviorRoster get roster;
 
+  /// The class on now: listed first with a dot. Only Team Shuffle sets it.
+  String? get nowClass => null;
+
   String _picked = '';
   final Set<String> absent = {};
 
@@ -258,12 +286,16 @@ mixin _ClassChoice<T extends StatefulWidget> on State<T> {
   List<String> get ownClasses =>
       roster.myClasses.where(byClass.containsKey).toList();
 
-  /// Their own classes first.
+  /// The class on now, then their own classes, then the rest.
   List<String> get classes {
     final own = ownClasses;
+    final now = byClass.containsKey(nowClass) ? nowClass : null;
     return [
-      ...own,
-      ...byClass.keys.where((name) => !own.contains(name)).toList()
+      ?now,
+      ...own.where((name) => name != now),
+      ...byClass.keys
+          .where((name) => !own.contains(name) && name != now)
+          .toList()
         ..sort(_byClassName),
     ];
   }
@@ -313,6 +345,16 @@ mixin _ClassChoice<T extends StatefulWidget> on State<T> {
               selected: name == className,
               soft: own.contains(name),
               onTap: () => onPick(name),
+              leading: name == nowClass
+                  ? Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
+                    )
+                  : null,
             ),
         ],
       ),
@@ -609,11 +651,16 @@ class _TeamShuffleTool extends StatefulWidget {
     required this.roster,
     required this.bottomInset,
     this.random,
+    this.nowLesson,
+    this.gradeWithTeams,
   });
 
   final BehaviorRoster roster;
   final double bottomInset;
   final Random? random;
+  final TeacherLesson? nowLesson;
+  final void Function(TeacherLesson lesson, Map<int, TeamMark> teams)?
+  gradeWithTeams;
 
   @override
   State<_TeamShuffleTool> createState() => _TeamShuffleToolState();
@@ -624,16 +671,50 @@ class _TeamShuffleToolState extends State<_TeamShuffleTool>
   @override
   BehaviorRoster get roster => widget.roster;
 
+  @override
+  String? get nowClass => widget.nowLesson?.classLabel;
+
   int _count = 4;
   List<Team>? _teams;
   bool _presenceOpen = true;
   bool _rolesOn = true;
 
+  /// The class on now is picked once, over the remembered one, as on the web.
+  bool _restored = false;
+  bool _nowApplied = false;
+
   @override
   void initState() {
     super.initState();
-    restoreClass();
+    restoreClass().whenComplete(() {
+      _restored = true;
+      _applyNow();
+    });
     _restoreRoles();
+  }
+
+  @override
+  void didUpdateWidget(_TeamShuffleTool old) {
+    super.didUpdateWidget(old);
+    if (old.nowLesson != widget.nowLesson) _applyNow();
+  }
+
+  void _applyNow() {
+    final now = nowClass;
+    if (!mounted || !_restored || _nowApplied) return;
+    if (now == null || !byClass.containsKey(now)) return;
+    _nowApplied = true;
+    setState(() => pickClass(now));
+  }
+
+  void _gradeWithTeams(List<Team> teams) {
+    final lesson = widget.nowLesson!;
+    final marks = <int, TeamMark>{
+      for (var i = 0; i < teams.length; i++)
+        for (final member in teams[i].members)
+          ?int.tryParse(member.id): (color: _teamColors[i], order: i),
+    };
+    widget.gradeWithTeams!(lesson, marks);
   }
 
   Future<void> _restoreRoles() async {
@@ -793,6 +874,24 @@ class _TeamShuffleToolState extends State<_TeamShuffleTool>
         if (teams != null)
           for (var i = 0; i < teams.length; i++)
             _teamCard(context, l, teams[i], teamNames[i], _teamColors[i]),
+        if (teams != null &&
+            widget.gradeWithTeams != null &&
+            widget.nowLesson?.instanceId != null &&
+            className == nowClass)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                foregroundColor: colors.accent.solid,
+                side: BorderSide(color: colors.accent.border),
+                shape: const StadiumBorder(),
+              ),
+              onPressed: () => _gradeWithTeams(teams),
+              icon: const Icon(Icons.fact_check_rounded, size: 18),
+              label: Text(l.gradeWithTeams(className)),
+            ),
+          ),
       ],
     );
   }
